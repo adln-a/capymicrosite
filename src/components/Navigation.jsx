@@ -108,9 +108,9 @@ function NavSpacer() {
 // value that would need retuning if section heights change.
 const SCROLLSPY_ROOT_MARGIN = '-50% 0px -50% 0px';
 
-export default function Navigation({ heroRef, contactSectionRef, mainRef }) {
+export default function Navigation({ heroRef, sentinelRef, contactSectionRef, mainRef }) {
   const [isOpen, setIsOpen] = useState(false);
-  const [heroInView, setHeroInView] = useState(true);
+  const [sentinelVisible, setSentinelVisible] = useState(true);
   const [activeSection, setActiveSection] = useState('home');
 
   const toggleRef = useRef(null);
@@ -119,20 +119,23 @@ export default function Navigation({ heroRef, contactSectionRef, mainRef }) {
   const contactRef = useRef(null);
   const downloadRef = useRef(null);
 
-  // One observer drives the collapse in both scroll directions: full bar
-  // shows while Section 1 intersects the viewport, collapses to the toggle
-  // the moment it doesn't (threshold: 0 is a starting point, tune against
-  // Figma if the collapse point should trigger earlier/later).
+  // Collapse trigger: a zero-height sentinel div (rendered by Section 1,
+  // right at the top of its content) is the only thing this observer
+  // watches -- not Section 1's own full height. Full bar shows while the
+  // sentinel is visible; the instant it scrolls out of the viewport
+  // (either direction), it flips to the toggle. Decoupling from Section 1's
+  // own height means the collapse point no longer depends on how tall
+  // Section 1 (or whatever precedes it) happens to be.
   useEffect(() => {
-    const target = heroRef?.current;
+    const target = sentinelRef?.current;
     if (!target) return undefined;
 
-    const observer = new IntersectionObserver(([entry]) => setHeroInView(entry.isIntersecting), {
+    const observer = new IntersectionObserver(([entry]) => setSentinelVisible(entry.isIntersecting), {
       threshold: 0,
     });
     observer.observe(target);
     return () => observer.disconnect();
-  }, [heroRef]);
+  }, [sentinelRef]);
 
   // Scrollspy: separate from the observer above (that one only cares
   // whether Section 1 is visible at all; this one tracks which section
@@ -252,18 +255,24 @@ export default function Navigation({ heroRef, contactSectionRef, mainRef }) {
 
   // Mutually exclusive by construction, not by styling: full bar and toggle
   // are two branches of one conditional, so only one is ever in the DOM.
-  // showFullBar also checks !isOpen (not just heroInView) -- if the user
-  // scrolls back up into Section 1 while the panel is still open, the panel
-  // (a fixed inset-0 overlay) covers everything anyway, and the toggle
-  // needs to stay mounted regardless of scroll position since it's the
-  // panel's own close control and first focus-trap stop.
-  const showFullBar = heroInView && !isOpen;
+  // showFullBar also checks !isOpen (not just sentinelVisible) -- if the
+  // user scrolls back up while the panel is still open, the panel (a fixed
+  // inset-0 overlay) covers everything anyway, and the toggle needs to stay
+  // mounted regardless of scroll position since it's the panel's own close
+  // control and first focus-trap stop.
+  const showFullBar = sentinelVisible && !isOpen;
 
   return (
     <div className="hidden xl:block">
       {showFullBar ? (
-        <div className="fixed inset-x-0 top-l z-30 h-14 px-page-margin-x">
-          <div className="relative flex h-full w-full items-center justify-between rounded-large">
+        // `absolute`, not `fixed` -- it needs to scroll away WITH Section 1's
+        // content (not stay pinned to the viewport) as the user scrolls, and
+        // only the collapsed toggle below should be `fixed`. With no
+        // positioned/fixed ancestor between this and the document root, an
+        // absolutely positioned element is placed relative to the page and
+        // scrolls normally; only `position: fixed` would pin it in place.
+        <div className="absolute inset-x-0 top-l z-30 h-14">
+          <div className="page-container relative flex h-full w-full items-center justify-between rounded-large">
             <NavSpacer />
 
             <nav aria-label="Primary">
@@ -283,16 +292,26 @@ export default function Navigation({ heroRef, contactSectionRef, mainRef }) {
           </div>
         </div>
       ) : (
-        <button
-          ref={toggleRef}
-          type="button"
-          onClick={handleToggleClick}
-          aria-expanded={isOpen}
-          aria-label={isOpen ? 'Close navigation' : 'Open navigation'}
-          className="fixed right-page-margin-x top-l z-50 flex h-14 w-14 items-center justify-center rounded-full bg-button-primary-orange text-button-inverted"
-        >
-          {isOpen ? <CloseIcon /> : <HamburgerIcon />}
-        </button>
+        // Wrapped in the same page-container as the full bar (rather than
+        // right-page-margin-x directly against the viewport) so the
+        // toggle's right edge lines up with the Download button's right
+        // edge above it, instead of drifting further right on very wide
+        // viewports where the 1280px-capped container no longer reaches
+        // the raw viewport edge.
+        <div className="fixed inset-x-0 top-l z-50 h-14">
+          <div className="page-container flex h-full w-full items-center justify-end">
+            <button
+              ref={toggleRef}
+              type="button"
+              onClick={handleToggleClick}
+              aria-expanded={isOpen}
+              aria-label={isOpen ? 'Close navigation' : 'Open navigation'}
+              className="flex h-14 w-14 items-center justify-center rounded-full bg-button-primary-orange text-button-inverted"
+            >
+              {isOpen ? <CloseIcon /> : <HamburgerIcon />}
+            </button>
+          </div>
+        </div>
       )}
 
       {isOpen && (
