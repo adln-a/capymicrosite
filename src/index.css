@@ -1,0 +1,550 @@
+@import url('https://api.fontshare.com/v2/css?f[]=satoshi@700,900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;800&display=swap');
+@import "tailwindcss";
+
+/* Design tokens.
+   --font-* and --font-weight-* sit in Tailwind's reserved theme namespaces
+   (so font-satoshi / font-weight-satoshi-black utilities exist as a side effect).
+   --type-* is a non-reserved namespace: it holds size/line-height pairs and is
+   consumed only via var() below, so it never leaks into Tailwind's generated
+   utility set. */
+@theme {
+  --font-satoshi: 'Satoshi', sans-serif;
+  --font-ibm-plex-mono: 'IBM Plex Mono', monospace;
+
+  --font-weight-satoshi-bold: 700;
+  --font-weight-satoshi-black: 900;
+  --font-weight-mono-medium: 500;
+  --font-weight-mono-bold: 800;
+
+  --tracking-none: 0em;
+
+  /* md (768px) and lg (1024px) stay Tailwind defaults; xl is redefined to
+     1440px (from the default 1280px) so there's no in-between layout state
+     between lg and the 1440px desktop design — 1024-1439px keeps the lg
+     layout. */
+  --breakpoint-xl: 1440px;
+
+  /* Primitives, generated from the Figma export (12 families; Black carries
+     an extra 0 shade below 50, so 133 tokens total, not 132). Semantic
+     tokens below reference these via var() — never hardcode a hex here. */
+  --color-black-0: #FFFFFF;
+  --color-black-50: #F6F6F6;
+  --color-black-100: #E7E7E7;
+  --color-black-200: #D1D1D1;
+  --color-black-300: #B0B0B0;
+  --color-black-400: #888888;
+  --color-black-500: #6D6D6D;
+  --color-black-600: #5D5D5D;
+  --color-black-700: #4F4F4F;
+  --color-black-800: #454545;
+  --color-black-900: #3D3D3D;
+  --color-black-950: #000000;
+
+  --color-capy-orange-50: #FFF3ED;
+  --color-capy-orange-100: #FFE4D4;
+  --color-capy-orange-200: #FFC5A8;
+  --color-capy-orange-300: #FF9C71;
+  --color-capy-orange-400: #FF6E40;
+  --color-capy-orange-500: #FE4011;
+  --color-capy-orange-600: #EF2607;
+  --color-capy-orange-700: #C61708;
+  --color-capy-orange-800: #9D150F;
+  --color-capy-orange-900: #7E1510;
+  --color-capy-orange-950: #440606;
+
+  --color-pomegranate-50: #FFF3F1;
+  --color-pomegranate-100: #FFE3DF;
+  --color-pomegranate-200: #FFCCC5;
+  --color-pomegranate-300: #FFA89D;
+  --color-pomegranate-400: #FF7664;
+  --color-pomegranate-500: #FF4B34;
+  --color-pomegranate-600: #EE3A23;
+  --color-pomegranate-700: #C8220D;
+  --color-pomegranate-800: #A5200F;
+  --color-pomegranate-900: #882114;
+  --color-pomegranate-950: #4A0D05;
+
+  --color-pink-50: #FEF2F3;
+  --color-pink-100: #FFE1E3;
+  --color-pink-200: #FFBFC3;
+  --color-pink-300: #FEA3A9;
+  --color-pink-400: #FB6E77;
+  --color-pink-500: #F2414C;
+  --color-pink-600: #E0222E;
+  --color-pink-700: #BC1923;
+  --color-pink-800: #9B1921;
+  --color-pink-900: #811B21;
+  --color-pink-950: #46090D;
+
+  --color-white-linen-50: #F9F6F3;
+  --color-white-linen-100: #F3EEE8;
+  --color-white-linen-200: #E1D4C7;
+  --color-white-linen-300: #CEB8A3;
+  --color-white-linen-400: #BA977D;
+  --color-white-linen-500: #AB7F64;
+  --color-white-linen-600: #9E6E58;
+  --color-white-linen-700: #84594A;
+  --color-white-linen-800: #6B4A41;
+  --color-white-linen-900: #583E36;
+  --color-white-linen-950: #2E201C;
+
+  --color-surf-crest-50: #F5F9F4;
+  --color-surf-crest-100: #E6F3E5;
+  --color-surf-crest-200: #CFE7CD;
+  --color-surf-crest-300: #A6D2A3;
+  --color-surf-crest-400: #77B573;
+  --color-surf-crest-500: #53984F;
+  --color-surf-crest-600: #417C3D;
+  --color-surf-crest-700: #366233;
+  --color-surf-crest-800: #2E4F2C;
+  --color-surf-crest-900: #254225;
+  --color-surf-crest-950: #102310;
+
+  --color-allports-50: #F2F9FD;
+  --color-allports-100: #E4F0FA;
+  --color-allports-200: #C3E2F4;
+  --color-allports-300: #8FCAEA;
+  --color-allports-400: #53AFDD;
+  --color-allports-500: #2D95CA;
+  --color-allports-600: #1E79AE;
+  --color-allports-700: #19608B;
+  --color-allports-800: #195173;
+  --color-allports-900: #1A4460;
+  --color-allports-950: #112C40;
+
+  --color-sunglow-50: #FEFBE8;
+  --color-sunglow-100: #FEF8C3;
+  --color-sunglow-200: #FEED8A;
+  --color-sunglow-300: #FDDB47;
+  --color-sunglow-400: #FACB2A;
+  --color-sunglow-500: #EAAD08;
+  --color-sunglow-600: #CA8504;
+  --color-sunglow-700: #A15E07;
+  --color-sunglow-800: #854A0E;
+  --color-sunglow-900: #713D12;
+  --color-sunglow-950: #421E06;
+
+  --color-chateau-green-50: #EEFFF6;
+  --color-chateau-green-100: #D7FFEC;
+  --color-chateau-green-200: #B2FFDA;
+  --color-chateau-green-300: #76FFBE;
+  --color-chateau-green-400: #33F59A;
+  --color-chateau-green-500: #09DE7A;
+  --color-chateau-green-600: #00AC5C;
+  --color-chateau-green-700: #049150;
+  --color-chateau-green-800: #0A7142;
+  --color-chateau-green-900: #0A5D39;
+  --color-chateau-green-950: #00341E;
+
+  --color-genoa-50: #EDFFFB;
+  --color-genoa-100: #C2FFF3;
+  --color-genoa-200: #84FFEA;
+  --color-genoa-300: #3FFFDE;
+  --color-genoa-400: #08F9CD;
+  --color-genoa-500: #00DCB5;
+  --color-genoa-600: #00B297;
+  --color-genoa-700: #008D79;
+  --color-genoa-800: #00695C;
+  --color-genoa-900: #065B50;
+  --color-genoa-950: #003834;
+
+  --color-prelude-50: #FAF8FC;
+  --color-prelude-100: #F4EFF8;
+  --color-prelude-200: #ECE2F2;
+  --color-prelude-300: #D6C2E4;
+  --color-prelude-400: #C5A8D8;
+  --color-prelude-500: #AE86C6;
+  --color-prelude-600: #976AB3;
+  --color-prelude-700: #81569A;
+  --color-prelude-800: #6C4A7F;
+  --color-prelude-900: #583C67;
+  --color-prelude-950: #3C2348;
+
+  --color-everglade-50: #F0F9F3;
+  --color-everglade-100: #DCEFE1;
+  --color-everglade-200: #BBDFC7;
+  --color-everglade-300: #8DC8A5;
+  --color-everglade-400: #5DAA7E;
+  --color-everglade-500: #3B8E61;
+  --color-everglade-600: #2A714C;
+  --color-everglade-700: #225A3E;
+  --color-everglade-800: #1E4B35;
+  --color-everglade-900: #183C2B;
+  --color-everglade-950: #0D2118;
+
+  --color-primary-orange: var(--color-capy-orange-400);
+  --color-primary-teal: var(--color-genoa-700);
+
+  --color-heading-default: var(--color-black-900);
+  --color-heading-red: var(--color-pomegranate-600);
+  --color-heading-blue: var(--color-allports-600);
+  --color-heading-inverted: var(--color-black-0);
+  --color-body-default: var(--color-black-700);
+  --color-body-disabled: var(--color-black-400);
+  --color-body-inverted: var(--color-black-0);
+  --color-body-orange: var(--color-primary-orange);
+  --color-body-error: var(--color-pomegranate-600);
+  --color-body-success: var(--color-chateau-green-600);
+
+  --color-button-primary-orange: var(--color-primary-orange);
+  --color-button-dark-orange: var(--color-capy-orange-500);
+  --color-button-primary-green: var(--color-primary-teal);
+  --color-button-inverted: var(--color-black-0);
+
+  --color-bg-linen-light: var(--color-white-linen-50);
+  --color-bg-linen-dark: var(--color-white-linen-100);
+  --color-bg-white: var(--color-black-0);
+  --color-bg-teal: var(--color-primary-teal);
+  --color-bg-bright-green: var(--color-chateau-green-600);
+  --color-bg-light-green: var(--color-surf-crest-200);
+  --color-bg-orange: var(--color-primary-orange);
+  --color-bg-red: var(--color-pomegranate-600);
+  --color-bg-light-pink: var(--color-pink-50);
+  --color-bg-pink: var(--color-pink-100);
+  --color-bg-blue: var(--color-allports-600);
+  --color-bg-light-blue: var(--color-allports-200);
+  --color-bg-purple: var(--color-prelude-300);
+  --color-bg-yellow: var(--color-sunglow-400);
+  --color-bg-dark-green: var(--color-everglade-800);
+  --color-bg-black: var(--color-black-900);
+
+  --color-border-default: var(--color-black-500);
+  --color-border-light: var(--color-black-300);
+  --color-border-orange: var(--color-primary-orange);
+  --color-border-inverted: var(--color-black-0);
+  --color-border-error: var(--color-pomegranate-600);
+  --color-border-success: var(--color-chateau-green-600);
+
+  --type-h1-font-size: 24px;
+  --type-h1-line-height: 32px;
+  --type-h1-font-size-desktop: 32px;
+  --type-h1-line-height-desktop: 40px;
+
+  --type-h2-font-size: 20px;
+  --type-h2-line-height: 28px;
+  --type-h2-font-size-desktop: 28px;
+  --type-h2-line-height-desktop: 32px;
+
+  --type-h3-font-size: 18px;
+  --type-h3-line-height: 24px;
+  --type-h3-font-size-desktop: 22px;
+  --type-h3-line-height-desktop: 28px;
+
+  --type-h4-font-size: 16px;
+  --type-h4-line-height: 24px;
+  --type-h4-font-size-desktop: 20px;
+  --type-h4-line-height-desktop: 24px;
+
+  --type-body-font-size: 16px;
+  --type-body-line-height: 24px;
+
+  --type-body-strong-font-size: 16px;
+  --type-body-strong-line-height: 24px;
+  --type-body-strong-font-size-md: 16px;
+  --type-body-strong-line-height-md: 24px;
+
+  --type-body-lg-font-size: 18px;
+  --type-body-lg-line-height: 24px;
+  --type-body-lg-font-size-md: 20px;
+  --type-body-lg-line-height-md: 28px;
+
+  --type-body-lg-strong-font-size: 18px;
+  --type-body-lg-strong-line-height: 24px;
+  --type-body-lg-strong-font-size-md: 20px;
+  --type-body-lg-strong-line-height-md: 28px;
+
+  --type-speech-bubble-font-size: 16px;
+  --type-speech-bubble-line-height: 24px;
+  --type-speech-bubble-font-size-md: 22px;
+  --type-speech-bubble-line-height-md: 28px;
+
+  --type-button-font-size: 16px;
+  --type-button-line-height: 24px;
+  --type-button-font-size-md: 16px;
+  --type-button-line-height-md: 24px;
+
+  --type-button-sm-font-size: 14px;
+  --type-button-sm-line-height: 20px;
+  --type-button-sm-font-size-md: 14px;
+  --type-button-sm-line-height-md: 20px;
+
+  --type-button-lg-font-size: 18px;
+  --type-button-lg-line-height: 24px;
+  --type-button-lg-font-size-md: 20px;
+  --type-button-lg-line-height-md: 28px;
+
+  --type-nav-font-size: 16px;
+  --type-nav-line-height: 24px;
+  --type-nav-font-size-md: 16px;
+  --type-nav-line-height-md: 24px;
+
+  --type-nav-active-font-size: 16px;
+  --type-nav-active-line-height: 24px;
+  --type-nav-active-font-size-md: 16px;
+  --type-nav-active-line-height-md: 24px;
+
+  --type-caption-font-size: 14px;
+  --type-caption-line-height: 20px;
+  --type-caption-font-size-md: 14px;
+  --type-caption-line-height-md: 20px;
+
+  /* Spacing/radius base values are mobile values. Tokens that change at md
+     (768px) or xl (1440px) are overridden in the :root block below — there
+     is no lg (1024px) step for spacing, tablet portrait and landscape share
+     one value. */
+  --spacing-0: 0;
+  --spacing-3xs: 2px;
+  --spacing-2xs: 4px;
+  --spacing-xs: 8px;
+  --spacing-s: 16px;
+  --spacing-m: 16px;
+  --spacing-l: 24px;
+  --spacing-xl: 32px;
+  --spacing-2xl: 48px;
+  --spacing-3xl: 64px;
+  --spacing-4xl: 80px;
+
+  --spacing-page-margin-x: var(--spacing-s);
+  --spacing-page-margin-y: var(--spacing-3xl);
+
+  --spacing-container-margin-s: var(--spacing-s);
+  --spacing-container-margin-m: var(--spacing-m);
+  --spacing-container-margin-l: var(--spacing-l);
+
+  --spacing-paragraph: var(--spacing-s);
+
+  --radius-small: 16px;
+  --radius-medium: 16px;
+  --radius-large: 24px;
+}
+
+/* Responsive overrides for the tokens above. Tokens built with var() (page
+   margin y, container margin m/l) inherit their breakpoint changes
+   automatically and don't need entries here. */
+@layer base {
+  :root {
+    @variant md {
+      --spacing-page-margin-x: 32px;
+      --radius-medium: 20px;
+    }
+
+    @variant xl {
+      --spacing-m: 24px;
+      --spacing-l: 40px;
+      --spacing-xl: 48px;
+      --spacing-2xl: 64px;
+      --spacing-3xl: 96px;
+      --spacing-4xl: 128px;
+      --spacing-page-margin-x: 150px;
+      --radius-medium: 24px;
+      --radius-large: 32px;
+    }
+  }
+
+  /* Global focus-visible style. Navigation.jsx (and future interactive
+     components) rely on this rather than defining their own per-component
+     focus style. */
+  :focus-visible {
+    outline: 2px solid var(--color-primary-teal);
+    outline-offset: 2px;
+  }
+}
+
+@layer components {
+  .heading-1 {
+    font-family: var(--font-satoshi);
+    font-weight: var(--font-weight-satoshi-black);
+    font-size: var(--type-h1-font-size);
+    line-height: var(--type-h1-line-height);
+    letter-spacing: var(--tracking-none);
+
+    @variant xl {
+      font-size: var(--type-h1-font-size-desktop);
+      line-height: var(--type-h1-line-height-desktop);
+    }
+  }
+
+  .heading-2 {
+    font-family: var(--font-satoshi);
+    font-weight: var(--font-weight-satoshi-black);
+    font-size: var(--type-h2-font-size);
+    line-height: var(--type-h2-line-height);
+    letter-spacing: var(--tracking-none);
+
+    @variant xl {
+      font-size: var(--type-h2-font-size-desktop);
+      line-height: var(--type-h2-line-height-desktop);
+    }
+  }
+
+  .heading-3 {
+    font-family: var(--font-satoshi);
+    font-weight: var(--font-weight-satoshi-black);
+    font-size: var(--type-h3-font-size);
+    line-height: var(--type-h3-line-height);
+    letter-spacing: var(--tracking-none);
+
+    @variant xl {
+      font-size: var(--type-h3-font-size-desktop);
+      line-height: var(--type-h3-line-height-desktop);
+    }
+  }
+
+  .heading-4 {
+    font-family: var(--font-satoshi);
+    font-weight: var(--font-weight-satoshi-black);
+    font-size: var(--type-h4-font-size);
+    line-height: var(--type-h4-line-height);
+    letter-spacing: var(--tracking-none);
+
+    @variant xl {
+      font-size: var(--type-h4-font-size-desktop);
+      line-height: var(--type-h4-line-height-desktop);
+    }
+  }
+
+  .body-paragraph {
+    font-family: var(--font-ibm-plex-mono);
+    font-weight: var(--font-weight-mono-medium);
+    font-size: var(--type-body-font-size);
+    line-height: var(--type-body-line-height);
+    letter-spacing: var(--tracking-none);
+  }
+
+  .body-paragraph-strong {
+    font-family: var(--font-ibm-plex-mono);
+    font-weight: var(--font-weight-mono-bold);
+    font-size: var(--type-body-strong-font-size);
+    line-height: var(--type-body-strong-line-height);
+    letter-spacing: var(--tracking-none);
+  }
+
+  .body-paragraph-large {
+    font-family: var(--font-ibm-plex-mono);
+    font-weight: var(--font-weight-mono-medium);
+    font-size: var(--type-body-lg-font-size);
+    line-height: var(--type-body-lg-line-height);
+    letter-spacing: var(--tracking-none);
+  }
+
+  .body-paragraph-large-strong {
+    font-family: var(--font-ibm-plex-mono);
+    font-weight: var(--font-weight-mono-bold);
+    font-size: var(--type-body-lg-strong-font-size);
+    line-height: var(--type-body-lg-strong-line-height);
+    letter-spacing: var(--tracking-none);
+  }
+
+  .body-speech-bubble {
+    font-family: var(--font-satoshi);
+    font-weight: var(--font-weight-satoshi-black);
+    font-size: var(--type-speech-bubble-font-size);
+    line-height: var(--type-speech-bubble-line-height);
+    letter-spacing: var(--tracking-none);
+  }
+
+  .button-default {
+    font-family: var(--font-satoshi);
+    font-weight: var(--font-weight-satoshi-bold);
+    font-size: var(--type-button-font-size);
+    line-height: var(--type-button-line-height);
+    letter-spacing: var(--tracking-none);
+  }
+
+  .button-small {
+    font-family: var(--font-satoshi);
+    font-weight: var(--font-weight-satoshi-bold);
+    font-size: var(--type-button-sm-font-size);
+    line-height: var(--type-button-sm-line-height);
+    letter-spacing: var(--tracking-none);
+  }
+
+  .button-large {
+    font-family: var(--font-satoshi);
+    font-weight: var(--font-weight-satoshi-bold);
+    font-size: var(--type-button-lg-font-size);
+    line-height: var(--type-button-lg-line-height);
+    letter-spacing: var(--tracking-none);
+  }
+
+  .nav-default {
+    font-family: var(--font-satoshi);
+    font-weight: var(--font-weight-satoshi-bold);
+    font-size: var(--type-nav-font-size);
+    line-height: var(--type-nav-line-height);
+    letter-spacing: var(--tracking-none);
+  }
+
+  .nav-active {
+    font-family: var(--font-satoshi);
+    font-weight: var(--font-weight-satoshi-black);
+    font-size: var(--type-nav-active-font-size);
+    line-height: var(--type-nav-active-line-height);
+    letter-spacing: var(--tracking-none);
+  }
+
+  .caption {
+    font-family: var(--font-ibm-plex-mono);
+    font-weight: var(--font-weight-mono-medium);
+    font-size: var(--type-caption-font-size);
+    line-height: var(--type-caption-line-height);
+    letter-spacing: var(--tracking-none);
+  }
+
+  /* Body Paragraph Default is intentionally flat (16/24 on mobile and desktop)
+     and has no entry in this query. Headings do not break here — they hold
+     their mobile/tablet values through 768px and 1024px and only change at
+     1440px, in the dedicated query below. */
+  @media (min-width: 768px) {
+    .body-paragraph-strong {
+      font-size: var(--type-body-strong-font-size-md);
+      line-height: var(--type-body-strong-line-height-md);
+    }
+
+    .body-paragraph-large {
+      font-size: var(--type-body-lg-font-size-md);
+      line-height: var(--type-body-lg-line-height-md);
+    }
+
+    .body-paragraph-large-strong {
+      font-size: var(--type-body-lg-strong-font-size-md);
+      line-height: var(--type-body-lg-strong-line-height-md);
+    }
+
+    .body-speech-bubble {
+      font-size: var(--type-speech-bubble-font-size-md);
+      line-height: var(--type-speech-bubble-line-height-md);
+    }
+
+    .button-default {
+      font-size: var(--type-button-font-size-md);
+      line-height: var(--type-button-line-height-md);
+    }
+
+    .button-small {
+      font-size: var(--type-button-sm-font-size-md);
+      line-height: var(--type-button-sm-line-height-md);
+    }
+
+    .button-large {
+      font-size: var(--type-button-lg-font-size-md);
+      line-height: var(--type-button-lg-line-height-md);
+    }
+
+    .nav-default {
+      font-size: var(--type-nav-font-size-md);
+      line-height: var(--type-nav-line-height-md);
+    }
+
+    .nav-active {
+      font-size: var(--type-nav-active-font-size-md);
+      line-height: var(--type-nav-active-line-height-md);
+    }
+
+    .caption {
+      font-size: var(--type-caption-font-size-md);
+      line-height: var(--type-caption-line-height-md);
+    }
+  }
+}
