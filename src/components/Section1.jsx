@@ -128,7 +128,7 @@ export default function Section1({ sectionRef }) {
           <span
             aria-hidden="true"
             className="absolute origin-top-left rotate-[10deg] bg-prelude-300 mix-blend-multiply"
-            style={{ width: '107px', height: '38px', left: '751px', top: '-28px' }}
+            style={{ width: '107px', height: '38px', left: '710px', top: '-28px' }}
           />
 
           <div className="flex flex-col items-center gap-[24px]">

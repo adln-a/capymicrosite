@@ -3,17 +3,22 @@ import { motion, useReducedMotion, useScroll, useTransform } from 'framer-motion
 import ScrollSection from './ScrollSection.jsx';
 import bgScene1 from '../assets/Desktop-BG--Frame-2.svg';
 import bgScene2 from '../assets/Desktop-BG--Frame-2B.svg';
+import bgScene3 from '../assets/Desktop-BG--Frame-2C.svg';
 import pinkScribble from '../assets/Pink-Scribble.svg';
+import blueScribble from '../assets/Blue-Scribble.svg';
 import paperClip from '../assets/Paper-Clip.png';
 import paperClipBlack from '../assets/Paper-Clip-Black.png';
 import paperBorderTop from '../assets/Paper-Border-Top.png';
+import greenScotchTape from '../assets/Green-Scotch-Tape.svg';
 
-// Crossfade window: both the background (color + image) and the card
-// transition (Scene 1 rising / flattening, Scene 2 fading in) happen across
-// this same slice of scroll progress, so everything reads as one coordinated
-// transition rather than several independently-timed effects.
-const TRANSITION_START = 0.4;
-const TRANSITION_END = 0.6;
+// Two crossfade windows: Scene 1 -> Scene 2 (background + card), then
+// Scene 2 -> Scene 3, further down the same scroll wrapper. Everything
+// within a window reads as one coordinated transition rather than several
+// independently-timed effects.
+const TRANSITION_1_START = 0.4;
+const TRANSITION_1_END = 0.6;
+const TRANSITION_2_START = 0.7;
+const TRANSITION_2_END = 0.9;
 
 function HoleColumn({ color }) {
   // Plain even-gap stack (not Section 1's split top/pair/bottom pattern) --
@@ -38,7 +43,7 @@ function HoleColumn({ color }) {
 // texture unit). Scale it down to a proper tile: 24px tall, with width
 // derived from the source's own aspect ratio so it doesn't distort.
 const BORDER_TILE_HEIGHT = 24;
-const BORDER_TILE_WIDTH = (760 / 55) * BORDER_TILE_HEIGHT;
+const BORDER_TILE_WIDTH = 338;
 
 function TopBorderImage() {
   // Replaces the circle-based hole-punch pattern for Scene 2's second card
@@ -48,16 +53,13 @@ function TopBorderImage() {
   // in, so the pattern actually repeats at a small, correctly-proportioned
   // unit rather than the source file's native resolution.
   //
-  // Per the Figma reference, this strip sits ABOVE the card entirely -- the
-  // card's own box (640x200 in Figma's own dev-mode annotation) starts
-  // below the border, not underneath it. bottom-full (bottom: 100%)
-  // positions this div's own bottom edge flush with the card's top edge,
-  // so the whole strip renders above the card instead of inside it, where
-  // it was getting painted underneath the card's own white background.
+  // Renders as a normal-flow sibling BEFORE the card box (not absolutely
+  // positioned) -- it's a plain 24px-tall block, so it naturally stacks
+  // above the card in the outer wrapper's flex column.
   return (
     <div
       aria-hidden="true"
-      className="pointer-events-none absolute inset-x-0 bottom-full"
+      className="pointer-events-none inset-x-0 bottom-full"
       style={{
         height: `${BORDER_TILE_HEIGHT}px`,
         backgroundImage: `url(${paperBorderTop})`,
@@ -79,7 +81,7 @@ function MatterHighlight() {
         src={pinkScribble}
         alt=""
         aria-hidden="true"
-        className="pointer-events-none absolute left-1/2 top-full -z-10 h-auto max-w-none -translate-x-1/2 -translate-y-1/2"
+        className="pointer-events-none absolute left-1/2 top-[120%] -z-10 h-auto max-w-none -translate-x-1/2 -translate-y-1/2"
       />
       <span className="relative">matter</span>
     </span>
@@ -124,8 +126,6 @@ function Scene1Content({ holeColumnColor }) {
 function Scene2Content() {
   return (
     <>
-      <TopBorderImage />
-
       {/* Paper clip 2: a different asset from paper clip 1 (Paper-Clip-Black.png,
           not Paper-Clip.png), rotated -90deg, poking out the card's left
           edge (negative left offset). Explicit width/height -- the source
@@ -149,13 +149,61 @@ function Scene2Content() {
   );
 }
 
+function Scene3Content() {
+  return (
+    <>
+      <p className="body-paragraph self-stretch text-body-default">
+        While plenty of resources exist for middle-income families, those
+        living on less often face barriers that are invisible to most:
+      </p>
+
+      {/* Rotate step of 4deg isn't in Tailwind's default scale (0,1,2,3,6,
+          12...), so this needs the arbitrary-value form. There is no
+          authored gap between Card 2 and this card -- the visible seam is
+          an emergent side effect of Card 2 being unrotated and this card's
+          own rotate(-1.5deg) (default center transform-origin). */}
+      <img
+        src={greenScotchTape}
+        alt=""
+        aria-hidden="true"
+        className="pointer-events-none absolute origin-top-left rotate-[4deg] mix-blend-multiply"
+        style={{ width: '133px', height: '36px', left: '510px', top: '-21.5px' }}
+      />
+
+      {/* z-0 gives this block its own stacking context so the scribble's
+          -z-10 stays scoped inside it and paints behind the text (same
+          technique as MatterHighlight/FourHighlight, just applied to the
+          whole block instead of a single wrapped word, since this scribble
+          sits at a fixed offset rather than under one specific word). */}
+      <div className="relative z-0 flex w-full items-center justify-center gap-xs self-stretch">
+        <p className="body-paragraph-large flex-1 text-center text-body-success">
+          Financial stress, unstable routines, limited enrichment, and
+          emotional burnout.
+        </p>
+        {/* Blue-Scribble.svg is 89x23 natively -- essentially exact match
+            for the ~88x22 target (within 1px), so it's used at its own
+            natural size rather than an explicit override. */}
+        <img
+          src={blueScribble}
+          alt=""
+          aria-hidden="true"
+          className="pointer-events-none absolute -z-10 h-auto max-w-none"
+          style={{ left: '384px', top: '54px' }}
+        />
+      </div>
+    </>
+  );
+}
+
 export default function Section2() {
   const prefersReducedMotion = useReducedMotion();
 
   const wrapperRef = useRef(null);
   const stackRef = useRef(null);
   const scene2Ref = useRef(null);
+  const scene3Ref = useRef(null);
   const [scene2Height, setScene2Height] = useState(0);
+  const [scene3Height, setScene3Height] = useState(0);
   const [cardGap, setCardGap] = useState(0);
 
   const { scrollYProgress } = useScroll({
@@ -163,14 +211,15 @@ export default function Section2() {
     offset: ['start start', 'end end'],
   });
 
-  // Scene 2's rendered height is measured, not guessed, so the amount
-  // Scene 1 needs to shift up by (half of it) stays correct regardless of
-  // how tall Scene 2's actual content turns out to be. cardGap is read from
+  // Scene 2 and Scene 3's rendered heights are measured, not guessed, so the
+  // amount each earlier card needs to shift up by stays correct regardless
+  // of how tall their actual content turns out to be. cardGap is read from
   // the actual computed gap-l value (not hardcoded) so it stays correct
   // even if that token's px value changes at a different breakpoint.
   useLayoutEffect(() => {
     function measure() {
       setScene2Height(scene2Ref.current?.offsetHeight ?? 0);
+      setScene3Height(scene3Ref.current?.offsetHeight ?? 0);
       setCardGap(stackRef.current ? parseFloat(getComputedStyle(stackRef.current).rowGap) || 0 : 0);
     }
     measure();
@@ -178,22 +227,38 @@ export default function Section2() {
     return () => window.removeEventListener('resize', measure);
   }, []);
 
-  // The stack (Scene 1 + Scene 2, in one normal flex column, gap-l between
-  // them) starts shifted down by half of Scene 2's height PLUS half the
-  // gap -- exactly canceling the extra space Scene 2 (and the gap) occupy
-  // in the column, so Scene 1 alone reads as centered at progress 0 --
-  // then animates to y:0, which is what actually reads as "Scene 1 moves
-  // upward" as the transition completes, ending with a real gap-l gap
-  // between the two cards instead of them touching.
-  const stackY = useTransform(scrollYProgress, [TRANSITION_START, TRANSITION_END], [(scene2Height + cardGap) / 2, 0]);
-  const scene2Opacity = useTransform(scrollYProgress, [TRANSITION_START, TRANSITION_END], [0, 1]);
-  // One motion value drives both the background-color crossfade and the
-  // Scene 2 background-image fade-in, since they're meant to happen in
-  // sync; scene1BgOpacity is its mirror image, fading Scene 1's background
-  // OUT (see the note above the image itself for why this can't just be
-  // left permanently opaque).
-  const scene2BgOpacity = useTransform(scrollYProgress, [TRANSITION_START, TRANSITION_END], [0, 1]);
-  const scene1BgOpacity = useTransform(scrollYProgress, [TRANSITION_START, TRANSITION_END], [1, 0]);
+  // The stack (Scene 1 + Scene 2 + Scene 3, in one normal flex column,
+  // gap-l between each pair) starts shifted down by half of everything
+  // below Scene 1 (Scene 2 + its gap + Scene 3 + its gap) -- exactly
+  // canceling that invisible-but-space-occupying content, so Scene 1 alone
+  // reads as centered at progress 0. During transition 1 it eases to a
+  // smaller shift that cancels only Scene 3 + its gap (centering the
+  // Scene 1 + Scene 2 pair once Scene 2 is visible), holds there through
+  // the plateau between the two transitions, then eases to 0 during
+  // transition 2 -- which is what actually reads as "Scene 1 and Scene 2
+  // continue rising" as Scene 3 fades in below them.
+  const stackY = useTransform(
+    scrollYProgress,
+    [TRANSITION_1_START, TRANSITION_1_END, TRANSITION_2_START, TRANSITION_2_END],
+    [(scene2Height + scene3Height + 2 * cardGap) / 2, (scene3Height + cardGap) / 2, (scene3Height + cardGap) / 2, 0],
+  );
+  const scene2Opacity = useTransform(scrollYProgress, [TRANSITION_1_START, TRANSITION_1_END], [0, 1]);
+  const scene3Opacity = useTransform(scrollYProgress, [TRANSITION_2_START, TRANSITION_2_END], [0, 1]);
+  // Background-image/color opacities. Scene 2's rises during transition 1
+  // and falls again during transition 2 (a plateau at 1 in between) --
+  // both the Frame-2B image and the linen color-overlay div reuse this
+  // same value, so once Scene 3 is fully in, the linen overlay has receded
+  // back to 0, revealing the sticky container's own bg-bg-blue base
+  // underneath -- which conveniently matches Frame-2C's own blue-dominant
+  // tone, so no third color layer is needed. Scene 1's and Scene 3's
+  // background images only ever do one fade each, in their own window.
+  const scene2BgOpacity = useTransform(
+    scrollYProgress,
+    [TRANSITION_1_START, TRANSITION_1_END, TRANSITION_2_START, TRANSITION_2_END],
+    [0, 1, 1, 0],
+  );
+  const scene1BgOpacity = useTransform(scrollYProgress, [TRANSITION_1_START, TRANSITION_1_END], [1, 0]);
+  const scene3BgOpacity = useTransform(scrollYProgress, [TRANSITION_2_START, TRANSITION_2_END], [0, 1]);
   // Scene 1's own hole column: starts matching Scene 1's background
   // (--color-bg-blue, #1E79AE) and crossfades to Scene 2's background
   // (--color-bg-linen-dark, #F3EEE8) -- hardcoded hex since framer-motion
@@ -201,27 +266,39 @@ export default function Section2() {
   // keep in sync if those tokens change. Scene 1's card stays visible
   // (shifted up, not faded out) throughout the transition, so its holes
   // need to track the current background too, same as the seam holes do.
-  const holeColumnColor = useTransform(scrollYProgress, [TRANSITION_START, TRANSITION_END], ['#1E79AE', '#F3EEE8']);
+  // It does not revert for Scene 3 -- by then Scene 1's card is far above
+  // the current action, and ping-ponging its color back and forth wasn't
+  // asked for and would look odd.
+  const holeColumnColor = useTransform(scrollYProgress, [TRANSITION_1_START, TRANSITION_1_END], ['#1E79AE', '#F3EEE8']);
 
   if (prefersReducedMotion) {
-    // No pin, no scroll-scrub: both cards stacked in normal flow, existing
-    // whileInView fade-up per card, static background. Scene 2's assets are
-    // used as the static backdrop since both cards are permanently visible
-    // together here -- an inference, not explicitly specified either way.
+    // No pin, no scroll-scrub: all three cards stacked in normal flow,
+    // existing whileInView fade-up per card, static background. Frame-2C
+    // (Scene 3's, blue-dominant per the reference) is used as the static
+    // backdrop since all three cards are permanently visible together here
+    // -- an inference, not explicitly specified either way. Scene 1's
+    // holeColumnColor is set to blue to match this backdrop, rather than
+    // the linen-dark used in the two-scene version of this fallback.
     return (
-      <section className="relative flex h-screen w-full flex-col items-center justify-center gap-m overflow-hidden bg-white-linen-200 px-page-margin-x py-3xl">
+      <section className="relative flex h-screen w-full flex-col items-center justify-center gap-m overflow-hidden bg-bg-blue px-page-margin-x py-3xl">
         <img
-          src={bgScene2}
+          src={bgScene3}
           alt=""
           aria-hidden="true"
           className="pointer-events-none absolute inset-0 h-full w-full object-cover"
         />
-        <div className="page-container relative flex flex-col items-center">
-          <ScrollSection className="relative flex w-[640px] max-w-full origin-top-left rotate-1 flex-row items-center justify-center gap-s rounded-small bg-bg-white pb-[16px] pl-[16px] pr-[40px] pt-[16px]">
-            <Scene1Content holeColumnColor="#F3EEE8" />
+        <div className="page-container relative flex flex-col items-center gap-xs">
+          <ScrollSection className="relative flex w-[640px] max-w-full rotate-1 flex-row items-center justify-center gap-s rounded-small bg-bg-white pb-[16px] pl-[16px] pr-[40px] pt-[16px]">
+            <Scene1Content holeColumnColor="#1E79AE" />
           </ScrollSection>
-          <ScrollSection className="relative w-[640px] max-w-full bg-bg-white p-[40px]">
-            <Scene2Content />
+          <ScrollSection className="relative w-[640px]">
+            <TopBorderImage />
+            <div className="max-w-full bg-bg-white p-[40px]">
+              <Scene2Content />
+            </div>
+          </ScrollSection>
+          <ScrollSection className="relative flex w-[640px] max-w-full rotate-[-1.5deg] flex-col items-center justify-start gap-s rounded-small bg-bg-white p-[40px]">
+            <Scene3Content />
           </ScrollSection>
         </div>
       </section>
@@ -229,22 +306,24 @@ export default function Section2() {
   }
 
   return (
-    <section ref={wrapperRef} className="relative h-[200vh]">
+    <section ref={wrapperRef} className="relative h-[300vh]">
       <div className="sticky top-0 flex h-screen w-full flex-col items-center justify-center gap-m overflow-hidden bg-bg-blue px-page-margin-x py-3xl">
         {/* Background color crossfade: bg-bg-blue (the container's own
             class, always present underneath) -> bg-white-linen-200 (this
-            overlay, fading in). */}
+            overlay, rising then receding again as Scene 3 activates --
+            see scene2BgOpacity's own comment). */}
         <motion.div
           aria-hidden="true"
           style={{ opacity: scene2BgOpacity }}
           className="pointer-events-none absolute inset-0 bg-white-linen-200"
         />
 
-        {/* Background image crossfade. Scene 1's image also fades OUT
-            (not left permanently opaque) -- Frame-2B.svg has its own
-            transparent regions in places, so if Frame-2.svg stayed at
-            opacity 1 underneath, blue would visibly bleed through those
-            gaps even after the crossfade "completes". */}
+        {/* Background image crossfade, three layers. Scene 1's and Scene 2's
+            images each also fade OUT (not left permanently opaque) --
+            Frame-2B.svg and Frame-2C.svg each have their own transparent
+            regions in places, so leaving an earlier layer opaque
+            underneath would let it visibly bleed through those gaps even
+            after its own crossfade "completes". */}
         <motion.img
           src={bgScene1}
           alt=""
@@ -259,19 +338,33 @@ export default function Section2() {
           style={{ opacity: scene2BgOpacity }}
           className="pointer-events-none absolute inset-0 h-full w-full object-cover"
         />
+        <motion.img
+          src={bgScene3}
+          alt=""
+          aria-hidden="true"
+          style={{ opacity: scene3BgOpacity }}
+          className="pointer-events-none absolute inset-0 h-full w-full object-cover"
+        />
 
         <div className="page-container relative flex justify-center">
-          <motion.div ref={stackRef} style={{ y: stackY }} className="flex flex-col items-center gap-l">
-            <motion.div className="relative flex w-[640px] max-w-full origin-top-left rotate-1 flex-row items-center justify-center gap-s rounded-small bg-bg-white pb-[16px] pl-[16px] pr-[40px] pt-[16px]">
+          <motion.div ref={stackRef} style={{ y: stackY }} className="flex flex-col items-center gap-xs">
+            <motion.div className="relative flex w-[640px] max-w-full rotate-1 flex-row items-center justify-center gap-s rounded-small bg-bg-white pb-[16px] pl-[16px] pr-[40px] pt-[16px]">
               <Scene1Content holeColumnColor={holeColumnColor} />
             </motion.div>
 
+            <motion.div ref={scene2Ref} style={{ opacity: scene2Opacity }} className="relative w-[640px]">
+              <TopBorderImage />
+              <div className="max-w-full bg-bg-white p-[40px]">
+                <Scene2Content />
+              </div>
+            </motion.div>
+
             <motion.div
-              ref={scene2Ref}
-              style={{ opacity: scene2Opacity }}
-              className="relative w-[640px] max-w-full bg-bg-white p-[40px]"
+              ref={scene3Ref}
+              style={{ opacity: scene3Opacity }}
+              className="relative flex w-[640px] max-w-full rotate-[-1.5deg] flex-col items-center justify-start gap-s rounded-small bg-bg-white p-[40px]"
             >
-              <Scene2Content />
+              <Scene3Content />
             </motion.div>
           </motion.div>
         </div>
