@@ -1,16 +1,26 @@
-export function HamburgerIcon(props) {
+/**
+ * Material Symbols (Rounded), rendered via the font's ligature feature --
+ * a <span> whose text content is the icon's name (e.g. "play_arrow")
+ * displays as the glyph once the font-face + .material-symbols-rounded
+ * class (both in index.css) are loaded. `fill` toggles the filled/outlined
+ * variant (the FILL axis); `size` sets the glyph's rendered font-size in
+ * px, which is how Material Symbols scales (there's no separate
+ * width/height to set, unlike the hand-drawn SVG icons above).
+ */
+export function MaterialIcon({ name, fill = false, size = 24, className = '', style, ...props }) {
   return (
-    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" aria-hidden="true" {...props}>
-      <path d="M4 6h16M4 12h16M4 18h16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-    </svg>
-  );
-}
-
-export function CloseIcon(props) {
-  return (
-    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" aria-hidden="true" {...props}>
-      <path d="M6 6l12 12M18 6L6 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-    </svg>
+    <span
+      aria-hidden="true"
+      className={`material-symbols-rounded ${className}`}
+      style={{
+        fontSize: `${size}px`,
+        fontVariationSettings: `'FILL' ${fill ? 1 : 0}, 'wght' 400, 'GRAD' 0, 'opsz' ${size}`,
+        ...style,
+      }}
+      {...props}
+    >
+      {name}
+    </span>
   );
 }
 

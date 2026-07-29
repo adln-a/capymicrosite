@@ -1,6 +1,7 @@
 @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;800&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@700&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Just+Me+Again+Down+Here&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=block');
 @import "tailwindcss";
 
 /* Design tokens.
@@ -354,6 +355,26 @@
 }
 
 @layer components {
+  /* Material Symbols icon font (Rounded style) -- boilerplate from
+     Google's own setup docs. Renders via ligature: a <span> containing
+     the icon's name (e.g. "play_arrow") as text displays as the glyph
+     instead, once this class + the font-face above are in place. Icon.jsx
+     wraps this so call sites never write the class/ligature convention
+     by hand. */
+  .material-symbols-rounded {
+    font-family: 'Material Symbols Rounded';
+    font-weight: normal;
+    font-style: normal;
+    line-height: 1;
+    letter-spacing: normal;
+    text-transform: none;
+    display: inline-block;
+    white-space: nowrap;
+    word-wrap: normal;
+    direction: ltr;
+    -webkit-font-smoothing: antialiased;
+  }
+
   .heading-1 {
     font-family: var(--font-space-grotesk);
     font-weight: var(--font-weight-space-grotesk-bold);

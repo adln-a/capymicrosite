@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import bgNavActive from '../assets/BG--Nav-Active.svg';
 import desktopNav from '../assets/Desktop-Nav.svg';
-import { CloseIcon, DownloadIcon, HamburgerIcon } from './icons.jsx';
+import { DownloadIcon, MaterialIcon } from './icons.jsx';
 
 const DOWNLOAD_LABEL = 'Download our design guide';
 
@@ -38,18 +38,32 @@ const CARD_SHADOW = 'shadow-[0_8px_16px_rgba(0,0,0,0.08)]';
  * positive z-index against the image's default `auto` -- positive always
  * paints after auto within the same containing block, so this doesn't need
  * a negative-z-index-plus-stacking-context dance.
+ *
+ * activeMarkerSrc/activeColorClassName/defaultColorClassName default to the
+ * header's own light-background treatment (solid pill + dark text); Footer
+ * overrides all three to reuse this same active/default logic against its
+ * dark green background with its own outline-scribble marker asset.
  */
-function NavLink({ href, label, isActive, innerRef, className = '' }) {
+export function NavLink({
+  href,
+  label,
+  isActive,
+  innerRef,
+  className = '',
+  activeMarkerSrc = bgNavActive,
+  activeColorClassName = 'text-heading-default',
+  defaultColorClassName = 'text-body-default',
+}) {
   if (isActive) {
     return (
       <a
         ref={innerRef}
         href={href}
         aria-current="location"
-        className={`nav-active relative inline-flex items-center p-xs text-heading-default ${className}`}
+        className={`nav-active relative inline-flex items-center p-xs ${activeColorClassName} ${className}`}
       >
         <img
-          src={bgNavActive}
+          src={activeMarkerSrc}
           alt=""
           aria-hidden="true"
           className="absolute left-1/2 top-1/2 h-auto w-auto max-w-none -translate-x-1/2 -translate-y-1/2"
@@ -60,7 +74,7 @@ function NavLink({ href, label, isActive, innerRef, className = '' }) {
   }
 
   return (
-    <a ref={innerRef} href={href} className={`nav-default inline-flex items-center p-xs text-body-default ${className}`}>
+    <a ref={innerRef} href={href} className={`nav-default inline-flex items-center p-xs ${defaultColorClassName} ${className}`}>
       {label}
     </a>
   );
@@ -74,6 +88,27 @@ export function DownloadButton({ innerRef, className = '' }) {
       className={`button-default inline-flex items-center gap-2xs rounded-large bg-button-primary-orange px-m py-s text-button-inverted ${CARD_SHADOW} ${className}`}
     >
       <DownloadButtonContent />
+    </button>
+  );
+}
+
+/**
+ * Same padding/radius/font spec as DownloadButton above (button-default,
+ * gap-2xs, rounded-large, px-m py-s), but bg-transparent with no shadow --
+ * a ghost/tertiary button for secondary in-content actions (e.g. "Next:
+ * ..." / "Read transcript" in Section 4) rather than the primary CTA.
+ * `inverted` switches text color from orange (the default, for use on
+ * light backgrounds) to white (for use on dark backgrounds).
+ */
+export function ButtonTertiary({ children, innerRef, className = '', inverted = false, type = 'button', ...props }) {
+  return (
+    <button
+      ref={innerRef}
+      type={type}
+      className={`button-default inline-flex items-center gap-2xs rounded-large bg-transparent px-m py-s ${inverted ? 'text-button-inverted' : 'text-button-primary-orange'} ${className}`}
+      {...props}
+    >
+      {children}
     </button>
   );
 }
@@ -99,19 +134,9 @@ function NavSpacer() {
   );
 }
 
-// Collapses the effective viewport (for intersection purposes only) down to
-// a zero-height line at vertical center: -50% off the top and -50% off the
-// bottom leaves nothing in between. A section only "intersects" this sliver
-// while the viewport's own center line is somewhere inside it, so the
-// active link switches exactly when a section crosses viewport-center --
-// not the instant its top edge appears, and not tied to a specific pixel
-// value that would need retuning if section heights change.
-const SCROLLSPY_ROOT_MARGIN = '-50% 0px -50% 0px';
-
-export default function Navigation({ heroRef, sentinelRef, contactSectionRef, mainRef }) {
+export default function Navigation({ sentinelRef, mainRef, activeSection }) {
   const [isOpen, setIsOpen] = useState(false);
   const [sentinelVisible, setSentinelVisible] = useState(true);
-  const [activeSection, setActiveSection] = useState('home');
 
   const toggleRef = useRef(null);
   const panelRef = useRef(null);
@@ -136,37 +161,6 @@ export default function Navigation({ heroRef, sentinelRef, contactSectionRef, ma
     observer.observe(target);
     return () => observer.disconnect();
   }, [sentinelRef]);
-
-  // Scrollspy: separate from the observer above (that one only cares
-  // whether Section 1 is visible at all; this one tracks which section
-  // currently owns the viewport's center, independent of the nav bar's own
-  // collapse state). One observer watches every nav-linked section at once
-  // -- entries only report the sections whose crossing state just changed,
-  // so whichever one just started intersecting the centerline becomes
-  // active.
-  useEffect(() => {
-    const sections = [
-      { key: 'home', ref: heroRef },
-      { key: 'contact', ref: contactSectionRef },
-    ].filter((section) => section.ref?.current);
-
-    if (sections.length === 0) return undefined;
-
-    const keyByElement = new Map(sections.map((section) => [section.ref.current, section.key]));
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const entered = entries.find((entry) => entry.isIntersecting);
-        if (entered) {
-          setActiveSection(keyByElement.get(entered.target));
-        }
-      },
-      { rootMargin: SCROLLSPY_ROOT_MARGIN, threshold: 0 },
-    );
-
-    sections.forEach((section) => observer.observe(section.ref.current));
-    return () => observer.disconnect();
-  }, [heroRef, contactSectionRef]);
 
   const close = useCallback(() => {
     setIsOpen(false);
@@ -305,7 +299,7 @@ export default function Navigation({ heroRef, sentinelRef, contactSectionRef, ma
               aria-label={isOpen ? 'Close navigation' : 'Open navigation'}
               className="flex h-14 w-14 items-center justify-center rounded-full bg-button-primary-orange text-button-inverted"
             >
-              {isOpen ? <CloseIcon /> : <HamburgerIcon />}
+              {isOpen ? <MaterialIcon name="close" size={32} /> : <MaterialIcon name="menu" size={32} />}
             </button>
           </div>
         </div>

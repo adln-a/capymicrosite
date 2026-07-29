@@ -1,8 +1,11 @@
 import { useRef } from 'react';
+import useActiveSection from './hooks/useActiveSection.js';
 import Navigation from './components/Navigation.jsx';
+import Footer from './components/Footer.jsx';
 import Section1 from './components/Section1.jsx';
 import Section2 from './components/Section2.jsx';
 import Section3 from './components/Section3.jsx';
+import Section4 from './components/Section4.jsx';
 import Section5 from './components/Section5.jsx';
 import Section7 from './components/Section7.jsx';
 import Section10 from './components/Section10.jsx';
@@ -17,15 +20,11 @@ export default function App() {
   const sentinelRef = useRef(null);
   const contactSectionRef = useRef(null);
   const mainRef = useRef(null);
+  const activeSection = useActiveSection({ heroRef, contactSectionRef });
 
   return (
     <>
-      <Navigation
-        heroRef={heroRef}
-        sentinelRef={sentinelRef}
-        contactSectionRef={contactSectionRef}
-        mainRef={mainRef}
-      />
+      <Navigation sentinelRef={sentinelRef} mainRef={mainRef} activeSection={activeSection} />
       <main ref={mainRef}>
         {/* Nav-collapse sentinel: zero visual presence, exists purely for
             Navigation's IntersectionObserver to watch. Rendered as the true
@@ -37,12 +36,7 @@ export default function App() {
         <Section1 sectionRef={heroRef} />
         <Section2 />
         <Section3 />
-        {/* Placeholder only -- no Section 4 design has been built yet.
-            Keeps page flow/scroll order intact for the sections built
-            after it. */}
-        <section id="section-4" className="flex h-dvh items-center justify-center bg-bg-white">
-          <h2 className="heading-2 text-heading-default">Section 4 — TBD</h2>
-        </section>
+        <Section4 />
         <Section5 />
         {/* Placeholder only -- no Section 6 design has been built yet.
             Keeps page flow/scroll order intact for the sections built
@@ -97,6 +91,7 @@ export default function App() {
           <h2 className="heading-2 text-heading-default">Contact section placeholder</h2>
         </section>
       </main>
+      <Footer activeSection={activeSection} />
     </>
   );
 }
