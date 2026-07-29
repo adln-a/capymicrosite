@@ -1,5 +1,6 @@
 @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;800&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Just+Me+Again+Down+Here&display=swap');
 @import "tailwindcss";
 
 /* Design tokens.
@@ -12,6 +13,7 @@
 @theme {
   --font-space-grotesk: 'Space Grotesk', sans-serif;
   --font-ibm-plex-mono: 'IBM Plex Mono', monospace;
+  --font-handwriting: 'Just Me Again Down Here', cursive;
 
   --font-weight-space-grotesk-bold: 700;
   --font-weight-mono-medium: 500;

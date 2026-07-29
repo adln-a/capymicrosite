@@ -4,6 +4,9 @@ import Section1 from './components/Section1.jsx';
 import Section2 from './components/Section2.jsx';
 import Section3 from './components/Section3.jsx';
 import Section5 from './components/Section5.jsx';
+import Section7 from './components/Section7.jsx';
+import Section10 from './components/Section10.jsx';
+import Section11 from './components/Section11.jsx';
 
 export default function App() {
   const heroRef = useRef(null);
@@ -37,6 +40,24 @@ export default function App() {
           <h2 className="heading-2 text-heading-default">Section 4 — TBD</h2>
         </section>
         <Section5 />
+        {/* Placeholder only -- no Section 6 design has been built yet.
+            Keeps page flow/scroll order intact for the sections built
+            after it. */}
+        <section id="section-6" className="flex h-dvh items-center justify-center bg-bg-white">
+          <h2 className="heading-2 text-heading-default">Section 6 — TBD</h2>
+        </section>
+        <Section7 />
+        {/* Placeholders only -- no Section 8/9 designs have been built yet.
+            Keeps page flow/scroll order intact for the sections built
+            after them. */}
+        <section id="section-8" className="flex h-dvh items-center justify-center bg-bg-white">
+          <h2 className="heading-2 text-heading-default">Section 8 — TBD</h2>
+        </section>
+        <section id="section-9" className="flex h-dvh items-center justify-center bg-bg-white">
+          <h2 className="heading-2 text-heading-default">Section 9 — TBD</h2>
+        </section>
+        <Section10 />
+        <Section11 />
         {/*
           Placeholder only -- no Contact section design has been built yet.
           min-h-[150vh] (not min-h-screen) is deliberate: at exactly one

@@ -67,7 +67,7 @@ export default function Section5() {
   return (
     <section
       id="section-5"
-      className="relative flex h-dvh w-full items-center justify-center bg-bg-pink px-page-margin-x py-3xl"
+      className="relative flex w-full items-center justify-center bg-bg-pink px-page-margin-x py-page-margin-y"
     >
       <div className="flex w-[826px] flex-col items-center justify-start self-stretch">
         {/* Card group: plain, unanimated position:relative wrapper -- the
