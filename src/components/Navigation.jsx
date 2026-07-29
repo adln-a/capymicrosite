@@ -66,7 +66,7 @@ function NavLink({ href, label, isActive, innerRef, className = '' }) {
   );
 }
 
-function DownloadButton({ innerRef, className = '' }) {
+export function DownloadButton({ innerRef, className = '' }) {
   return (
     <button
       ref={innerRef}

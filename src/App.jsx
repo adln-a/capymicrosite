@@ -9,6 +9,8 @@ import Section10 from './components/Section10.jsx';
 import Section11 from './components/Section11.jsx';
 import Section13 from './components/Section13.jsx';
 import Section14 from './components/Section14.jsx';
+import Section15 from './components/Section15.jsx';
+import Section17 from './components/Section17.jsx';
 
 export default function App() {
   const heroRef = useRef(null);
@@ -68,6 +70,14 @@ export default function App() {
         </section>
         <Section13 />
         <Section14 />
+        <Section15 />
+        {/* Placeholder only -- no Section 16 design has been built yet.
+            Keeps page flow/scroll order intact for the sections built
+            after it. */}
+        <section id="section-16" className="flex h-dvh items-center justify-center bg-bg-white">
+          <h2 className="heading-2 text-heading-default">Section 16 — TBD</h2>
+        </section>
+        <Section17 />
         {/*
           Placeholder only -- no Contact section design has been built yet.
           min-h-[150vh] (not min-h-screen) is deliberate: at exactly one

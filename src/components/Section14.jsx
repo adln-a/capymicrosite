@@ -1,4 +1,5 @@
 import ScrollSection from './ScrollSection.jsx';
+import blueLineScribble from '../assets/Blue-Line-Scribble.svg';
 import paperClipMetal2 from '../assets/Paper-Clip-Metal2.png';
 import illustration from '../assets/Desktop-IMG-Frame-14.svg';
 
@@ -13,22 +14,19 @@ const ILLUSTRATION_DELAY = 0.54;
 const RULED_LINE_COUNT = 8;
 
 function AloneHighlight({ children }) {
-  // Same z-0/-z-10 span-wrap technique as ParticipationHighlight/
-  // PeopleHighlight, but the "scribble" is a plain solid-color rotated
-  // rect (Allports-300) rather than an SVG asset -- the raw export
-  // clips an oversized rect through an overflow-hidden mask, but for a
-  // flat fill that's visually identical to just sizing the rect to the
-  // final 265x41 directly. Built this way (rather than copying the
-  // export's plain position:absolute sibling) so the rect is guaranteed
-  // to paint behind the text regardless of paint-order rules -- an
-  // absolutely-positioned sibling with no z-index would otherwise paint
-  // AFTER static text content, on top of it, not behind it.
+  // Same z-0/-z-10 span-wrap technique as Section 5's ScribbleHighlight
+  // (same Blue-Line-Scribble.svg asset, 227x16 natively) -- w-full ties
+  // the scribble's width to the wrapped text's own rendered width rather
+  // than a fixed pixel value, so it can't drift if the text changes. No
+  // -translate-y-1/2 (unlike Section 5's version): this one sits fully
+  // below the text, same as ParticipationHighlight in Section 13.
   return (
     <span className="relative z-0 inline-block whitespace-nowrap px-[2px]">
-      <span
+      <img
+        src={blueLineScribble}
+        alt=""
         aria-hidden="true"
-        className="pointer-events-none absolute -z-10 origin-top-left rotate-[-5deg] bg-allports-300"
-        style={{ width: '265px', height: '41px', left: '0px', top: '45px' }}
+        className="pointer-events-none absolute left-1/2 top-full -z-10 h-auto w-full max-w-none origin-top -translate-x-1/2 rotate-[-5deg]"
       />
       <span className="relative">{children}</span>
     </span>
@@ -93,7 +91,7 @@ export default function Section14() {
               <span
                 aria-hidden="true"
                 className="pointer-events-none absolute origin-top-left rotate-[19deg] bg-bg-yellow mix-blend-multiply"
-                style={{ width: '109px', height: '32px', left: '11px', top: '-11px' }}
+                style={{ width: '106px', height: '40px', left: '11px', top: '-30px' }}
               />
               <h2 className="heading-3 text-center uppercase text-heading-default">
                 <AloneHighlight>We can&rsquo;t do this alone</AloneHighlight>
@@ -113,7 +111,7 @@ export default function Section14() {
               alt=""
               aria-hidden="true"
               className="pointer-events-none absolute"
-              style={{ width: '76px', height: '77px', left: '236px', top: '-33px' }}
+              style={{ width: '76px', height: '77px', left: '236px', top: '-53px' }}
             />
           </ScrollSection>
         </div>
