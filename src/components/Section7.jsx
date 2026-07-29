@@ -165,11 +165,12 @@ export default function Section7() {
             className="pointer-events-none absolute origin-top-left rotate-[-4deg] bg-bg-light-blue mix-blend-multiply"
             style={{ width: '107px', height: '40px', left: '521px', top: '-16px' }}
           />
-          <h2 className="heading-2 flex flex-wrap items-center justify-center gap-xs text-heading-inverted">
-            <span>Understanding the system</span>
-            <span>
-              meant starting with <PeopleHighlight />
-            </span>
+          {/* Plain natural text wrap, not a forced two-span break -- explicit
+              line breaks read poorly to screen readers, and the heading-2
+              line-height already gives wrapped lines correct spacing on its
+              own, no extra flex/gap needed. */}
+          <h2 className="heading-2 text-center text-heading-inverted">
+            Understanding the system meant starting with <PeopleHighlight />
           </h2>
         </ScrollSection>
 

@@ -238,7 +238,7 @@ function SpeechBubbleContent() {
           aria-hidden="true"
           className="pointer-events-none absolute inset-0 h-full w-full"
         />
-        <p className="relative heading-2 text-heading-default">But by listening,</p>
+        <h2 className="relative heading-2 text-heading-default">But by listening,</h2>
       </div>
 
       {/* Bubble 2: "we learned what the REAL PROBLEM was." -- built from
@@ -271,15 +271,14 @@ function SpeechBubbleContent() {
           className="pointer-events-none absolute"
           style={{ width: '45px', height: '42px', left: '404px', bottom: '32.5px' }}
         />
-        <div className="absolute left-0 top-0 flex h-[186px] w-[677px] flex-col items-center justify-center gap-xs text-center">
-          {/* Explicit line break: at this container's full 677px width,
-              this text fits on one line at heading-2's size, but the
-              reference shows it wrapping after "the" -- forcing it here
-              rather than relying on natural wrap. */}
-          <p className="heading-2 text-heading-default">we learned what the</p>
-          <p className="heading-2 text-heading-default">
-            <RealProblemHighlight /> was.
-          </p>
+        <div className="absolute left-0 top-0 flex h-[186px] w-[677px] items-center justify-center text-center">
+          {/* Plain natural text wrap, not a forced two-line break --
+              explicit line breaks read poorly to screen readers, and
+              heading-2's own line-height already spaces wrapped lines
+              correctly with no extra gap needed. */}
+          <h2 className="heading-2 text-heading-default">
+            we learned what the <RealProblemHighlight /> was.
+          </h2>
         </div>
       </div>
     </div>
