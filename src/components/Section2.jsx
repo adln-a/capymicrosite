@@ -287,7 +287,7 @@ export default function Section2() {
           aria-hidden="true"
           className="pointer-events-none absolute inset-0 h-full w-full object-cover"
         />
-        <div className="page-container relative flex flex-col items-center gap-xs">
+        <div className="relative flex flex-col items-center gap-xs">
           <ScrollSection className="relative flex w-[640px] max-w-full rotate-1 flex-row items-center justify-center gap-s rounded-small bg-bg-white pb-[16px] pl-[16px] pr-[40px] pt-[16px]">
             <Scene1Content holeColumnColor="#1E79AE" />
           </ScrollSection>
@@ -346,7 +346,7 @@ export default function Section2() {
           className="pointer-events-none absolute inset-0 h-full w-full object-cover"
         />
 
-        <div className="page-container relative flex justify-center">
+        <div className="relative flex justify-center">
           <motion.div ref={stackRef} style={{ y: stackY }} className="flex flex-col items-center gap-xs">
             <motion.div className="relative flex w-[640px] max-w-full rotate-1 flex-row items-center justify-center gap-s rounded-small bg-bg-white pb-[16px] pl-[16px] pr-[40px] pt-[16px]">
               <Scene1Content holeColumnColor={holeColumnColor} />

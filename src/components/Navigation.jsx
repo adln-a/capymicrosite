@@ -272,7 +272,7 @@ export default function Navigation({ heroRef, sentinelRef, contactSectionRef, ma
         // absolutely positioned element is placed relative to the page and
         // scrolls normally; only `position: fixed` would pin it in place.
         <div className="absolute inset-x-0 top-l z-30 h-14">
-          <div className="page-container relative flex h-full w-full items-center justify-between rounded-large">
+          <div className="relative flex h-full w-full items-center justify-between rounded-large px-page-margin-x">
             <NavSpacer />
 
             <nav aria-label="Primary">
@@ -292,14 +292,11 @@ export default function Navigation({ heroRef, sentinelRef, contactSectionRef, ma
           </div>
         </div>
       ) : (
-        // Wrapped in the same page-container as the full bar (rather than
-        // right-page-margin-x directly against the viewport) so the
-        // toggle's right edge lines up with the Download button's right
-        // edge above it, instead of drifting further right on very wide
-        // viewports where the 1280px-capped container no longer reaches
-        // the raw viewport edge.
+        // Wrapped in the same px-page-margin-x inset as the full bar (rather
+        // than a separate right-only margin) so the toggle's right edge
+        // lines up with the Download button's right edge above it.
         <div className="fixed inset-x-0 top-l z-50 h-14">
-          <div className="page-container flex h-full w-full items-center justify-end">
+          <div className="flex h-full w-full items-center justify-end px-page-margin-x">
             <button
               ref={toggleRef}
               type="button"

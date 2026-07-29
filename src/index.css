@@ -354,19 +354,6 @@
 }
 
 @layer components {
-  /* Shared max-width container. Deliberately NOT display:flex -- a
-     block-level container only constrains/centers/pads; it never has an
-     opinion about how its children size themselves. If a consumer needs
-     flex for internal alignment, add flex utilities alongside this class
-     and set align-items explicitly (e.g. items-center / items-start), not
-     the flex default of stretch, which would force children to fill the
-     cross-axis instead of keeping their own intrinsic width. */
-  .page-container {
-    max-width: 1280px;
-    margin-inline: auto;
-    padding-inline: var(--spacing-page-margin-x);
-  }
-
   .heading-1 {
     font-family: var(--font-space-grotesk);
     font-weight: var(--font-weight-space-grotesk-bold);

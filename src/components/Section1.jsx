@@ -101,7 +101,11 @@ export default function Section1({ sectionRef }) {
         className="absolute inset-0 h-full w-full object-cover pointer-events-none"
       />
 
-      <div className="page-container relative flex w-full flex-col items-center">
+      {/* px-page-margin-x lives here (not on the section itself) so the
+          background image above -- absolute inset-0 relative to this
+          section's padding box -- stays full-bleed edge-to-edge instead of
+          getting inset by the same horizontal padding. */}
+      <div className="relative flex w-full flex-col items-center px-page-margin-x">
         {/* Pink box (heading). Animates in first -- this ScrollSection uses
             the wrapper's own default transition (no delay). */}
         <ScrollSection className="flex w-[800px] max-w-full min-h-[200px] flex-wrap items-center justify-center gap-s rounded-medium bg-bg-pink p-s origin-top-left rotate-1">
