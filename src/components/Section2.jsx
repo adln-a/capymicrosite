@@ -280,7 +280,7 @@ export default function Section2() {
     // holeColumnColor is set to blue to match this backdrop, rather than
     // the linen-dark used in the two-scene version of this fallback.
     return (
-      <section className="relative flex h-screen w-full flex-col items-center justify-center gap-m overflow-hidden bg-bg-blue px-page-margin-x py-3xl">
+      <section id="section-2" className="relative flex h-dvh w-full flex-col items-center justify-center gap-m overflow-hidden bg-bg-blue px-page-margin-x py-3xl">
         <img
           src={bgScene3}
           alt=""
@@ -306,8 +306,8 @@ export default function Section2() {
   }
 
   return (
-    <section ref={wrapperRef} className="relative h-[300vh]">
-      <div className="sticky top-0 flex h-screen w-full flex-col items-center justify-center gap-m overflow-hidden bg-bg-blue px-page-margin-x py-3xl">
+    <section id="section-2" ref={wrapperRef} className="relative h-[300vh]">
+      <div className="sticky top-0 flex h-dvh w-full flex-col items-center justify-center gap-m overflow-hidden bg-bg-blue px-page-margin-x py-3xl">
         {/* Background color crossfade: bg-bg-blue (the container's own
             class, always present underneath) -> bg-white-linen-200 (this
             overlay, rising then receding again as Scene 3 activates --

@@ -84,8 +84,7 @@ export default function Section1({ sectionRef }) {
     <section
       ref={sectionRef}
       id="section-1"
-      className="relative flex min-h-[800px] items-center bg-white-linen-200 py-4xl"
-      style={{ height: '100vh' }}
+      className="relative flex h-dvh items-center bg-white-linen-200 py-4xl"
     >
       {/* Background image layer, sitting on top of the section's own
           bg-white-linen-200 color and behind everything else. As the

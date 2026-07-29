@@ -2,6 +2,7 @@ import { useRef } from 'react';
 import Navigation from './components/Navigation.jsx';
 import Section1 from './components/Section1.jsx';
 import Section2 from './components/Section2.jsx';
+import Section3 from './components/Section3.jsx';
 
 export default function App() {
   const heroRef = useRef(null);
@@ -27,6 +28,7 @@ export default function App() {
         <div ref={sentinelRef} aria-hidden="true" style={{ height: 1 }} />
         <Section1 sectionRef={heroRef} />
         <Section2 />
+        <Section3 />
         {/*
           Placeholder only -- no Contact section design has been built yet.
           min-h-[150vh] (not min-h-screen) is deliberate: at exactly one
