@@ -106,7 +106,7 @@ export default function Section1({ sectionRef }) {
             the wrapper's own default transition (no delay). */}
         <ScrollSection className="flex w-[800px] max-w-full min-h-[200px] flex-wrap items-center justify-center gap-s rounded-medium bg-bg-pink p-s origin-top-left rotate-1">
           <PinkPunchHoles />
-          <h1 className="heading-1 flex-1 text-center text-heading-red">
+          <h1 className="heading-1 flex-1 px-s text-center text-heading-red">
             Children from low-income families in Singapore are over{' '}
             <FourHighlight /> times more likely to underperform in school
             compared to their wealthier peers*

@@ -1,19 +1,19 @@
-@import url('https://api.fontshare.com/v2/css?f[]=satoshi@700,900&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@700&display=swap');
 @import "tailwindcss";
 
 /* Design tokens.
    --font-* and --font-weight-* sit in Tailwind's reserved theme namespaces
-   (so font-satoshi / font-weight-satoshi-black utilities exist as a side effect).
+   (so font-space-grotesk / font-weight-space-grotesk-bold utilities exist
+   as a side effect).
    --type-* is a non-reserved namespace: it holds size/line-height pairs and is
    consumed only via var() below, so it never leaks into Tailwind's generated
    utility set. */
 @theme {
-  --font-satoshi: 'Satoshi', sans-serif;
+  --font-space-grotesk: 'Space Grotesk', sans-serif;
   --font-ibm-plex-mono: 'IBM Plex Mono', monospace;
 
-  --font-weight-satoshi-bold: 700;
-  --font-weight-satoshi-black: 900;
+  --font-weight-space-grotesk-bold: 700;
   --font-weight-mono-medium: 500;
   --font-weight-mono-bold: 800;
 
@@ -224,7 +224,7 @@
   --type-h2-font-size: 20px;
   --type-h2-line-height: 28px;
   --type-h2-font-size-desktop: 28px;
-  --type-h2-line-height-desktop: 32px;
+  --type-h2-line-height-desktop: 36px;
 
   --type-h3-font-size: 18px;
   --type-h3-line-height: 24px;
@@ -366,8 +366,8 @@
   }
 
   .heading-1 {
-    font-family: var(--font-satoshi);
-    font-weight: var(--font-weight-satoshi-black);
+    font-family: var(--font-space-grotesk);
+    font-weight: var(--font-weight-space-grotesk-bold);
     font-size: var(--type-h1-font-size);
     line-height: var(--type-h1-line-height);
     letter-spacing: var(--tracking-none);
@@ -379,8 +379,8 @@
   }
 
   .heading-2 {
-    font-family: var(--font-satoshi);
-    font-weight: var(--font-weight-satoshi-black);
+    font-family: var(--font-space-grotesk);
+    font-weight: var(--font-weight-space-grotesk-bold);
     font-size: var(--type-h2-font-size);
     line-height: var(--type-h2-line-height);
     letter-spacing: var(--tracking-none);
@@ -392,8 +392,8 @@
   }
 
   .heading-3 {
-    font-family: var(--font-satoshi);
-    font-weight: var(--font-weight-satoshi-black);
+    font-family: var(--font-space-grotesk);
+    font-weight: var(--font-weight-space-grotesk-bold);
     font-size: var(--type-h3-font-size);
     line-height: var(--type-h3-line-height);
     letter-spacing: var(--tracking-none);
@@ -405,8 +405,8 @@
   }
 
   .heading-4 {
-    font-family: var(--font-satoshi);
-    font-weight: var(--font-weight-satoshi-black);
+    font-family: var(--font-space-grotesk);
+    font-weight: var(--font-weight-space-grotesk-bold);
     font-size: var(--type-h4-font-size);
     line-height: var(--type-h4-line-height);
     letter-spacing: var(--tracking-none);
@@ -450,48 +450,48 @@
   }
 
   .body-speech-bubble {
-    font-family: var(--font-satoshi);
-    font-weight: var(--font-weight-satoshi-black);
+    font-family: var(--font-space-grotesk);
+    font-weight: var(--font-weight-space-grotesk-bold);
     font-size: var(--type-speech-bubble-font-size);
     line-height: var(--type-speech-bubble-line-height);
     letter-spacing: var(--tracking-none);
   }
 
   .button-default {
-    font-family: var(--font-satoshi);
-    font-weight: var(--font-weight-satoshi-bold);
+    font-family: var(--font-space-grotesk);
+    font-weight: var(--font-weight-space-grotesk-bold);
     font-size: var(--type-button-font-size);
     line-height: var(--type-button-line-height);
     letter-spacing: var(--tracking-none);
   }
 
   .button-small {
-    font-family: var(--font-satoshi);
-    font-weight: var(--font-weight-satoshi-bold);
+    font-family: var(--font-space-grotesk);
+    font-weight: var(--font-weight-space-grotesk-bold);
     font-size: var(--type-button-sm-font-size);
     line-height: var(--type-button-sm-line-height);
     letter-spacing: var(--tracking-none);
   }
 
   .button-large {
-    font-family: var(--font-satoshi);
-    font-weight: var(--font-weight-satoshi-bold);
+    font-family: var(--font-space-grotesk);
+    font-weight: var(--font-weight-space-grotesk-bold);
     font-size: var(--type-button-lg-font-size);
     line-height: var(--type-button-lg-line-height);
     letter-spacing: var(--tracking-none);
   }
 
   .nav-default {
-    font-family: var(--font-satoshi);
-    font-weight: var(--font-weight-satoshi-bold);
+    font-family: var(--font-space-grotesk);
+    font-weight: var(--font-weight-space-grotesk-bold);
     font-size: var(--type-nav-font-size);
     line-height: var(--type-nav-line-height);
     letter-spacing: var(--tracking-none);
   }
 
   .nav-active {
-    font-family: var(--font-satoshi);
-    font-weight: var(--font-weight-satoshi-black);
+    font-family: var(--font-space-grotesk);
+    font-weight: var(--font-weight-space-grotesk-bold);
     font-size: var(--type-nav-active-font-size);
     line-height: var(--type-nav-active-line-height);
     letter-spacing: var(--tracking-none);
