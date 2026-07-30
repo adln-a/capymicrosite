@@ -35,11 +35,13 @@ const BUBBLES = [
     text: 'My teacher said I’m lazy',
     left: 317,
     top: 232.5,
-    // Fixed width (measured from this bubble's own hug-computed size with
-    // its original text), height still hug -- so the box doesn't visibly
+    // Fixed width -- height still hug -- so the box doesn't visibly
     // shrink when Scene 2 swaps the text to the much shorter "Am I
-    // enough?".
-    size: { width: 334.72 },
+    // enough?". Re-measured at 336.6px natural single-line width (the
+    // previous 334.72 was a couple px too narrow, wrapping the text to
+    // two lines); bumped to 344px for a safety margin against sub-pixel
+    // font-rendering differences across browsers.
+    size: { width: 344 },
     bg: 'bg-bg-white',
     textColor: 'text-heading-default',
     tailSide: 'left',
@@ -50,7 +52,9 @@ const BUBBLES = [
     left: 0,
     top: 389,
     // Same fixed-width-only treatment as "My teacher said I'm lazy" above.
-    size: { width: 340.78 },
+    // Re-measured at 346.5px natural single-line width (was 340.78,
+    // wrapping to two lines); bumped to 352px for the same safety margin.
+    size: { width: 352 },
     bg: 'bg-bg-white',
     textColor: 'text-heading-default',
     tailSide: 'right',

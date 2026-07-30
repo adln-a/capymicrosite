@@ -264,7 +264,7 @@ export default function Section4() {
             instead of the side-by-side layout the reference actually
             shows. */}
         <div className="relative flex flex-1 flex-row items-start justify-start self-stretch rounded-[32px] bg-black-950">
-          <div className="outline-pomegranate-500 flex flex-1 flex-col items-center justify-start gap-m self-stretch rounded-[32px] p-s outline outline-[4px]">
+          <div className="outline-bg-red flex flex-1 flex-col items-center justify-start gap-m self-stretch rounded-[32px] p-s outline outline-[4px]">
             {/* grid + both stories stacked in the same cell (col/row-start-1),
                 the inactive one `invisible` rather than unmounted -- this is
                 what pins the screen's height to the TALLER of the two
@@ -367,7 +367,10 @@ export default function Section4() {
                 </button>
               </div>
 
-              <ButtonTertiary inverted>Read transcript</ButtonTertiary>
+              <ButtonTertiary inverted>
+                <MaterialIcon name="description" />
+                Read transcript
+              </ButtonTertiary>
             </div>
 
             <div className="flex flex-col items-start justify-start gap-s self-stretch">
