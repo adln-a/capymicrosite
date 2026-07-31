@@ -297,7 +297,7 @@ export default function Navigation({ sentinelRef, mainRef, activeSection }) {
               onClick={handleToggleClick}
               aria-expanded={isOpen}
               aria-label={isOpen ? 'Close navigation' : 'Open navigation'}
-              className="flex h-14 w-14 items-center justify-center rounded-full bg-button-primary-orange text-button-inverted"
+              className="flex h-14 w-14 items-center justify-center rounded-full bg-button-primary-orange text-button-inverted shadow-[0_8px_16px_rgba(0,0,0,0.08)]"
             >
               {isOpen ? <MaterialIcon name="close" size={32} /> : <MaterialIcon name="menu" size={32} />}
             </button>
