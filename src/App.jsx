@@ -13,6 +13,7 @@ import Section8 from './components/Section8.jsx';
 import Section9 from './components/Section9.jsx';
 import Section10 from './components/Section10.jsx';
 import Section11 from './components/Section11.jsx';
+import Section12 from './components/Section12.jsx';
 import Section13 from './components/Section13.jsx';
 import Section14 from './components/Section14.jsx';
 import Section15 from './components/Section15.jsx';
@@ -47,12 +48,7 @@ export default function App() {
         <Section9 />
         <Section10 />
         <Section11 />
-        {/* Placeholder only -- no Section 12 design has been built yet.
-            Keeps page flow/scroll order intact for the sections built
-            after it. */}
-        <section id="section-12" className="flex h-dvh items-center justify-center bg-bg-white">
-          <h2 className="heading-2 text-heading-default">Section 12 — TBD</h2>
-        </section>
+        <Section12 />
         <Section13 />
         <Section14 />
         <Section15 />

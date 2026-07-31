@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
 import ScrollSection from './ScrollSection.jsx';
-import { MaterialIcon } from './icons.jsx';
+import ArrowButton from './ArrowButton.jsx';
 import paperClipBlack from '../assets/Paper-Clip-Black.png';
 import slide1 from '../assets/section-9/Capy-Slide-Item-1.jpg';
 import slide2 from '../assets/section-9/Capy-Slide-Item-2.jpg';
@@ -50,25 +50,6 @@ function HolePunchDot() {
   return <span aria-hidden="true" className="h-5 w-5 flex-shrink-0 rounded-full bg-bg-linen-dark" />;
 }
 
-// 32px icon + p-xs (8px) padding on each side = 48px circle, clearing the
-// 44px minimum tap-target size. Real, focusable, visible <button>s in
-// normal tab order -- they only move the visual carousel position; a
-// screen reader user already has all 5 images in normal reading order
-// regardless of activeIndex, so these aren't the access mechanism for
-// that content and don't need any special-casing beyond a plain label.
-function NavArrowButton({ direction, onClick, className = '', style }) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-label={direction === 'left' ? 'Previous slide' : 'Next slide'}
-      className={`flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-bg-linen-dark p-xs text-body-default ${className}`}
-      style={style}
-    >
-      <MaterialIcon name={direction === 'left' ? 'chevron_left' : 'chevron_right'} size={32} />
-    </button>
-  );
-}
 
 export default function Section9() {
   // Centered on slide 3 (index 2) when the section is first reached.
@@ -196,16 +177,24 @@ export default function Section9() {
               720px inset from ITS edge no longer lands anywhere near the
               visible area). page-margin-x keeps the same rhythm as the
               rest of the page's own side margins. */}
-          <NavArrowButton
+          <ArrowButton
             direction="left"
             onClick={goToPrev}
-            className="absolute top-1/2 -translate-y-1/2"
+            label="Previous slide"
+            size={48}
+            iconSize={32}
+            bg="bg-bg-linen-light"
+            className="absolute top-1/2 -translate-y-1/2 shadow-[0_8px_16px_rgba(0,0,0,0.08)]"
             style={{ left: 'var(--spacing-page-margin-x)' }}
           />
-          <NavArrowButton
+          <ArrowButton
             direction="right"
             onClick={goToNext}
-            className="absolute top-1/2 -translate-y-1/2"
+            label="Next slide"
+            size={48}
+            iconSize={32}
+            bg="bg-bg-linen-light"
+            className="absolute top-1/2 -translate-y-1/2 shadow-[0_8px_16px_rgba(0,0,0,0.08)]"
             style={{ right: 'var(--spacing-page-margin-x)' }}
           />
         </ScrollSection>
