@@ -2,6 +2,7 @@ import ScrollSection from './ScrollSection.jsx';
 import purpleScribble from '../assets/Purple-Scribble.svg';
 import paperClipMetal from '../assets/Paper-Clip-Metal.png';
 import blueEllipse from '../assets/Blue-Ellipse.svg';
+import yellowBeneficiariesShape from '../assets/Yellow-Shape-Beneficiaries-Background.svg';
 
 // Text boxes fade up in sequence first (heading, then the quote box,
 // staggered the same 0.18s used for Section 1's pink/white box pair).
@@ -94,7 +95,14 @@ const ROW_1 = [
     label: 'Non-profits',
     className: 'relative origin-top-left rotate-2 p-[40px] text-body-inverted',
     marginLeft: '-8px',
-    blob: true,
+    blob: {
+      src: blueEllipse,
+      width: 206,
+      height: 110,
+      left: -1,
+      top: 0,
+      rotate: -2,
+    },
   },
 ];
 
@@ -113,15 +121,20 @@ const ROW_2 = [
   {
     key: 'beneficiaries',
     label: 'Beneficiaries',
-    // Not in the raw export (no background/shape data for this one at
-    // all) and not given an exact color in the spec either -- bg-bg-yellow
-    // is the closest token match to the reference image's yellow, flagging
-    // in case that's wrong. rounded-full is a simplification too: the
-    // reference shows a scalloped/wavy blob, but no shape data was given
-    // to reproduce that precisely, so this uses the same plain rounded
-    // shape as its neighbors rather than guessing extra sub-shapes.
-    className: 'origin-top-left rotate-1 rounded-full bg-bg-yellow p-[40px] text-body-default',
+    // Yellow-Shape-Beneficiaries-Background.svg (232x83 native) replaces
+    // the earlier plain rounded-full/bg-bg-yellow placeholder -- padding
+    // is asymmetric (shorter vertically than the p-[40px] its siblings
+    // use) to match this blob's own flatter, wider proportions rather
+    // than the taller rounded-pill shapes next to it.
+    className: 'relative origin-top-left rotate-1 px-[47px] py-[27px] text-body-default',
     marginLeft: '-24px',
+    blob: {
+      src: yellowBeneficiariesShape,
+      width: 232,
+      height: 83,
+      left: 0,
+      top: 0,
+    },
   },
 ];
 
@@ -134,11 +147,17 @@ function Shape({ shape, index }) {
     >
       {shape.blob && (
         <img
-          src={blueEllipse}
+          src={shape.blob.src}
           alt=""
           aria-hidden="true"
-          className="pointer-events-none absolute origin-top-left -rotate-2"
-          style={{ width: '206px', height: '110px', left: '-1px', top: '0px' }}
+          className="pointer-events-none absolute origin-top-left"
+          style={{
+            width: `${shape.blob.width}px`,
+            height: `${shape.blob.height}px`,
+            left: `${shape.blob.left}px`,
+            top: `${shape.blob.top}px`,
+            transform: shape.blob.rotate ? `rotate(${shape.blob.rotate}deg)` : undefined,
+          }}
         />
       )}
       <span className="relative">{shape.label}</span>

@@ -7,7 +7,9 @@ import Section2 from './components/Section2.jsx';
 import Section3 from './components/Section3.jsx';
 import Section4 from './components/Section4.jsx';
 import Section5 from './components/Section5.jsx';
+import Section6 from './components/Section6.jsx';
 import Section7 from './components/Section7.jsx';
+import Section8 from './components/Section8.jsx';
 import Section10 from './components/Section10.jsx';
 import Section11 from './components/Section11.jsx';
 import Section13 from './components/Section13.jsx';
@@ -38,19 +40,12 @@ export default function App() {
         <Section3 />
         <Section4 />
         <Section5 />
-        {/* Placeholder only -- no Section 6 design has been built yet.
+        <Section6 />
+        <Section7 />
+        <Section8 />
+        {/* Placeholder only -- no Section 9 design has been built yet.
             Keeps page flow/scroll order intact for the sections built
             after it. */}
-        <section id="section-6" className="flex h-dvh items-center justify-center bg-bg-white">
-          <h2 className="heading-2 text-heading-default">Section 6 — TBD</h2>
-        </section>
-        <Section7 />
-        {/* Placeholders only -- no Section 8/9 designs have been built yet.
-            Keeps page flow/scroll order intact for the sections built
-            after them. */}
-        <section id="section-8" className="flex h-dvh items-center justify-center bg-bg-white">
-          <h2 className="heading-2 text-heading-default">Section 8 — TBD</h2>
-        </section>
         <section id="section-9" className="flex h-dvh items-center justify-center bg-bg-white">
           <h2 className="heading-2 text-heading-default">Section 9 — TBD</h2>
         </section>
