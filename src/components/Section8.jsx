@@ -4,6 +4,8 @@ import { ButtonTertiary } from './Navigation.jsx';
 import { MaterialIcon } from './icons.jsx';
 import { NODE_GRAPHICS, CONNECTOR_GRAPHICS, CONNECTOR_DOTS } from './section8ChartData.js';
 import bgWhite from '../assets/Desktop-BGWhite--Frame-8.svg';
+import cardBorderTop from '../assets/ChartCard--BorderTop.svg';
+import cardBorderTopBigHole from '../assets/ChartCard--Big-Hole-BorderTop.svg';
 
 const NODES = [
   {
@@ -130,19 +132,49 @@ function FlowChart({ activeKey }) {
   );
 }
 
-function NotchRow() {
-  // Same hole-punch circle technique used throughout the site (Section
-  // 1/5/7's HoleColumn), applied horizontally along a card's top edge --
-  // white, since the sticky background blob sits behind every card (it
-  // pins for the whole section, not just the intro), reading as holes
-  // punched through to reveal it.
+// Both border-top assets bake in one fixed color each (Donors' purple,
+// this card's own linen), so rather than duplicate their path data as JS
+// (a snapshot that can silently go stale if the source file changes --
+// exactly what happened with an earlier double-rotated version of the
+// big-hole asset), each is used as a CSS mask over a plain colored div.
+// That keeps the shape always in sync with the real file while still
+// letting the color be swapped dynamically per card.
+//
+// The url() must be quoted: Vite inlines these small SVGs as
+// `data:image/svg+xml,...` URIs that contain literal single quotes
+// (from the SVG's own attributes, e.g. width='400'), and an unquoted
+// CSS url() token can't contain a literal quote character -- the
+// browser dropped the whole declaration silently when it wasn't quoted.
+function MaskedBorderTop({ src, color, heightClass }) {
   return (
-    <div aria-hidden="true" className="-mb-[10px] flex items-center justify-center gap-s overflow-hidden">
-      {Array.from({ length: 14 }).map((_, i) => (
-        <span key={i} className="h-5 w-5 flex-shrink-0 rounded-full bg-bg-white" />
-      ))}
-    </div>
+    <div
+      aria-hidden="true"
+      className={`w-full ${heightClass}`}
+      style={{
+        backgroundColor: color,
+        WebkitMaskImage: `url("${src}")`,
+        maskImage: `url("${src}")`,
+        WebkitMaskSize: '100% 100%',
+        maskSize: '100% 100%',
+        WebkitMaskRepeat: 'no-repeat',
+        maskRepeat: 'no-repeat',
+      }}
+    />
   );
+}
+
+// ChartCard--BorderTop.svg is 480x8 -- exactly the node cards' fixed
+// width, used at native size with no tiling needed (unlike Section
+// 2/10's repeat-x border-top technique).
+function CardBorderTop({ color }) {
+  return <MaskedBorderTop src={cardBorderTop} color={color} heightClass="h-2" />;
+}
+
+// ChartCard--Big-Hole-BorderTop.svg is 400x20 -- a single large scallop
+// rather than the repeating small ones, used for the "Here's how the
+// ecosystem typically flows" linen card (also 400px wide).
+function CardBorderTopBigHole({ color }) {
+  return <MaskedBorderTop src={cardBorderTopBigHole} color={color} heightClass="h-5" />;
 }
 
 function EnvelopeCard({ innerRef, node, footer }) {
@@ -150,16 +182,18 @@ function EnvelopeCard({ innerRef, node, footer }) {
   const headingColor = node.textVariant === 'inverted' ? 'text-heading-inverted' : 'text-heading-default';
   return (
     <div ref={innerRef} className="flex min-h-dvh w-full flex-col items-center justify-center gap-xs py-3xl">
-      <div className={`w-[480px] max-w-full overflow-hidden ${node.bg}`}>
-        <NotchRow />
-        <ScrollSection className="flex w-full flex-col items-start gap-s pb-l pl-l pr-l pt-s">
-          <h2 className={`heading-3 self-stretch ${headingColor}`}>{node.cardTitle}</h2>
-          {node.body.map((paragraph, i) => (
-            <p key={i} className={`body-paragraph self-stretch ${bodyColor}`}>
-              {paragraph}
-            </p>
-          ))}
-        </ScrollSection>
+      <div className="flex w-[480px] max-w-full flex-col items-start">
+        <CardBorderTop color={node.colorVar} />
+        <div className={`w-full ${node.bg}`}>
+          <ScrollSection className="flex w-full flex-col items-start gap-s pb-l pl-l pr-l pt-s">
+            <h2 className={`heading-3 self-stretch ${headingColor}`}>{node.cardTitle}</h2>
+            {node.body.map((paragraph, i) => (
+              <p key={i} className={`body-paragraph self-stretch ${bodyColor}`}>
+                {paragraph}
+              </p>
+            ))}
+          </ScrollSection>
+        </div>
       </div>
       {footer}
     </div>
@@ -243,9 +277,14 @@ export default function Section8() {
 
                 <ScrollSection
                   transition={{ duration: 0.6, ease: 'easeOut', delay: 0.15 }}
-                  className="w-full origin-top-left -rotate-2 self-stretch bg-bg-linen-dark p-l text-center"
+                  className="w-full origin-top-left -rotate-2 self-stretch"
                 >
-                  <p className="body-paragraph text-body-default">Here&rsquo;s how the ecosystem typically flows</p>
+                  <div className="w-full">
+                    <CardBorderTopBigHole color="var(--color-bg-linen-dark)" />
+                  </div>
+                  <div className="w-full bg-bg-linen-dark p-l text-center">
+                    <p className="body-paragraph text-body-default">Here&rsquo;s how the ecosystem typically flows</p>
+                  </div>
                 </ScrollSection>
               </div>
             </div>
