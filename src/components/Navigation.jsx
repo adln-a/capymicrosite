@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import bgNavActive from '../assets/BG--Nav-Active.svg';
 import desktopNav from '../assets/Desktop-Nav.svg';
 import { DownloadIcon, MaterialIcon } from './icons.jsx';
@@ -15,6 +16,19 @@ function DownloadButtonContent() {
 }
 
 const CARD_SHADOW = 'shadow-[0_8px_16px_rgba(0,0,0,0.08)]';
+
+// Active NavLink's own outline is invisible: its marker image is an
+// absolutely-positioned descendant, and an element's outline always
+// paints below its own positioned descendants regardless of the
+// descendant's z-index (a CSS stacking rule, not something fixable by
+// re-ordering the image). This redraws the same ring as a real ::after
+// box instead -- z-20 puts it above both the marker (auto/0) and the
+// label (z-10). No border-radius: the anchor itself has none (the green
+// shape is a decorative image, not a CSS radius), and every other focus
+// ring on the site is the browser's plain outline, which follows
+// whatever radius the focused element actually has -- none here too.
+const ACTIVE_LINK_FOCUS_RING =
+  "focus-visible:outline-none after:pointer-events-none after:absolute after:inset-0 after:z-20 after:opacity-0 after:content-[''] focus-visible:after:opacity-100 after:outline after:outline-2 after:outline-offset-2 after:outline-primary-teal";
 
 /**
  * Either nav item, active or default. Active treatment: BG--Nav-Active.svg
@@ -60,7 +74,7 @@ export function NavLink({
         ref={innerRef}
         href={href}
         aria-current="location"
-        className={`nav-active relative inline-flex items-center p-xs ${activeColorClassName} ${className}`}
+        className={`nav-active relative inline-flex items-center p-xs ${activeColorClassName} ${className} ${ACTIVE_LINK_FOCUS_RING}`}
       >
         <img
           src={activeMarkerSrc}
@@ -114,6 +128,29 @@ export function ButtonTertiary({ children, innerRef, className = '', inverted = 
 }
 
 /**
+ * Same padding/radius/font spec as ButtonTertiary above, plus a 1px
+ * border in the same color as the text (border-button-primary-orange +
+ * text-button-primary-orange by default, border-button-inverted +
+ * text-button-inverted white on white when `inverted`) -- an outlined
+ * secondary button, distinct from ButtonTertiary's borderless ghost
+ * style.
+ */
+export function ButtonSecondary({ children, innerRef, className = '', inverted = false, type = 'button', ...props }) {
+  return (
+    <button
+      ref={innerRef}
+      type={type}
+      className={`button-default inline-flex items-center gap-2xs rounded-large border bg-transparent px-m py-s ${
+        inverted ? 'border-button-inverted text-button-inverted' : 'border-button-primary-orange text-button-primary-orange'
+      } ${className}`}
+      {...props}
+    >
+      {children}
+    </button>
+  );
+}
+
+/**
  * Invisible twin of the Download button, kept in the DOM purely so the
  * center pill stays visually centered in the bar (a "ghost" flex item
  * balancing the real button on the other side) — a Figma auto-layout trick,
@@ -137,6 +174,7 @@ function NavSpacer() {
 export default function Navigation({ sentinelRef, mainRef, activeSection }) {
   const [isOpen, setIsOpen] = useState(false);
   const [sentinelVisible, setSentinelVisible] = useState(true);
+  const shouldReduceMotion = useReducedMotion();
 
   const toggleRef = useRef(null);
   const panelRef = useRef(null);
@@ -305,23 +343,41 @@ export default function Navigation({ sentinelRef, mainRef, activeSection }) {
         </div>
       )}
 
-      {isOpen && (
-        <div
-          ref={panelRef}
-          className="fixed inset-0 z-40 flex flex-col items-center justify-center gap-xl bg-bg-linen-light px-page-margin-x py-xl xl:gap-2xl"
-        >
-          <NavLink href="#section-1" label="Home" isActive={activeSection === 'home'} innerRef={homeRef} />
-          <NavLink href="#contact" label="Contact us" isActive={activeSection === 'contact'} innerRef={contactRef} />
-          <DownloadButton innerRef={downloadRef} />
+      {/* Hugs its own content (logo + links + button) rather than covering
+          the full viewport, per the reference -- page content stays
+          visible peeking below the shadow. That's safe precisely because
+          `inert` (above) already pulls the rest of the page out of both
+          the tab order and the accessibility tree the moment this is
+          open; a sighted user can see it, but nothing below is reachable
+          or announced, so it can't be mistaken for interactive content. */}
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            ref={panelRef}
+            initial={shouldReduceMotion ? false : { y: '-100%' }}
+            animate={{ y: 0 }}
+            exit={shouldReduceMotion ? undefined : { y: '-100%' }}
+            transition={shouldReduceMotion ? { duration: 0 } : { duration: 0.3, ease: 'easeOut' }}
+            className="fixed inset-x-0 top-0 z-40 flex items-end justify-center gap-xl bg-bg-linen-light px-page-margin-x py-xl shadow-[0_8px_16px_rgba(0,0,0,0.08)]"
+          >
+            <img src={desktopNav} alt="" aria-hidden="true" className="pointer-events-none h-auto w-[198px] flex-shrink-0" />
 
-          <img
-            src={desktopNav}
-            alt=""
-            aria-hidden="true"
-            className="pointer-events-none absolute bottom-xl left-xl w-40"
-          />
-        </div>
-      )}
+            <div className="flex flex-col items-center justify-start gap-xl">
+              <NavLink href="#section-1" label="Home" isActive={activeSection === 'home'} innerRef={homeRef} />
+              <NavLink href="#contact" label="Contact us" isActive={activeSection === 'contact'} innerRef={contactRef} />
+              <DownloadButton innerRef={downloadRef} />
+            </div>
+
+            {/* Invisible twin of the image, same trick as NavSpacer above --
+                balances the image on the other side of the links column so
+                justify-center on the row centers the LINKS on the panel's
+                true center, rather than centering the image+links group as
+                one block (which would push the links right of center by
+                roughly half the image's own width). */}
+            <div aria-hidden="true" className="pointer-events-none w-[198px] flex-shrink-0 opacity-0" />
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

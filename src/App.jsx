@@ -30,8 +30,23 @@ export default function App() {
 
   return (
     <>
+      {/* First focusable element on the page, before the primary nav --
+          standard "visually hidden until focused" skip link. Targets
+          #main-content, which carries tabIndex={-1} so activating this
+          (click or Enter) actually MOVES focus there too, not just
+          scrolls -- a plain <main> with no tabindex is scroll-only.
+          focus:outline-none on <main> below suppresses the global teal
+          :focus-visible ring there specifically, since ringing the
+          entire page-content box on landing isn't useful feedback (the
+          scroll jump + focus move already are). */}
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:fixed focus:left-s focus:top-s focus:z-50 focus:rounded-medium focus:bg-button-primary-orange focus:px-m focus:py-s focus:text-button-inverted focus:shadow-[0_8px_16px_rgba(0,0,0,0.08)]"
+      >
+        Skip to content
+      </a>
       <Navigation sentinelRef={sentinelRef} mainRef={mainRef} activeSection={activeSection} />
-      <main ref={mainRef}>
+      <main ref={mainRef} id="main-content" tabIndex={-1} className="focus:outline-none">
         {/* Nav-collapse sentinel: zero visual presence, exists purely for
             Navigation's IntersectionObserver to watch. Rendered as the true
             first element on the page (before Section 1's own padding takes
