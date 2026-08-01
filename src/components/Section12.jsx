@@ -1,18 +1,24 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
 import { ButtonTertiary } from './Navigation.jsx';
 import { MaterialIcon } from './icons.jsx';
 import ArrowButton from './ArrowButton.jsx';
+import content from '../data/section12-content.json';
 
-// Content transcribed directly from the four reference screenshots
-// (Section 12-A/B/C/D.jpg). trackColor is each set's own audio-player
-// progress-fill color -- sampled directly from the reference images
-// rather than guessed: every set but orange uses that hue's own -800
-// scale step (confirmed pixel-for-pixel against Pomegranate-800/
-// Allports-800/Surf-Crest-800); orange's sample matched -700, not -800
-// (the true -800 is a much darker, muddier brown that doesn't appear
-// anywhere in the reference), so it's the one intentional exception.
-const SETS = [
+// Design-only fields (colors, shapes, rotations) -- these don't change per
+// content edit. Actual text (assumption/reality/quote) and audioSrc live
+// in section12-content.json instead, loaded via `content` above and
+// merged in per-set below, so editing that file (by hand, or via the
+// /admin editor's Save button while running `npm run dev`) changes what
+// renders here without touching this component. trackColor is each set's
+// own audio-player progress-fill color -- sampled directly from the
+// reference images rather than guessed: every set but orange uses that
+// hue's own -800 scale step (confirmed pixel-for-pixel against
+// Pomegranate-800/Allports-800/Surf-Crest-800); orange's sample matched
+// -700, not -800 (the true -800 is a much darker, muddier brown that
+// doesn't appear anywhere in the reference), so it's the one intentional
+// exception.
+const SET_DESIGN = [
   {
     number: 1,
     shape: 'sticker',
@@ -20,11 +26,6 @@ const SETS = [
     card2Bg: 'bg-bg-pink',
     card3Bg: 'bg-bg-red',
     trackColor: 'var(--color-pomegranate-800)',
-    assumption:
-      'We believed that affordability was the main barrier, and that removing the cost would lead to full participation.',
-    reality:
-      "Despite showing interest, many families didn't attend. Last-minute changes, transport issues, or family emergencies often got in the way. It wasn't about willingness - it was about capacity to follow through.",
-    quote: 'We invited 20 people, hired a 40-seater bus… one family came. It’s not that they don’t care –it’s just the reality they live in.',
   },
   {
     number: 2,
@@ -33,11 +34,6 @@ const SETS = [
     card2Bg: 'bg-bg-light-blue',
     card3Bg: 'bg-bg-blue',
     trackColor: 'var(--color-allports-800)',
-    assumption:
-      'Parents see enrichment activities as exciting learning opportunities and would support their children in joining them.',
-    reality:
-      "Many low-income parents prioritised survival - work, bills, and food - leaving little time or mental space to support their kids' enrichment activities.",
-    quote: 'People looking for family activities aren’t beneficiaries - they’re just trying to survive.',
   },
   {
     number: 3,
@@ -46,11 +42,6 @@ const SETS = [
     card2Bg: 'bg-bg-light-green',
     card3Bg: 'bg-bg-bright-green',
     trackColor: 'var(--color-surf-crest-800)',
-    assumption:
-      'Activities like coding classes, zoo trips, and weekend workshops provide valuable enrichment for beneficiaries.',
-    reality:
-      "Although parents were enthusiastic about these activities, creating real impact requires long-term, regular participation, not just one-offs. Volunteers will also be needed to track children's progress and provide specialised support.",
-    quote: 'Plastering activities and programmes can bring joy, but impact needs consistency. We want children to truly thrive.',
   },
   {
     number: 4,
@@ -59,13 +50,14 @@ const SETS = [
     card2Bg: 'bg-capy-orange-200',
     card3Bg: 'bg-bg-orange',
     trackColor: 'var(--color-capy-orange-700)',
-    assumption:
-      'Social Service Organisations will be happy to partner with us and see Capy as a platform that helps beneficiaries engage with low-cost enrichment offerings for their children.',
-    reality:
-      "Social Service Organisations don't need another platform to reach families. They need better ways to ensure participation. The problem isn't discovery. It's follow-through.",
-    quote: 'They don’t need this kind of affordable activity website. They already have access to lots of free programmes.',
   },
 ];
+
+function getSet(number) {
+  const design = SET_DESIGN.find((s) => s.number === number);
+  const text = content[String(number)] ?? {};
+  return { ...design, assumption: text.assumption ?? '', reality: text.reality ?? '', quote: text.quote ?? '', audioSrc: text.audioSrc ?? '' };
+}
 
 // Card shells share the same shape/animation, just their content and
 // number-badge shape/color differ. Final rotation matches the reference
@@ -184,12 +176,19 @@ function NumberButton({ set, isActive, onClick, shouldReduceMotion }) {
   );
 }
 
-function StaticAudioPlayer({ trackColor }) {
-  // Static/inert per spec -- no real audio hookup yet, just the visual.
-  // "0:10" / "1:02" and the ~68% fill are literal constants matching
-  // every reference screenshot (all four sets show these exact same
-  // numbers, confirming they're placeholder content, not derived from
-  // real playback state).
+function formatTime(seconds) {
+  if (!Number.isFinite(seconds)) return '0:00';
+  const total = Math.max(0, Math.floor(seconds));
+  const m = Math.floor(total / 60);
+  const s = total % 60;
+  return `${m}:${String(s).padStart(2, '0')}`;
+}
+
+// Static/inert visual -- unchanged from the original spec, used whenever
+// a set has no audioSrc yet (edit section12-content.json, by hand or via
+// the /admin editor, to add one). "0:10" / "1:02" and the ~68% fill are
+// the literal placeholder numbers from every reference screenshot.
+function InertAudioPlayer({ trackColor }) {
   const fillPct = 68;
   return (
     <div className="flex items-end justify-start gap-l self-stretch">
@@ -214,8 +213,9 @@ function StaticAudioPlayer({ trackColor }) {
 
       <button
         type="button"
-        aria-label="Play"
-        className="flex h-[58px] w-[58px] flex-shrink-0 items-center justify-center rounded-full bg-black-0 text-body-default shadow-[0_8px_16px_rgba(0,0,0,0.08)]"
+        disabled
+        aria-label="Play (no audio set for this quote yet)"
+        className="flex h-[58px] w-[58px] flex-shrink-0 cursor-not-allowed items-center justify-center rounded-full bg-black-0 text-body-default shadow-[0_8px_16px_rgba(0,0,0,0.08)] opacity-60"
         style={{ color: trackColor }}
       >
         <MaterialIcon name="play_arrow" fill size={32} />
@@ -224,28 +224,151 @@ function StaticAudioPlayer({ trackColor }) {
   );
 }
 
-function AssumptionCard({ index, shouldReduceMotion }) {
+// Real playback, used once a set has an audioSrc. Drag-to-seek on the
+// track (via Pointer Events + setPointerCapture, so the drag keeps
+// tracking even if the cursor slips off the thin 8px track while
+// moving) plus a live play/pause + elapsed/duration readout -- enough to
+// freely scrub and test a dropped-in audio file without leaving the page.
+function AudioPlayer({ trackColor, audioSrc }) {
+  const audioRef = useRef(null);
+  const trackRef = useRef(null);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
+
+  const fillPct = duration > 0 ? Math.min(100, (currentTime / duration) * 100) : 0;
+
+  const togglePlay = () => {
+    const audio = audioRef.current;
+    if (!audio) return;
+    if (isPlaying) {
+      audio.pause();
+    } else {
+      audio.play();
+    }
+  };
+
+  // Shared by pointerdown (the initial tap/click position) and every
+  // pointermove while dragging -- both need the same "where on the track
+  // did this happen" math.
+  const timeFromPointer = (e) => {
+    const rect = trackRef.current.getBoundingClientRect();
+    const ratio = Math.min(1, Math.max(0, (e.clientX - rect.left) / rect.width));
+    return ratio * duration;
+  };
+
+  const handlePointerDown = (e) => {
+    if (!duration) return;
+    trackRef.current.setPointerCapture(e.pointerId);
+    setIsDragging(true);
+    const t = timeFromPointer(e);
+    audioRef.current.currentTime = t;
+    // Set directly instead of waiting for the audio element's own
+    // timeupdate event -- that keeps the thumb glued to the pointer
+    // every frame rather than trailing behind at the audio element's own
+    // (throttled, less frequent) update rate.
+    setCurrentTime(t);
+  };
+
+  const handlePointerMove = (e) => {
+    if (!isDragging || !duration) return;
+    const t = timeFromPointer(e);
+    audioRef.current.currentTime = t;
+    setCurrentTime(t);
+  };
+
+  const handlePointerUp = (e) => {
+    if (!isDragging) return;
+    setIsDragging(false);
+    trackRef.current.releasePointerCapture(e.pointerId);
+  };
+
+  return (
+    <div className="flex items-end justify-start gap-l self-stretch">
+      <audio
+        ref={audioRef}
+        src={audioSrc}
+        preload="metadata"
+        onPlay={() => setIsPlaying(true)}
+        onPause={() => setIsPlaying(false)}
+        onEnded={() => setIsPlaying(false)}
+        onLoadedMetadata={(e) => setDuration(e.currentTarget.duration)}
+        onTimeUpdate={(e) => setCurrentTime(e.currentTarget.currentTime)}
+      />
+      <div className="flex flex-1 flex-col items-start justify-start gap-2xs">
+        <div
+          ref={trackRef}
+          role="slider"
+          aria-label="Seek audio position"
+          aria-valuemin={0}
+          aria-valuemax={Math.round(duration)}
+          aria-valuenow={Math.round(currentTime)}
+          aria-valuetext={`${formatTime(currentTime)} of ${formatTime(duration)}`}
+          tabIndex={0}
+          onPointerDown={handlePointerDown}
+          onPointerMove={handlePointerMove}
+          onPointerUp={handlePointerUp}
+          onPointerCancel={handlePointerUp}
+          onKeyDown={(e) => {
+            const audio = audioRef.current;
+            if (!audio) return;
+            if (e.key === 'ArrowRight') audio.currentTime = Math.min(duration, currentTime + 5);
+            if (e.key === 'ArrowLeft') audio.currentTime = Math.max(0, currentTime - 5);
+          }}
+          className="relative h-[8px] w-full cursor-pointer touch-none select-none self-stretch bg-black-0"
+        >
+          <span
+            aria-hidden="true"
+            className="pointer-events-none absolute left-0 top-0 h-[8px]"
+            style={{ width: `${fillPct}%`, backgroundColor: trackColor }}
+          />
+          <span
+            aria-hidden="true"
+            className="pointer-events-none absolute rounded-full"
+            style={{ width: '20px', height: '20px', left: `calc(${fillPct}% - 10px)`, top: '-6px', backgroundColor: trackColor }}
+          />
+        </div>
+        <div className="flex items-start justify-between self-stretch">
+          <p className="body-paragraph text-body-inverted">{formatTime(currentTime)}</p>
+          <p className="body-paragraph text-body-inverted">{formatTime(duration)}</p>
+        </div>
+      </div>
+
+      <button
+        type="button"
+        onClick={togglePlay}
+        aria-label={isPlaying ? 'Pause' : 'Play'}
+        className="flex h-[58px] w-[58px] flex-shrink-0 items-center justify-center rounded-full bg-black-0 text-body-default shadow-[0_8px_16px_rgba(0,0,0,0.08)]"
+        style={{ color: trackColor }}
+      >
+        <MaterialIcon name={isPlaying ? 'pause' : 'play_arrow'} fill size={32} />
+      </button>
+    </div>
+  );
+}
+
+function AssumptionCard({ set, shouldReduceMotion }) {
   return (
     <motion.div
       initial={shouldReduceMotion ? false : { x: STACK_X[0], rotate: STACK_ROTATE[0], opacity: 0 }}
       animate={{ x: 0, rotate: FINAL_ROTATE[0], opacity: 1 }}
       transition={shouldReduceMotion ? { duration: 0 } : { duration: DEAL_DURATIONS[0], ease: 'easeOut', delay: 0 * DEAL_STAGGER }}
-      className="relative z-[3] flex h-[480px] flex-1 flex-col items-start justify-start gap-s rounded-large bg-bg-white p-l"
+      className="relative z-[3] flex flex-1 flex-col items-start justify-start gap-s rounded-large bg-bg-white p-l"
     >
       <p className="body-paragraph self-stretch text-body-default">We assumed</p>
-      <h3 className="heading-3 self-stretch text-heading-default">{SETS[index].assumption}</h3>
+      <h3 className="heading-3 self-stretch text-heading-default">{set.assumption}</h3>
     </motion.div>
   );
 }
 
-function RealityCard({ index, shouldReduceMotion }) {
-  const set = SETS[index];
+function RealityCard({ set, shouldReduceMotion }) {
   return (
     <motion.div
       initial={shouldReduceMotion ? false : { x: STACK_X[1], rotate: STACK_ROTATE[1], opacity: 0 }}
       animate={{ x: 0, rotate: FINAL_ROTATE[1], opacity: 1 }}
       transition={shouldReduceMotion ? { duration: 0 } : { duration: DEAL_DURATIONS[1], ease: 'easeOut', delay: 1 * DEAL_STAGGER }}
-      className={`relative z-[2] flex h-[480px] flex-1 flex-col items-start justify-start gap-s rounded-large p-l ${set.card2Bg}`}
+      className={`relative z-[2] flex flex-1 flex-col items-start justify-start gap-s rounded-large p-l ${set.card2Bg}`}
     >
       <p className="body-paragraph self-stretch text-body-default">What really happened</p>
       <h3 className="heading-3 self-stretch text-heading-default">{set.reality}</h3>
@@ -253,20 +376,23 @@ function RealityCard({ index, shouldReduceMotion }) {
   );
 }
 
-function QuoteCard({ index, shouldReduceMotion }) {
-  const set = SETS[index];
+function QuoteCard({ set, shouldReduceMotion }) {
   return (
     <motion.div
       initial={shouldReduceMotion ? false : { x: STACK_X[2], rotate: STACK_ROTATE[2], opacity: 0 }}
       animate={{ x: 0, rotate: FINAL_ROTATE[2], opacity: 1 }}
       transition={shouldReduceMotion ? { duration: 0 } : { duration: DEAL_DURATIONS[2], ease: 'easeOut', delay: 2 * DEAL_STAGGER }}
-      className={`relative z-[1] flex h-[480px] flex-1 flex-col items-start justify-start gap-s rounded-large p-l ${set.card3Bg}`}
+      className={`relative z-[1] flex flex-1 flex-col items-start justify-start gap-s rounded-large p-l ${set.card3Bg}`}
     >
       <p className="body-paragraph self-stretch text-body-inverted">What was said</p>
       <h3 className="heading-3 self-stretch text-heading-inverted">&ldquo;{set.quote}&rdquo;</h3>
 
       <div className="mt-auto flex flex-col items-start justify-center gap-l self-stretch">
-        <StaticAudioPlayer trackColor={set.trackColor} />
+        {set.audioSrc ? (
+          <AudioPlayer trackColor={set.trackColor} audioSrc={set.audioSrc} />
+        ) : (
+          <InertAudioPlayer trackColor={set.trackColor} />
+        )}
         <ButtonTertiary inverted>
           <MaterialIcon name="description" />
           Read transcript
@@ -279,7 +405,7 @@ function QuoteCard({ index, shouldReduceMotion }) {
 export default function Section12() {
   const [activeSet, setActiveSet] = useState(1);
   const shouldReduceMotion = useReducedMotion();
-  const index = activeSet - 1;
+  const set = getSet(activeSet);
 
   const goToPrev = () => setActiveSet((s) => (s === 1 ? 4 : s - 1));
   const goToNext = () => setActiveSet((s) => (s === 4 ? 1 : s + 1));
@@ -287,21 +413,21 @@ export default function Section12() {
   return (
     <section
       id="section-12"
-      className="relative flex h-dvh w-full flex-col items-center justify-center gap-m bg-white-linen-100 px-page-margin-x py-3xl"
+      className="relative flex w-full flex-col items-center justify-start gap-xl bg-white-linen-100 px-page-margin-x py-page-margin-y"
     >
       <div className="flex items-center justify-start gap-2xl">
-        {SETS.map((set) => (
+        {SET_DESIGN.map((design) => (
           <NumberButton
-            key={set.number}
-            set={set}
-            isActive={activeSet === set.number}
-            onClick={() => setActiveSet(set.number)}
+            key={design.number}
+            set={design}
+            isActive={activeSet === design.number}
+            onClick={() => setActiveSet(design.number)}
             shouldReduceMotion={shouldReduceMotion}
           />
         ))}
       </div>
 
-      <div className="relative flex w-full items-start justify-center gap-m self-stretch">
+      <div className="relative flex w-full items-stretch justify-center gap-m self-stretch">
         <ArrowButton
           direction="left"
           onClick={goToPrev}
@@ -327,9 +453,9 @@ export default function Section12() {
             change, re-triggering the stacked-deck entrance from scratch
             each time (rather than animating between two sets' worth of
             transform values, which would look like a slide, not a deal). */}
-        <AssumptionCard key={`a-${activeSet}`} index={index} shouldReduceMotion={shouldReduceMotion} />
-        <RealityCard key={`r-${activeSet}`} index={index} shouldReduceMotion={shouldReduceMotion} />
-        <QuoteCard key={`q-${activeSet}`} index={index} shouldReduceMotion={shouldReduceMotion} />
+        <AssumptionCard key={`a-${activeSet}`} set={set} shouldReduceMotion={shouldReduceMotion} />
+        <RealityCard key={`r-${activeSet}`} set={set} shouldReduceMotion={shouldReduceMotion} />
+        <QuoteCard key={`q-${activeSet}`} set={set} shouldReduceMotion={shouldReduceMotion} />
       </div>
     </section>
   );
