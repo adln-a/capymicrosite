@@ -1,12 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
 import ScrollSection from './ScrollSection.jsx';
-import { ButtonTertiary } from './Navigation.jsx';
+import { ButtonSecondary, ButtonTertiary } from './Navigation.jsx';
 import { MaterialIcon } from './icons.jsx';
 import antenna from '../assets/Antenna.svg';
 import sandyAudioSrc from '../assets/Sandy-Final-Audio.mp3';
 import joAudioSrc from '../assets/Jo-Audio-Final.mp3';
 
-const TRANSCRIPT_LINE_COUNT = 12;
+const TRANSCRIPT_LINE_COUNT = 9;
 const SKIP_SECONDS = 5;
 // Story text starts fading up partway through the TV frame's own 0.6s
 // fade (not after it fully finishes) -- a snappier cascade than waiting
@@ -60,6 +60,21 @@ function formatTime(totalSeconds) {
   const minutes = Math.floor(totalSeconds / 60);
   const seconds = Math.floor(totalSeconds % 60);
   return `${minutes}:${String(seconds).padStart(2, '0')}`;
+}
+
+// Spoken-language form of the same value, for screen readers -- "1:23"
+// read literally by a screen reader is ambiguous ("one twenty-three"?
+// "one colon twenty-three"?), so this is used for aria-label/
+// aria-valuetext instead, while the visual "0:00"-style text (above)
+// stays as-is for sighted users.
+function formatTimeSpoken(totalSeconds) {
+  if (!Number.isFinite(totalSeconds) || totalSeconds < 0) return '0 seconds';
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = Math.floor(totalSeconds % 60);
+  const secondsPart = `${seconds} second${seconds === 1 ? '' : 's'}`;
+  if (minutes === 0) return secondsPart;
+  const minutesPart = `${minutes} minute${minutes === 1 ? '' : 's'}`;
+  return `${minutesPart} ${secondsPart}`;
 }
 
 /**
@@ -126,11 +141,11 @@ function Scrubber({ currentTime, duration, onSeek }) {
       ref={trackRef}
       role="slider"
       tabIndex={0}
-      aria-label="Seek audio"
+      aria-label="Playback progress"
       aria-valuemin={0}
       aria-valuemax={duration}
       aria-valuenow={currentTime}
-      aria-valuetext={formatTime(currentTime)}
+      aria-valuetext={formatTimeSpoken(currentTime)}
       onPointerDown={handlePointerDown}
       onPointerMove={handlePointerMove}
       onKeyDown={handleKeyDown}
@@ -157,6 +172,14 @@ export default function Section4() {
   const [isPlaying, setIsPlaying] = useState(false);
   const [playbackRate, setPlaybackRate] = useState(1);
   const [storyIndex, setStoryIndex] = useState(0);
+  const activeHeadingRef = useRef(null);
+  // Set right before toggling, consumed by the effect below once the new
+  // story has actually rendered (and is no longer aria-hidden/invisible)
+  // -- calling .focus() synchronously inside the click handler would hit
+  // the OLD story's DOM, since React hasn't re-rendered with the new
+  // storyIndex yet at that point. Guards against stealing focus on
+  // initial mount too: it only ever becomes true from an explicit toggle.
+  const pendingHeadingFocusRef = useRef(false);
 
   useEffect(() => {
     const audio = audioRef.current;
@@ -236,8 +259,21 @@ export default function Section4() {
 
   // Only two stories, so "next" and "prev" are the same action: flip
   // between index 0 and 1.
-  const toggleStory = () => setStoryIndex((index) => (index === 0 ? 1 : 0));
+  const toggleStory = () => {
+    pendingHeadingFocusRef.current = true;
+    setStoryIndex((index) => (index === 0 ? 1 : 0));
+  };
   const currentStory = STORIES[storyIndex];
+
+  // Moves focus to the new story's own heading once it's actually the
+  // active, visible one -- so a screen reader user lands right where the
+  // new content starts, rather than staying on a button whose label just
+  // silently changed to describe the OTHER story now.
+  useEffect(() => {
+    if (!pendingHeadingFocusRef.current) return;
+    pendingHeadingFocusRef.current = false;
+    activeHeadingRef.current?.focus();
+  }, [storyIndex]);
 
   return (
     <section
@@ -287,27 +323,20 @@ export default function Section4() {
                       isActive ? '' : 'invisible'
                     }`}
                   >
-                    <h2 className="heading-2 self-stretch text-heading-red">{story.title}</h2>
+                    <h2
+                      ref={isActive ? activeHeadingRef : null}
+                      tabIndex={-1}
+                      className="heading-2 self-stretch text-heading-red"
+                    >
+                      {story.title}
+                    </h2>
 
-                    <div className="flex flex-col items-end justify-start gap-s self-stretch">
+                    <div className="flex flex-col items-start justify-start gap-s self-stretch">
                       {story.paragraphs.map((paragraph, i) => (
                         <p key={i} className="body-paragraph self-stretch text-body-default">
                           {paragraph}
                         </p>
                       ))}
-                      <ButtonTertiary onClick={toggleStory}>
-                        {index === 0 ? (
-                          <>
-                            Next: {STORIES[1].title}
-                            <MaterialIcon name="chevron_right" />
-                          </>
-                        ) : (
-                          <>
-                            <MaterialIcon name="chevron_left" />
-                            Prev: {STORIES[0].title}
-                          </>
-                        )}
-                      </ButtonTertiary>
                     </div>
                   </ScrollSection>
                 );
@@ -318,19 +347,23 @@ export default function Section4() {
           {/* Audio player panel. Not its own fade-up -- it's part of the
               TV frame's single-unit fade above the panel doesn't animate
               separately. */}
-          <div className="flex w-[400px] flex-col items-start justify-between self-stretch p-m">
+          <div className="flex w-[400px] flex-col items-start justify-start gap-m self-stretch p-m">
             <div className="flex flex-col items-start justify-center gap-m self-stretch">
               <h3 className="heading-3 self-stretch text-heading-inverted">{currentStory.playerTitle}</h3>
 
               <div className="flex flex-col gap-[2px] self-stretch">
                 <Scrubber currentTime={currentTime} duration={duration} onSeek={seek} />
                 <div className="flex items-start justify-between self-stretch">
-                  <p className="body-paragraph text-body-inverted">{formatTime(currentTime)}</p>
-                  <p className="body-paragraph text-body-inverted">{formatTime(duration)}</p>
+                  <p className="body-paragraph text-body-inverted" aria-label={`Elapsed: ${formatTimeSpoken(currentTime)}`}>
+                    {formatTime(currentTime)}
+                  </p>
+                  <p className="body-paragraph text-body-inverted" aria-label={`Duration: ${formatTimeSpoken(duration)}`}>
+                    {formatTime(duration)}
+                  </p>
                 </div>
               </div>
 
-              <div className="flex items-center justify-between self-stretch">
+              <div role="group" aria-label="Playback controls" className="flex items-center justify-between self-stretch">
                 <button
                   type="button"
                   onClick={togglePlayback}
@@ -373,10 +406,34 @@ export default function Section4() {
               </ButtonTertiary>
             </div>
 
-            <div className="flex flex-col items-start justify-start gap-s self-stretch">
-              {Array.from({ length: TRANSCRIPT_LINE_COUNT }).map((_, i) => (
-                <span key={i} aria-hidden="true" className="h-1 self-stretch bg-white" />
-              ))}
+            {/* Story nav button lives here, after the audio player's own
+                controls/transcript -- not back in the story-text column
+                (its old spot) -- so a screen reader reaches it only once
+                it's actually finished with this story's audio, not
+                before. "Next"/"Prev" is now a single shared button (one
+                DOM node, label swapping with storyIndex) rather than one
+                per story with the inactive copy hidden, since there's no
+                more per-story column for it to live inside. */}
+            <div className="flex flex-col items-start justify-start gap-m self-stretch">
+              <div className="flex flex-col items-start justify-start gap-s self-stretch">
+                {Array.from({ length: TRANSCRIPT_LINE_COUNT }).map((_, i) => (
+                  <span key={i} aria-hidden="true" className="h-1 self-stretch bg-white" />
+                ))}
+              </div>
+
+              <ButtonSecondary inverted onClick={toggleStory}>
+                {storyIndex === 0 ? (
+                  <>
+                    Next: {STORIES[1].title}
+                    <MaterialIcon name="chevron_right" />
+                  </>
+                ) : (
+                  <>
+                    <MaterialIcon name="chevron_left" />
+                    Prev: {STORIES[0].title}
+                  </>
+                )}
+              </ButtonSecondary>
             </div>
           </div>
         </div>
