@@ -19,6 +19,7 @@ import Section14 from './components/Section14.jsx';
 import Section15 from './components/Section15.jsx';
 import Section16 from './components/Section16.jsx';
 import Section17 from './components/Section17.jsx';
+import Section18 from './components/Section18.jsx';
 
 export default function App() {
   const heroRef = useRef(null);
@@ -55,24 +56,7 @@ export default function App() {
         <Section15 />
         <Section16 />
         <Section17 />
-        {/*
-          Placeholder only -- no Contact section design has been built yet.
-          min-h-[150vh] (not min-h-screen) is deliberate: at exactly one
-          viewport tall, the real page's max scroll position only brings
-          Section 1's bottom edge to *exactly* touch the viewport top --
-          a zero-overlap boundary that browsers still count as
-          intersecting, so the nav never actually collapses to the toggle
-          during real scrolling. The extra height gives real, unambiguous
-          room to scroll Section 1 clearly out of view. Replace with the
-          real Contact section design when that work happens.
-        */}
-        <section
-          id="contact"
-          ref={contactSectionRef}
-          className="flex min-h-[150vh] items-center justify-center bg-bg-white"
-        >
-          <h2 className="heading-2 text-heading-default">Contact section placeholder</h2>
-        </section>
+        <Section18 sectionRef={contactSectionRef} />
       </main>
       <Footer activeSection={activeSection} />
     </>
