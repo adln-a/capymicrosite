@@ -382,26 +382,29 @@ export default function Section6() {
       id="section-6"
       className="relative flex h-dvh w-full items-center justify-start overflow-hidden bg-bg-bright-green px-page-margin-x py-3xl"
     >
-      <div className="flex flex-col items-end justify-start">
+      <div className="relative flex flex-col items-end justify-start">
         <ScrollSection
           transition={{ duration: 0.6, ease: 'easeOut', delay: WHITE_BOX_DELAY }}
-          className="relative flex w-[480px] items-center justify-center gap-s rounded-medium bg-bg-white p-m"
+          className="relative flex w-[480px] items-center justify-center gap-s rounded-medium bg-bg-white p-l"
         >
           <div className="flex flex-1 flex-col items-start justify-start gap-m">
-            <h2 className="heading-2 self-stretch text-center text-heading-blue">
-              When money is tight, <EssentialsHighlight /> comes first.
-            </h2>
+            <h3 className="heading-3 self-stretch text-center text-heading-blue">
+              {/* Same VoiceOver nested-"items" issue as the other
+                  scribble-highlight headings this session (Sections 1,
+                  5, 11, 16) -- same fix: aria-hidden the visual run,
+                  sr-only carries the one flat string assistive tech
+                  reads. */}
+              <span aria-hidden="true">
+                When money is tight, <EssentialsHighlight /> comes first.
+              </span>
+              <span className="sr-only">When money is tight, ESSENTIALS comes first.</span>
+            </h3>
             <p className="body-paragraph self-stretch text-center text-body-default">
               But parents still hope their kids can join art class, go on field trips, or just have
               time to play.
             </p>
           </div>
 
-          <span
-            aria-hidden="true"
-            className="pointer-events-none absolute origin-top-left rotate-[5deg] bg-bg-purple mix-blend-multiply"
-            style={{ width: '107px', height: '40px', left: '189px', top: '190px' }}
-          />
           <img
             src={paperClipMetal}
             alt=""
@@ -411,14 +414,36 @@ export default function Section6() {
           />
         </ScrollSection>
 
+        {/* Rendered as its own independently-animated sibling rather than
+            nested inside the card's ScrollSection -- a mix-blend-mode
+            element whose ANCESTOR has opacity/transform actively tweening
+            (exactly what ScrollSection's fade-up does) can render with
+            the wrong, un-blended flat color for a frame or two right as
+            that tween starts/settles, since opacity<1 + transform force
+            the ancestor into an isolated compositing layer the blend
+            mode can't correctly composite into until the layer
+            "catches up". Same transition/delay as the card keeps them
+            visually in sync; the outer wrapper above is `relative` (was
+            static) so this absolute position still resolves against the
+            same box the card itself sits in -- both share that box's
+            left/top edges (the card is its widest child), so the pixel
+            values are unchanged from when this lived inside the card. */}
+        <ScrollSection
+          as="span"
+          transition={{ duration: 0.6, ease: 'easeOut', delay: WHITE_BOX_DELAY }}
+          aria-hidden="true"
+          className="pointer-events-none absolute origin-top-left rotate-[5deg] bg-bg-purple mix-blend-multiply"
+          style={{ width: '107px', height: '40px', left: '189px', top: '212px' }}
+        />
+
         <ScrollSection
           transition={{ duration: 0.6, ease: 'easeOut', delay: PINK_CIRCLE_DELAY }}
           className="relative flex h-[320px] w-[320px] origin-top-left rotate-2 flex-col items-center justify-center gap-2xs overflow-hidden rounded-full bg-bg-pink p-m"
         >
           <RuledLines />
-          <h2 className="heading-3 relative self-stretch text-center text-heading-red">
+          <p className="body-paragraph-large relative self-stretch text-center text-heading-red">
             What would it take to make these opportunities easier to access?
-          </h2>
+          </p>
         </ScrollSection>
       </div>
 

@@ -134,10 +134,25 @@ function TogetherHighlight() {
 
 function Header() {
   return (
-    <h2 className="heading-2 flex w-[800px] max-w-full flex-wrap items-center justify-center gap-xs text-center text-heading-default">
-      <span>Ways we can work</span>
-      <TogetherHighlight />
-      <span>to make meaningful change</span>
+    <h2 className="heading-2 text-center text-heading-default">
+      {/* 3 separate top-level spans (for the flex-wrap layout) plus
+          TogetherHighlight's own nested span/image is even more nesting
+          than Section 5/1/11's single-highlight case -- same VoiceOver
+          nested-"items" risk, same fix: aria-hidden the whole visual
+          layout, sr-only carries the one flat string. The flex-wrap
+          layout itself moves onto this inner span (an h2 can host a
+          flex/inline-flex-styled child same as any other element) so the
+          h2 itself stays a plain block -- only its child needs to be a
+          flex container for these 3 pieces. */}
+      <span
+        aria-hidden="true"
+        className="flex w-[800px] max-w-full flex-wrap items-center justify-center gap-xs text-center"
+      >
+        <span>Ways we can work</span>
+        <TogetherHighlight />
+        <span>to make meaningful change</span>
+      </span>
+      <span className="sr-only">Ways we can work TOGETHER to make meaningful change</span>
     </h2>
   );
 }

@@ -111,9 +111,21 @@ export default function Section1({ sectionRef }) {
         <ScrollSection className="flex w-[800px] max-w-full min-h-[200px] flex-wrap items-center justify-center gap-s rounded-medium bg-bg-pink p-s origin-top-left rotate-1">
           <PinkPunchHoles />
           <h1 className="heading-1 flex-1 px-s text-center text-heading-red">
-            Children from low-income families in Singapore are over{' '}
-            <FourHighlight /> times more likely to underperform in school
-            compared to their wealthier peers*
+            {/* FourHighlight's nested span + absolutely-positioned
+                underline image reads to VoiceOver as separate nested
+                "items" inside the heading (each announced at its own DOM
+                depth), even though the image itself is aria-hidden --
+                same issue as Section 5's ScribbleHighlight, same fix:
+                aria-hidden the whole visual run, sr-only carries the one
+                flat string assistive tech actually reads. */}
+            <span aria-hidden="true">
+              Children from low-income families in Singapore are over <FourHighlight /> times more
+              likely to underperform in school compared to their wealthier peers*
+            </span>
+            <span className="sr-only">
+              Children from low-income families in Singapore are over FOUR times more likely to
+              underperform in school compared to their wealthier peers*
+            </span>
           </h1>
         </ScrollSection>
 

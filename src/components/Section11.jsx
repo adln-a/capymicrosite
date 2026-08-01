@@ -277,7 +277,14 @@ function SpeechBubbleContent() {
               heading-2's own line-height already spaces wrapped lines
               correctly with no extra gap needed. */}
           <h2 className="heading-2 text-heading-default">
-            we learned what the <RealProblemHighlight /> was.
+            {/* Same VoiceOver nested-"items" issue as Section 5's
+                ScribbleHighlight and Section 1's FourHighlight -- same
+                fix: aria-hidden the visual run, sr-only carries the one
+                flat string assistive tech reads. */}
+            <span aria-hidden="true">
+              we learned what the <RealProblemHighlight /> was.
+            </span>
+            <span className="sr-only">we learned what the REAL PROBLEM was.</span>
           </h2>
         </div>
       </div>

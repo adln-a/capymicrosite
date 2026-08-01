@@ -92,9 +92,25 @@ export default function Section5() {
             <div className="relative flex flex-1 flex-wrap content-center items-center justify-start gap-xs px-[24px]">
               <div className="flex flex-1 items-center justify-center">
                 <h2 className="heading-2 text-heading-inverted">
-                  How might we help low-income parents access AFFORDABLE{' '}
-                  <ScribbleHighlight>enrichment opportunities</ScribbleHighlight> for their children
-                  despite financial constraints and competing essential needs?
+                  {/* ScribbleHighlight's nested spans + absolutely-positioned
+                      underline image (needed for the decorative effect) read
+                      to VoiceOver as separate nested "items" inside the
+                      heading, each announced at its own DOM depth ("level 1")
+                      -- confusing noise despite the image itself already
+                      being aria-hidden. aria-hidden here on the whole visual
+                      run skips all of that; the plain sr-only span below is
+                      the only thing assistive tech actually reads, same
+                      aria-hidden-visible/sr-only-text pairing SpeechBubble.jsx
+                      already uses for this exact problem. */}
+                  <span aria-hidden="true">
+                    How might we help low-income parents access AFFORDABLE{' '}
+                    <ScribbleHighlight>enrichment opportunities</ScribbleHighlight> for their children
+                    despite financial constraints and competing essential needs?
+                  </span>
+                  <span className="sr-only">
+                    How might we help low-income parents access AFFORDABLE enrichment opportunities
+                    for their children despite financial constraints and competing essential needs?
+                  </span>
                 </h2>
               </div>
             </div>
