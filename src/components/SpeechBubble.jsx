@@ -33,6 +33,13 @@ import { motion } from 'framer-motion';
  * different length (like the Section 3 Scene 2 crossfade): without a
  * fixed width, the box would visibly resize when the text changes, since
  * a pure hug box's width is derived from its current text content.
+ *
+ * Padding uses the shared --spacing-l token (p-l: 24px, 40px from the true
+ * xl/1440px breakpoint up) rather than a hardcoded pixel value -- matches
+ * the Figma exports directly (XS/M frames both show padding:24px on this
+ * box; only the desktop/XL frame uses 40px), and stays correct automatically
+ * if that token's own breakpoint or values ever change, rather than drifting
+ * out of sync with a second, hand-copied breakpoint.
  */
 export default function SpeechBubble({
   bg,
@@ -61,7 +68,7 @@ export default function SpeechBubble({
   return (
     <div className={`flex flex-col items-end ${className}`} style={style}>
       <motion.div
-        className={`flex items-center justify-center rounded-small p-[40px] ${bg}`}
+        className={`flex items-center justify-center rounded-small p-l ${bg}`}
         style={{
           ...(hasFixedWidth ? { width: `${size.width}px` } : undefined),
           ...(hasFixedHeight ? { height: `${size.height}px` } : undefined),

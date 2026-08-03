@@ -1,9 +1,19 @@
 import { useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { motion, useReducedMotion, useScroll, useTransform } from 'framer-motion';
 import ScrollSection from './ScrollSection.jsx';
-import bgScene1 from '../assets/Desktop-BG--Frame-2.svg';
-import bgScene2 from '../assets/Desktop-BG--Frame-2B.svg';
-import bgScene3 from '../assets/Desktop-BG--Frame-2C.svg';
+import AccessibleHighlightText from './AccessibleHighlightText.jsx';
+import bgScene1Xl from '../assets/Desktop-BG--Frame-2.svg';
+import bgScene1L from '../assets/l/L--BG-Frame2.svg';
+import bgScene1M from '../assets/m/M--BG-Frame2.svg';
+import bgScene1Xs from '../assets/xs/XS--BG-Frame2.svg';
+import bgScene2Xl from '../assets/Desktop-BG--Frame-2B.svg';
+import bgScene2L from '../assets/l/L--BG-Frame2B.svg';
+import bgScene2M from '../assets/m/M--BG-Frame2B.svg';
+import bgScene2Xs from '../assets/xs/XS--BG-Frame2B.svg';
+import bgScene3Xl from '../assets/Desktop-BG--Frame-2C.svg';
+import bgScene3L from '../assets/l/L--BG-Frame2C.svg';
+import bgScene3M from '../assets/m/M--BG-Frame2C.svg';
+import bgScene3Xs from '../assets/xs/XS--BG-Frame2C.svg';
 import pinkScribble from '../assets/Pink-Scribble.svg';
 import blueScribble from '../assets/Blue-Scribble.svg';
 import paperClip from '../assets/Paper-Clip.png';
@@ -19,6 +29,27 @@ const TRANSITION_1_START = 0.4;
 const TRANSITION_1_END = 0.6;
 const TRANSITION_2_START = 0.7;
 const TRANSITION_2_END = 0.9;
+
+// Same breakpoint-swap technique as Section 1's background (640/1024/1440,
+// matching sm/lg/xl) -- <picture> picks ONE matching source rather than
+// rendering all four and hiding three with CSS. No separate S asset: the
+// "S" tier (640-768px) doesn't have its own export, it just reuses the M
+// asset -- same as Section 1, so the M source's own media query starts at
+// 640px (sm), not 768px (md); there's no third source line for S. Always a
+// motion.img (not a plain <img>) even for the reduced-motion fallback
+// below, which never actually animates it -- motion.img renders a normal
+// <img> either way, so there's one code path instead of two near-identical
+// ones.
+function SceneBackgroundPicture({ xl, l, m, xs, style, className }) {
+  return (
+    <picture>
+      <source media="(min-width: 1440px)" srcSet={xl} />
+      <source media="(min-width: 1024px)" srcSet={l} />
+      <source media="(min-width: 640px)" srcSet={m} />
+      <motion.img src={xs} alt="" aria-hidden="true" style={style} className={className} />
+    </picture>
+  );
+}
 
 function HoleColumn({ color }) {
   // Plain even-gap stack (not Section 1's split top/pair/bottom pattern) --
@@ -71,10 +102,13 @@ function TopBorderImage() {
   );
 }
 
-function MatterHighlight() {
+function MatterHighlight({ children }) {
   // Same technique as FOUR in Section 1 and Section 2's standalone build:
   // z-0 gives this span its own stacking context so -z-10 on the image
   // stays scoped inside it; the image renders at its own natural size.
+  // Takes `children` (not a hardcoded "matter") so AccessibleHighlightText
+  // below can read the word straight off it, same as every other
+  // Highlight component in the codebase.
   return (
     <span className="body-paragraph-large relative z-0 inline-block whitespace-nowrap text-center text-heading-blue">
       <img
@@ -84,7 +118,7 @@ function MatterHighlight() {
         className="pointer-events-none absolute left-1/2 -z-10 h-auto max-w-none -translate-x-1/2"
         style={{ top: 'var(--scribble-offset-tight)' }}
       />
-      <span className="relative">matter</span>
+      <span className="relative">{children}</span>
     </span>
   );
 }
@@ -110,15 +144,20 @@ function Scene1Content({ holeColumnColor }) {
           In 2023, 55 Minutes started Capy, a design-led initiative focused
           on one question:
         </p>
-        <div className="flex flex-wrap content-start items-start justify-center gap-x-xs self-stretch">
-          <span className="body-paragraph-large text-center text-heading-blue">
-            What if we could help children from
-          </span>
-          <span className="body-paragraph-large text-center text-heading-blue">
-            low-income families feel like they{' '}
-          </span>
-          <MatterHighlight />
-        </div>
+        {/* Plain flowing paragraph (not the old flex-wrap two-span row) --
+            that manual split into rigid phrase-spans wrapped/overflowed
+            inconsistently once the card's own width became responsive
+            (each span had to move/wrap as one unit rather than the text
+            reflowing naturally). AccessibleHighlightText is the same
+            single-flowing-run pattern used everywhere else in the
+            codebase (Section 1's "FOUR", etc.), so this just wraps like
+            normal text at any width. */}
+        <p className="body-paragraph-large self-stretch text-center text-heading-blue">
+          <AccessibleHighlightText
+            before="What if we could help children from low-income families feel like they "
+            highlight={<MatterHighlight>matter</MatterHighlight>}
+          />
+        </p>
       </div>
     </>
   );
@@ -170,13 +209,22 @@ function Scene3Content() {
         </p>
         {/* Blue-Scribble.svg is 89x23 natively -- essentially exact match
             for the ~88x22 target (within 1px), so it's used at its own
-            natural size rather than an explicit override. */}
+            natural size rather than an explicit override. `right` (not
+            `left`): this wrapper is the card's own full content width
+            (w-full of a card that's now itself responsive, w-full below
+            md and 640px from md up), and the original left:384px was only
+            ever correct at the old constant 640px card (560px content
+            width after its old fixed 40px padding, now p-l -- see below)
+            -- anchoring from the right
+            edge instead (560 - (384+89) = 87px) keeps the scribble the
+            same distance from the right edge at any content width,
+            instead of overshooting past it as the card narrows. */}
         <img
           src={blueScribble}
           alt=""
           aria-hidden="true"
           className="pointer-events-none absolute -z-10 h-auto max-w-none"
-          style={{ left: '384px', top: '54px' }}
+          style={{ right: '87px', top: '54px' }}
         />
       </div>
     </>
@@ -313,8 +361,19 @@ export default function Section2() {
   // compensated position depends on the card's actual rendered size, not a
   // guessed constant -- see Scene3Tape's own comment for why this
   // compensation is needed at all.
+  //
+  // The un-rotated x anchor is `scene3Width - 130`, not a flat 510 --
+  // 510 was only ever correct at the old constant 640px card width, where
+  // it put the 133px-wide tape 3px past the right edge (510+133-640=3),
+  // matching the intentional overhang built into the original design
+  // (see the reduced-motion fallback's own tape, which keeps that same
+  // 3px overhang via `right: -3px`). Since the card's width is now
+  // responsive, deriving x from the CURRENT scene3Width the same way
+  // (x = width - tapeWidth + 3 = width - 130) keeps that same edge
+  // overhang at any width instead of the tape drifting off past a
+  // narrower card's actual right edge.
   const scene3TapePosition = useMemo(
-    () => rotatePointAround(510, -21.5, scene3Width / 2, scene3Height / 2, -1.5),
+    () => rotatePointAround(scene3Width - 130, -21.5, scene3Width / 2, scene3Height / 2, -1.5),
     [scene3Width, scene3Height],
   );
 
@@ -328,19 +387,20 @@ export default function Section2() {
     // the linen-dark used in the two-scene version of this fallback.
     return (
       <section id="section-2" className="relative flex h-dvh w-full flex-col items-center justify-center gap-m overflow-hidden bg-bg-blue px-page-margin-x py-3xl">
-        <img
-          src={bgScene3}
-          alt=""
-          aria-hidden="true"
+        <SceneBackgroundPicture
+          xl={bgScene3Xl}
+          l={bgScene3L}
+          m={bgScene3M}
+          xs={bgScene3Xs}
           className="pointer-events-none absolute inset-0 h-full w-full object-cover"
         />
         <div className="relative flex flex-col items-center gap-xs">
-          <ScrollSection className="relative flex w-[640px] max-w-full rotate-1 flex-row items-center justify-center gap-s rounded-small bg-bg-white pb-[16px] pl-[16px] pr-[40px] pt-[16px]">
+          <ScrollSection className="relative flex w-full rotate-1 flex-row items-center justify-center gap-s rounded-small bg-bg-white pb-s pl-s pr-l pt-s md:w-[640px]">
             <Scene1Content holeColumnColor="#1E79AE" />
           </ScrollSection>
-          <ScrollSection className="relative w-[640px]">
+          <ScrollSection className="relative w-full md:w-[640px]">
             <TopBorderImage />
-            <div className="max-w-full bg-bg-white p-[40px]">
+            <div className="max-w-full bg-bg-white p-l">
               <Scene2Content />
             </div>
           </ScrollSection>
@@ -349,14 +409,21 @@ export default function Section2() {
               actively-tweening ancestor to isolate the tape from anything
               -- it can stay nested exactly like the original design,
               rotating together with the card as one rigid unit, no
-              compensation needed. */}
-          <ScrollSection className="relative flex w-[640px] max-w-full rotate-[-1.5deg] flex-col items-center justify-start gap-s rounded-small bg-bg-white p-[40px]">
+              compensation needed. `right` (not `left`): the card's own
+              width is now responsive (w-full below md, 640px from md up),
+              and the original left:510px was only ever correct at the old
+              constant 640px width -- it already intentionally overhung the
+              card's right edge by 3px there (510+133-640=3), so anchoring
+              from the right edge at that same -3px keeps the same
+              intentional overhang at ANY width instead of overshooting
+              further as the card narrows. */}
+          <ScrollSection className="relative flex w-full rotate-[-1.5deg] flex-col items-center justify-start gap-s rounded-small bg-bg-white p-l md:w-[640px]">
             <img
               src={greenScotchTape}
               alt=""
               aria-hidden="true"
               className="pointer-events-none absolute origin-top-left rotate-[4deg] mix-blend-multiply"
-              style={{ width: '133px', height: '36px', left: '510px', top: '-21.5px' }}
+              style={{ width: '133px', height: '36px', right: '-3px', top: '-21.5px' }}
             />
             <Scene3Content />
           </ScrollSection>
@@ -384,37 +451,40 @@ export default function Section2() {
             regions in places, so leaving an earlier layer opaque
             underneath would let it visibly bleed through those gaps even
             after its own crossfade "completes". */}
-        <motion.img
-          src={bgScene1}
-          alt=""
-          aria-hidden="true"
+        <SceneBackgroundPicture
+          xl={bgScene1Xl}
+          l={bgScene1L}
+          m={bgScene1M}
+          xs={bgScene1Xs}
           style={{ opacity: scene1BgOpacity }}
           className="pointer-events-none absolute inset-0 h-full w-full object-cover"
         />
-        <motion.img
-          src={bgScene2}
-          alt=""
-          aria-hidden="true"
+        <SceneBackgroundPicture
+          xl={bgScene2Xl}
+          l={bgScene2L}
+          m={bgScene2M}
+          xs={bgScene2Xs}
           style={{ opacity: scene2BgOpacity }}
           className="pointer-events-none absolute inset-0 h-full w-full object-cover"
         />
-        <motion.img
-          src={bgScene3}
-          alt=""
-          aria-hidden="true"
+        <SceneBackgroundPicture
+          xl={bgScene3Xl}
+          l={bgScene3L}
+          m={bgScene3M}
+          xs={bgScene3Xs}
           style={{ opacity: scene3BgOpacity }}
           className="pointer-events-none absolute inset-0 h-full w-full object-cover"
         />
 
         <div className="relative flex justify-center">
           <motion.div ref={stackRef} style={{ y: stackY }} className="flex flex-col items-center gap-xs">
-            <motion.div className="relative flex w-[640px] max-w-full rotate-1 flex-row items-center justify-center gap-s rounded-small bg-bg-white pb-[16px] pl-[16px] pr-[40px] pt-[16px]">
+            <motion.div className="relative flex w-full rotate-1 flex-row items-center justify-center gap-s rounded-small bg-bg-white pb-s pl-s pr-l pt-s md:w-[640px]">
               <Scene1Content holeColumnColor={holeColumnColor} />
             </motion.div>
 
-            <motion.div ref={scene2Ref} style={{ opacity: scene2Opacity }} className="relative w-[640px]">
+            <motion.div ref={scene2Ref} style={{ opacity: scene2Opacity }} className="relative w-full md:w-[640px]">
               <TopBorderImage />
-              <div className="max-w-full bg-bg-white p-[40px]">
+              <div className="max-w-full bg-bg-white p-l">
                 <Scene2Content />
               </div>
             </motion.div>
@@ -426,11 +496,11 @@ export default function Section2() {
                 transform of its own (see Scene3Tape's comment on why) --
                 the card keeps its rotate directly on itself, exactly as
                 before. */}
-            <div className="relative w-[640px] max-w-full">
+            <div className="relative w-full md:w-[640px]">
               <motion.div
                 ref={scene3Ref}
                 style={{ opacity: scene3Opacity, rotate: -1.5 }}
-                className="w-full origin-center flex flex-col items-center justify-start gap-s rounded-small bg-bg-white p-[40px]"
+                className="w-full origin-center flex flex-col items-center justify-start gap-s rounded-small bg-bg-white p-l"
               >
                 <Scene3Content />
               </motion.div>

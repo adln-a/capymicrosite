@@ -1,6 +1,8 @@
 import ScrollSection from './ScrollSection.jsx';
 import AccessibleHighlightText from './AccessibleHighlightText.jsx';
-import bgFrame1 from '../assets/Desktop-BG--Frame-1.svg';
+import bgFrame1Xl from '../assets/Desktop-BG--Frame-1.svg';
+import bgFrame1M from '../assets/m/M--BG-Frame1.svg';
+import bgFrame1Xs from '../assets/xs/XS--BG-Frame1.svg';
 import fourScribble from '../assets/Green-Scribble.svg';
 
 const CARD_SHADOW = 'shadow-[0_8px_16px_rgba(0,0,0,0.08)]';
@@ -135,13 +137,46 @@ export default function Section1({ sectionRef }) {
           paint above their parent's background) but below every later
           sibling here, since none of them set a competing negative
           z-index -- z-stacking is background color -> this image -> the
-          pink/white boxes, purely from DOM order. */}
-      <img
-        src={bgFrame1}
-        alt=""
-        aria-hidden="true"
-        className="absolute inset-0 h-full w-full object-cover pointer-events-none"
-      />
+          pink/white boxes, purely from DOM order.
+
+          <picture> picks ONE matching <source> (first, top-to-bottom, that
+          matches its media query) rather than rendering all four and
+          hiding three with CSS -- same breakpoints as the rest of the
+          fluid work (640/1024, matching sm/lg). The plain <img> fallback
+          (no media query, lowest priority) is the XS asset, covering
+          anything below 640px (phone widths). No separate S asset: the
+          "S" tier (640-768px) doesn't have its own export, it just
+          reuses the M asset -- same reasoning as dropping the separate L
+          asset below, one fewer breakpoint-specific file to maintain
+          where the artwork already reads fine shared across a wider
+          range. So the M source's own media query starts at 640px (sm),
+          not 768px (md) -- it's simultaneously serving both the S and M
+          tiers, there's no third source line for S.
+          No separate L asset either: the L export was dropped in favor of
+          just reusing XL from 1024px up.
+          className/alt/aria-hidden all live on the <img>, not <picture>
+          itself (a non-rendered wrapper with no styling of its own) --
+          `position: absolute` on the <img> still resolves against the
+          <section>'s own `relative` since <picture> establishes no
+          containing block of its own.
+
+          object-position: below lg (XS/S/M -- everything using the two
+          portrait-ish exports), top-center via object-top so the crop
+          favors the top of the illustration rather than the crop
+          centering that tends to lose it at narrower/taller aspect
+          ratios; lg:object-center reverts to plain center-center for the
+          XL asset, which was already exported/composed to look right
+          centered. */}
+      <picture>
+        <source media="(min-width: 1024px)" srcSet={bgFrame1Xl} />
+        <source media="(min-width: 640px)" srcSet={bgFrame1M} />
+        <img
+          src={bgFrame1Xs}
+          alt=""
+          aria-hidden="true"
+          className="absolute inset-0 h-full w-full object-cover object-top pointer-events-none lg:object-center"
+        />
+      </picture>
 
       {/* px-page-margin-x lives here (not on the section itself) so the
           background image above -- absolute inset-0 relative to this
