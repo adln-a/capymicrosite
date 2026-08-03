@@ -3,6 +3,7 @@ import { motion, useReducedMotion } from 'framer-motion';
 import { ButtonTertiary } from './Navigation.jsx';
 import { MaterialIcon } from './icons.jsx';
 import ArrowButton from './ArrowButton.jsx';
+import TranscriptModal from './TranscriptModal.jsx';
 import content from '../data/section12-content.json';
 
 // Design-only fields (colors, shapes, rotations) -- these don't change per
@@ -145,7 +146,7 @@ function NumberShape({ shape, fill, size }) {
   );
 }
 
-function NumberButton({ set, isActive, onClick, shouldReduceMotion }) {
+function NumberButton({ set, isActive, onClick, shouldReduceMotion, innerRef, id, panelId }) {
   const size = isActive ? 48 : 40;
   const fill = isActive ? set.numberColorVar : 'var(--color-black-200)';
   // Set 3's square rotates slightly when active (per spec); the other
@@ -155,11 +156,19 @@ function NumberButton({ set, isActive, onClick, shouldReduceMotion }) {
 
   return (
     <button
+      ref={innerRef}
       type="button"
+      role="tab"
+      id={id}
+      aria-selected={isActive}
+      aria-controls={panelId}
+      // Roving tabindex (ARIA APG Tabs pattern): only the selected tab is
+      // a Tab stop -- arrow keys (handled on the tablist, see
+      // handleTabListKeyDown) move focus among the rest.
+      tabIndex={isActive ? 0 : -1}
       onClick={onClick}
-      aria-pressed={isActive}
-      aria-label={`Go to set ${set.number}`}
-      className="relative flex flex-col items-center justify-center p-xs"
+      aria-label={`Insight ${set.number}`}
+      className="relative flex cursor-pointer flex-col items-center justify-center p-xs transition-opacity duration-150 hover:opacity-80"
       style={{ width: '48px', height: '48px' }}
     >
       <motion.div
@@ -169,7 +178,16 @@ function NumberButton({ set, isActive, onClick, shouldReduceMotion }) {
       >
         <NumberShape shape={set.shape} fill={fill} size={48} />
       </motion.div>
-      <span className="body-paragraph relative text-heading-inverted" style={{ fontSize: '20px', lineHeight: '28px' }}>
+      {/* White on the inactive fill (black-200, #D1D1D1) only reaches
+          1.53:1 -- badly fails WCAG AA regardless of text size. The
+          inactive number switches to text-body-default (black-700)
+          instead, which reaches 5.36:1 against that same light gray;
+          active numbers keep white, since every active fill (the four
+          brand colors) already clears 4.5:1 against white. */}
+      <span
+        className={`body-paragraph relative ${isActive ? 'text-heading-inverted' : 'text-body-default'}`}
+        style={{ fontSize: '20px', lineHeight: '28px' }}
+      >
         {set.number}
       </span>
     </button>
@@ -182,6 +200,23 @@ function formatTime(seconds) {
   const m = Math.floor(total / 60);
   const s = total % 60;
   return `${m}:${String(s).padStart(2, '0')}`;
+}
+
+// Spoken-language form of the same value, for screen readers -- "1:23"
+// read literally by a screen reader is ambiguous ("one twenty-three"?
+// "one colon twenty-three"?), so this is used for aria-label/aria-valuetext
+// instead, while the visual "0:00"-style text stays as-is for sighted
+// users. Same helper Section 4's TV audio player already uses, duplicated
+// locally rather than imported since each section keeps its own small
+// self-contained utilities in this codebase.
+function formatTimeSpoken(totalSeconds) {
+  if (!Number.isFinite(totalSeconds) || totalSeconds < 0) return '0 seconds';
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = Math.floor(totalSeconds % 60);
+  const secondsPart = `${seconds} second${seconds === 1 ? '' : 's'}`;
+  if (minutes === 0) return secondsPart;
+  const minutesPart = `${minutes} minute${minutes === 1 ? '' : 's'}`;
+  return `${minutesPart} ${secondsPart}`;
 }
 
 // Static/inert visual -- unchanged from the original spec, used whenever
@@ -206,8 +241,12 @@ function InertAudioPlayer({ trackColor }) {
           />
         </div>
         <div className="flex items-start justify-between self-stretch">
-          <p className="body-paragraph text-body-inverted">0:10</p>
-          <p className="body-paragraph text-body-inverted">1:02</p>
+          <p className="body-paragraph text-body-inverted" aria-label={`Elapsed: ${formatTimeSpoken(10)}`}>
+            0:10
+          </p>
+          <p className="body-paragraph text-body-inverted" aria-label={`Duration: ${formatTimeSpoken(62)}`}>
+            1:02
+          </p>
         </div>
       </div>
 
@@ -300,11 +339,11 @@ function AudioPlayer({ trackColor, audioSrc }) {
         <div
           ref={trackRef}
           role="slider"
-          aria-label="Seek audio position"
+          aria-label="Playback progress"
           aria-valuemin={0}
           aria-valuemax={Math.round(duration)}
           aria-valuenow={Math.round(currentTime)}
-          aria-valuetext={`${formatTime(currentTime)} of ${formatTime(duration)}`}
+          aria-valuetext={`${formatTimeSpoken(currentTime)} of ${formatTimeSpoken(duration)}`}
           tabIndex={0}
           onPointerDown={handlePointerDown}
           onPointerMove={handlePointerMove}
@@ -330,8 +369,12 @@ function AudioPlayer({ trackColor, audioSrc }) {
           />
         </div>
         <div className="flex items-start justify-between self-stretch">
-          <p className="body-paragraph text-body-inverted">{formatTime(currentTime)}</p>
-          <p className="body-paragraph text-body-inverted">{formatTime(duration)}</p>
+          <p className="body-paragraph text-body-inverted" aria-label={`Elapsed: ${formatTimeSpoken(currentTime)}`}>
+            {formatTime(currentTime)}
+          </p>
+          <p className="body-paragraph text-body-inverted" aria-label={`Duration: ${formatTimeSpoken(duration)}`}>
+            {formatTime(duration)}
+          </p>
         </div>
       </div>
 
@@ -339,7 +382,7 @@ function AudioPlayer({ trackColor, audioSrc }) {
         type="button"
         onClick={togglePlay}
         aria-label={isPlaying ? 'Pause' : 'Play'}
-        className="flex h-[58px] w-[58px] flex-shrink-0 items-center justify-center rounded-full bg-black-0 text-body-default shadow-[0_8px_16px_rgba(0,0,0,0.08)]"
+        className="flex h-[58px] w-[58px] flex-shrink-0 cursor-pointer items-center justify-center rounded-full bg-black-0 text-body-default shadow-[0_8px_16px_rgba(0,0,0,0.08)] transition-opacity duration-150 hover:opacity-80"
         style={{ color: trackColor }}
       >
         <MaterialIcon name={isPlaying ? 'pause' : 'play_arrow'} fill size={32} />
@@ -357,7 +400,7 @@ function AssumptionCard({ set, shouldReduceMotion }) {
       className="relative z-[3] flex flex-1 flex-col items-start justify-start gap-s rounded-large bg-bg-white p-l"
     >
       <p className="body-paragraph self-stretch text-body-default">We assumed</p>
-      <h3 className="heading-3 self-stretch text-heading-default">{set.assumption}</h3>
+      <p className="heading-3 self-stretch text-heading-default">{set.assumption}</p>
     </motion.div>
   );
 }
@@ -371,12 +414,15 @@ function RealityCard({ set, shouldReduceMotion }) {
       className={`relative z-[2] flex flex-1 flex-col items-start justify-start gap-s rounded-large p-l ${set.card2Bg}`}
     >
       <p className="body-paragraph self-stretch text-body-default">What really happened</p>
-      <h3 className="heading-3 self-stretch text-heading-default">{set.reality}</h3>
+      <p className="heading-3 self-stretch text-heading-default">{set.reality}</p>
     </motion.div>
   );
 }
 
 function QuoteCard({ set, shouldReduceMotion }) {
+  const [isTranscriptOpen, setIsTranscriptOpen] = useState(false);
+  const transcriptButtonRef = useRef(null);
+
   return (
     <motion.div
       initial={shouldReduceMotion ? false : { x: STACK_X[2], rotate: STACK_ROTATE[2], opacity: 0 }}
@@ -385,7 +431,7 @@ function QuoteCard({ set, shouldReduceMotion }) {
       className={`relative z-[1] flex flex-1 flex-col items-start justify-start gap-s rounded-large p-l ${set.card3Bg}`}
     >
       <p className="body-paragraph self-stretch text-body-inverted">What was said</p>
-      <h3 className="heading-3 self-stretch text-heading-inverted">&ldquo;{set.quote}&rdquo;</h3>
+      <p className="heading-3 self-stretch text-heading-inverted">&ldquo;{set.quote}&rdquo;</p>
 
       <div className="mt-auto flex flex-col items-start justify-center gap-l self-stretch">
         {set.audioSrc ? (
@@ -393,32 +439,85 @@ function QuoteCard({ set, shouldReduceMotion }) {
         ) : (
           <InertAudioPlayer trackColor={set.trackColor} />
         )}
-        <ButtonTertiary inverted>
+        <ButtonTertiary inverted innerRef={transcriptButtonRef} onClick={() => setIsTranscriptOpen(true)}>
           <MaterialIcon name="description" />
           Read transcript
         </ButtonTertiary>
       </div>
+
+      <TranscriptModal
+        isOpen={isTranscriptOpen}
+        onClose={() => setIsTranscriptOpen(false)}
+        subtitle={`Set ${set.number}: what was said`}
+        triggerRef={transcriptButtonRef}
+      />
     </motion.div>
   );
 }
+
+// ARIA APG Tabs pattern (https://www.w3.org/WAI/ARIA/apg/patterns/tabs/):
+// the 1/2/3/4 row is a tablist, each number a tab, and the assumption/
+// reality/quote trio together are a single tabpanel (one physical panel
+// whose content swaps, rather than four pre-rendered panels toggled via
+// `hidden` -- keeping the existing remount-per-set "deal" animation intact,
+// which four-simultaneous-panels would conflict with).
+const PANEL_ID = 'section12-panel';
+const tabId = (number) => `section12-tab-${number}`;
 
 export default function Section12() {
   const [activeSet, setActiveSet] = useState(1);
   const shouldReduceMotion = useReducedMotion();
   const set = getSet(activeSet);
+  const tabRefs = useRef({});
 
   const goToPrev = () => setActiveSet((s) => (s === 1 ? 4 : s - 1));
   const goToNext = () => setActiveSet((s) => (s === 4 ? 1 : s + 1));
+
+  // "Automatic activation" model: moving focus with an arrow key also
+  // switches the active tab/panel immediately, no separate Enter/Space
+  // step needed -- the more common of the two patterns APG allows.
+  const focusAndActivate = (number) => {
+    setActiveSet(number);
+    tabRefs.current[number]?.focus();
+  };
+
+  function handleTabListKeyDown(event) {
+    switch (event.key) {
+      case 'ArrowLeft':
+        event.preventDefault();
+        focusAndActivate(activeSet === 1 ? 4 : activeSet - 1);
+        break;
+      case 'ArrowRight':
+        event.preventDefault();
+        focusAndActivate(activeSet === 4 ? 1 : activeSet + 1);
+        break;
+      case 'Home':
+        event.preventDefault();
+        focusAndActivate(1);
+        break;
+      case 'End':
+        event.preventDefault();
+        focusAndActivate(4);
+        break;
+      default:
+        break;
+    }
+  }
 
   return (
     <section
       id="section-12"
       className="relative flex w-full flex-col items-center justify-start gap-xl bg-white-linen-100 px-page-margin-x py-page-margin-y"
     >
-      <div className="flex items-center justify-start gap-2xl">
+      <div role="tablist" aria-label="Insights" onKeyDown={handleTabListKeyDown} className="flex items-center justify-start gap-2xl">
         {SET_DESIGN.map((design) => (
           <NumberButton
             key={design.number}
+            innerRef={(el) => {
+              tabRefs.current[design.number] = el;
+            }}
+            id={tabId(design.number)}
+            panelId={PANEL_ID}
             set={design}
             isActive={activeSet === design.number}
             onClick={() => setActiveSet(design.number)}
@@ -427,7 +526,11 @@ export default function Section12() {
         ))}
       </div>
 
-      <div className="relative flex w-full items-stretch justify-center gap-m self-stretch">
+      <div className="relative flex w-full self-stretch">
+        {/* Purely a mouse/touch convenience now -- arrow-key navigation on
+            the tablist above already does exactly this for keyboard/AT
+            users, so these are hidden from both (see ArrowButton's own
+            `decorative` prop comment). */}
         <ArrowButton
           direction="left"
           onClick={goToPrev}
@@ -437,6 +540,7 @@ export default function Section12() {
           bg="bg-bg-linen-light"
           className="absolute top-1/2 z-10 -translate-y-1/2 shadow-[0_8px_16px_rgba(0,0,0,0.08)]"
           style={{ left: '-56px' }}
+          decorative
         />
         <ArrowButton
           direction="right"
@@ -447,15 +551,18 @@ export default function Section12() {
           bg="bg-bg-linen-light"
           className="absolute top-1/2 z-10 -translate-y-1/2 shadow-[0_8px_16px_rgba(0,0,0,0.08)]"
           style={{ right: '-56px' }}
+          decorative
         />
 
-        {/* key={activeSet} forces all three cards to remount on every set
-            change, re-triggering the stacked-deck entrance from scratch
-            each time (rather than animating between two sets' worth of
-            transform values, which would look like a slide, not a deal). */}
-        <AssumptionCard key={`a-${activeSet}`} set={set} shouldReduceMotion={shouldReduceMotion} />
-        <RealityCard key={`r-${activeSet}`} set={set} shouldReduceMotion={shouldReduceMotion} />
-        <QuoteCard key={`q-${activeSet}`} set={set} shouldReduceMotion={shouldReduceMotion} />
+        <div role="tabpanel" id={PANEL_ID} aria-labelledby={tabId(activeSet)} tabIndex={0} className="flex w-full items-stretch justify-center gap-m">
+          {/* key={activeSet} forces all three cards to remount on every set
+              change, re-triggering the stacked-deck entrance from scratch
+              each time (rather than animating between two sets' worth of
+              transform values, which would look like a slide, not a deal). */}
+          <AssumptionCard key={`a-${activeSet}`} set={set} shouldReduceMotion={shouldReduceMotion} />
+          <RealityCard key={`r-${activeSet}`} set={set} shouldReduceMotion={shouldReduceMotion} />
+          <QuoteCard key={`q-${activeSet}`} set={set} shouldReduceMotion={shouldReduceMotion} />
+        </div>
       </div>
     </section>
   );

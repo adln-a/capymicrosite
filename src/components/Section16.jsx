@@ -1,5 +1,6 @@
 import { useRef } from 'react';
 import { motion, useReducedMotion, useScroll, useTransform } from 'framer-motion';
+import AccessibleHighlightText from './AccessibleHighlightText.jsx';
 import pinkScribble from '../assets/Pink-Scribble.svg';
 import frameLeft from '../assets/Desktop-IMG-Frame-16-Left.svg';
 import frameRight from '../assets/Desktop-IMG-Frame-16-Right.svg';
@@ -36,7 +37,13 @@ const CARDS = [
     body: 'Exchange data, feedback, and insights across stakeholders to help everyone improve together.',
     headingColor: 'text-heading-inverted',
     bodyColor: 'text-body-inverted',
-    lineColor: 'var(--color-pomegranate-400)',
+    // pomegranate-500 at 50% opacity -- the standard treatment for ruled
+    // lines on a red (now capy-orange-a11y, after the bg-red/orange
+    // merge) background, matching Section 5/14's own RuledLines. The
+    // other three cards keep RuledLines' own default 75% -- their
+    // backgrounds/line colors were never affected by that merge.
+    lineColor: 'var(--color-pomegranate-500)',
+    lineOpacity: 50,
   },
   {
     key: 'codesign',
@@ -76,11 +83,12 @@ const THRESHOLDS = [
 // settles.
 const FADE_FRACTION = 0.12;
 
-function RuledLines({ color }) {
+function RuledLines({ color, opacity = 75 }) {
   return (
     <div
       aria-hidden="true"
-      className="pointer-events-none absolute inset-x-0 top-[81px] flex flex-col gap-m opacity-75"
+      className="pointer-events-none absolute inset-x-0 top-[81px] flex flex-col gap-m"
+      style={{ opacity: opacity / 100 }}
     >
       {Array.from({ length: 9 }).map((_, i) => (
         <span key={i} className="h-px w-full flex-shrink-0" style={{ backgroundColor: color }} />
@@ -92,7 +100,7 @@ function RuledLines({ color }) {
 function CardContent({ card }) {
   return (
     <>
-      <RuledLines color={card.lineColor} />
+      <RuledLines color={card.lineColor} opacity={card.lineOpacity} />
       <div className="relative flex flex-col items-center justify-start gap-s self-stretch">
         <h3 className={`heading-3 self-stretch text-center ${card.headingColor}`}>{card.heading}</h3>
         <p className={`body-paragraph self-stretch text-center ${card.bodyColor}`}>{card.body}</p>
@@ -118,16 +126,17 @@ function StackCard({ card, index, scrollYProgress }) {
   );
 }
 
-function TogetherHighlight() {
+function TogetherHighlight({ children }) {
   return (
     <span className="relative z-0 inline-block whitespace-nowrap">
       <img
         src={pinkScribble}
         alt=""
         aria-hidden="true"
-        className="pointer-events-none absolute left-1/2 top-[120%] -z-10 h-auto max-w-none -translate-x-1/2 -translate-y-1/2"
+        className="pointer-events-none absolute left-1/2 -z-10 h-auto max-w-none -translate-x-1/2"
+        style={{ top: 'var(--scribble-offset-default)' }}
       />
-      <span className="relative">TOGETHER</span>
+      <span className="heading-2-accent relative">{children}</span>
     </span>
   );
 }
@@ -140,19 +149,21 @@ function Header() {
           than Section 5/1/11's single-highlight case -- same VoiceOver
           nested-"items" risk, same fix: aria-hidden the whole visual
           layout, sr-only carries the one flat string. The flex-wrap
-          layout itself moves onto this inner span (an h2 can host a
+          layout itself moves onto the visual span (an h2 can host a
           flex/inline-flex-styled child same as any other element) so the
           h2 itself stays a plain block -- only its child needs to be a
-          flex container for these 3 pieces. */}
-      <span
-        aria-hidden="true"
-        className="flex w-[800px] max-w-full flex-wrap items-center justify-center gap-xs text-center"
-      >
-        <span>Ways we can work</span>
-        <TogetherHighlight />
-        <span>to make meaningful change</span>
-      </span>
-      <span className="sr-only">Ways we can work TOGETHER to make meaningful change</span>
+          flex container for these 3 pieces. `before`/`after` carry their
+          own explicit spaces below (unlike the other AccessibleHighlightText
+          call sites) because the sr-only string needs real spaces where the
+          visual layout instead relies on the flex gap -- visualClassName
+          tells the component to trim those spaces back off before
+          rendering the visual spans, so gap-xs isn't doubled up with them. */}
+      <AccessibleHighlightText
+        before="Ways we can work "
+        highlight={<TogetherHighlight>TOGETHER</TogetherHighlight>}
+        after=" to make meaningful change"
+        visualClassName="flex w-[800px] max-w-full flex-wrap items-center justify-center gap-xs text-center"
+      />
     </h2>
   );
 }

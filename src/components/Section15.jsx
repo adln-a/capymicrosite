@@ -1,10 +1,11 @@
 import ScrollSection from './ScrollSection.jsx';
+import AccessibleHighlightText from './AccessibleHighlightText.jsx';
 import pinkRoundScribble from '../assets/Pink-Round-Scribble.svg';
 import illustration from '../assets/Desktop-IMG-Frame-15.svg';
 
 const ILLUSTRATION_DELAY = 0.18;
 
-function PeopleHighlight() {
+function PeopleHighlight({ children }) {
   // Same z-0/-z-10 span-wrap technique as the other scribble highlights,
   // but centered on the word (left-1/2/top-1/2 + -translate-x-1/2/-y-1/2)
   // rather than hugging its width -- Pink-Round-Scribble.svg is a full
@@ -21,7 +22,7 @@ function PeopleHighlight() {
         className="pointer-events-none absolute left-1/2 top-1/2 -z-10 max-w-none -translate-x-1/2 -translate-y-1/2"
         style={{ width: '161px', height: '55px' }}
       />
-      <span className="relative">PEOPLE</span>
+      <span className="heading-2-accent relative">{children}</span>
     </span>
   );
 }
@@ -39,7 +40,11 @@ export default function Section15() {
           it safe if that's ever narrower than the viewport. */}
       <ScrollSection>
         <h2 className="heading-2 w-[540px] max-w-full text-center text-heading-inverted">
-          Products alone don&rsquo;t solve problems. <PeopleHighlight /> do.
+          <AccessibleHighlightText
+            before="Products alone don’t solve problems. "
+            highlight={<PeopleHighlight>PEOPLE</PeopleHighlight>}
+            after=" do."
+          />
         </h2>
       </ScrollSection>
 

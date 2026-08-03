@@ -56,22 +56,22 @@ export default function Footer({ activeSection }) {
             label="Home"
             isActive={activeSection === 'home'}
             activeMarkerSrc={footerNavActiveMarker}
-            activeColorClassName="text-body-inverted"
-            defaultColorClassName="text-body-inverted"
+            activeColorClassName="text-body-inverted hover:text-capy-orange-100"
+            defaultColorClassName="text-body-inverted hover:text-capy-orange-100"
           />
           <NavLink
             href="#contact"
             label="Contact us"
             isActive={activeSection === 'contact'}
             activeMarkerSrc={footerNavActiveMarker}
-            activeColorClassName="text-body-inverted"
-            defaultColorClassName="text-body-inverted"
+            activeColorClassName="text-body-inverted hover:text-capy-orange-100"
+            defaultColorClassName="text-body-inverted hover:text-capy-orange-100"
           />
           <NavLink
             href="#section-17"
             label="Download our design guide"
             isActive={false}
-            defaultColorClassName="text-body-inverted"
+            defaultColorClassName="text-body-inverted hover:text-capy-orange-100"
           />
         </ScrollSection>
       </div>

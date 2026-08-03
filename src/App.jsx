@@ -1,5 +1,6 @@
 import { useRef } from 'react';
 import useActiveSection from './hooks/useActiveSection.js';
+import useKeyboardScrollBoost from './hooks/useKeyboardScrollBoost.js';
 import Navigation from './components/Navigation.jsx';
 import Footer from './components/Footer.jsx';
 import Section1 from './components/Section1.jsx';
@@ -27,6 +28,7 @@ export default function App() {
   const contactSectionRef = useRef(null);
   const mainRef = useRef(null);
   const activeSection = useActiveSection({ heroRef, contactSectionRef });
+  useKeyboardScrollBoost();
 
   return (
     <>

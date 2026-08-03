@@ -34,7 +34,7 @@ export default function Section17() {
         transition={{ duration: 0.6, ease: 'easeOut', delay: TEXT_COLUMN_DELAY }}
         className="flex flex-1 flex-col items-start justify-start gap-m"
       >
-        <p className="body-paragraph self-stretch text-heading-default">Download our design guide</p>
+        <p className="body-paragraph self-stretch text-body-default">Download our design guide</p>
         <h2 className="heading-2 self-stretch text-heading-default">
           Designing for Low-Income Families in Singapore
         </h2>

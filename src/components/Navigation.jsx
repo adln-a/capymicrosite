@@ -15,7 +15,36 @@ function DownloadButtonContent() {
   );
 }
 
-const CARD_SHADOW = 'shadow-[0_8px_16px_rgba(0,0,0,0.08)]';
+// Exported (not just a private constant) so any component can opt into this
+// same drop shadow via className, rather than it being baked unconditionally
+// into a specific button -- ButtonPrimary itself doesn't carry a shadow by
+// default; DownloadButton (below) opts in explicitly since the nav bar's
+// own design wants it, while other ButtonPrimary instances (e.g. Section 8's
+// "Return to the beginning") don't.
+export const CARD_SHADOW = 'shadow-[0_8px_16px_rgba(0,0,0,0.08)]';
+
+/**
+ * Plain circular close action -- 56px orange circle + 32px white X.
+ * Reused by both the hamburger toggle's own "open" state (below) and
+ * other dismissible surfaces (e.g. TranscriptModal), so there's exactly
+ * one place defining what "the close button" looks like. `...rest`
+ * covers the toggle's own extra need for `aria-expanded`, which a
+ * plain standalone close action otherwise has no reason to carry.
+ */
+export function CloseButton({ onClick, innerRef, label = 'Close', className = '', ...rest }) {
+  return (
+    <button
+      ref={innerRef}
+      type="button"
+      onClick={onClick}
+      aria-label={label}
+      className={`flex h-14 w-14 cursor-pointer items-center justify-center rounded-full bg-button-primary-orange text-button-inverted transition-colors duration-150 hover:bg-capy-orange-500 ${CARD_SHADOW} ${className}`}
+      {...rest}
+    >
+      <MaterialIcon name="close" size={32} />
+    </button>
+  );
+}
 
 // Active NavLink's own outline is invisible: its marker image is an
 // absolutely-positioned descendant, and an element's outline always
@@ -65,8 +94,8 @@ export function NavLink({
   innerRef,
   className = '',
   activeMarkerSrc = bgNavActive,
-  activeColorClassName = 'text-heading-default',
-  defaultColorClassName = 'text-body-default',
+  activeColorClassName = 'text-heading-default hover:text-black-950',
+  defaultColorClassName = 'text-body-default hover:text-black-950',
 }) {
   if (isActive) {
     return (
@@ -74,7 +103,7 @@ export function NavLink({
         ref={innerRef}
         href={href}
         aria-current="location"
-        className={`nav-active relative inline-flex items-center p-xs ${activeColorClassName} ${className} ${ACTIVE_LINK_FOCUS_RING}`}
+        className={`nav-active relative inline-flex cursor-pointer items-center p-xs transition-colors duration-150 ${activeColorClassName} ${className} ${ACTIVE_LINK_FOCUS_RING}`}
       >
         <img
           src={activeMarkerSrc}
@@ -88,21 +117,49 @@ export function NavLink({
   }
 
   return (
-    <a ref={innerRef} href={href} className={`nav-default inline-flex items-center p-xs ${defaultColorClassName} ${className}`}>
+    <a ref={innerRef} href={href} className={`nav-default inline-flex cursor-pointer items-center p-xs transition-colors duration-150 ${defaultColorClassName} ${className}`}>
       {label}
     </a>
   );
 }
 
-export function DownloadButton({ innerRef, className = '' }) {
+/**
+ * `inverted` swaps the primary button's own bg/text pairing: orange bg +
+ * white text by default, white bg + orange text when true -- for use on
+ * a background where the orange doesn't have enough contrast to sit
+ * directly on (e.g. Section 8's "Return to the beginning" button, on
+ * bg-bg-lightest-blue: capy-orange-a11y as plain text there only reaches
+ * ~3.3:1, but as text on this button's own white surface it's back to a
+ * clean 4.52:1, since the white pill isolates it from whatever's behind
+ * the button). Hover darkens/tints the bg one step further in whichever
+ * direction it already leans -- orange bg -> a more saturated orange
+ * (capy-orange-500), white bg -> a faint orange tint (capy-orange-50) --
+ * rather than changing the text color, since primary buttons' whole
+ * visual weight IS their filled background.
+ */
+export function ButtonPrimary({ children, innerRef, className = '', inverted = false, type = 'button', ...props }) {
   return (
     <button
       ref={innerRef}
-      type="button"
-      className={`button-default inline-flex items-center gap-2xs rounded-large bg-button-primary-orange px-m py-s text-button-inverted ${CARD_SHADOW} ${className}`}
+      type={type}
+      className={`button-default inline-flex cursor-pointer items-center gap-2xs rounded-large px-m py-s transition-colors duration-150 ${
+        inverted
+          ? 'bg-bg-white text-button-primary-orange hover:bg-capy-orange-50'
+          : 'bg-button-primary-orange text-button-inverted hover:bg-capy-orange-500'
+      } ${className}`}
+      {...props}
     >
-      <DownloadButtonContent />
+      {children}
     </button>
+  );
+}
+
+/** Pre-configured ButtonPrimary carrying the fixed "Download" label + icon. */
+export function DownloadButton({ innerRef, className = '', inverted = false }) {
+  return (
+    <ButtonPrimary innerRef={innerRef} className={`${CARD_SHADOW} ${className}`} inverted={inverted}>
+      <DownloadButtonContent />
+    </ButtonPrimary>
   );
 }
 
@@ -112,14 +169,22 @@ export function DownloadButton({ innerRef, className = '' }) {
  * a ghost/tertiary button for secondary in-content actions (e.g. "Next:
  * ..." / "Read transcript" in Section 4) rather than the primary CTA.
  * `inverted` switches text color from orange (the default, for use on
- * light backgrounds) to white (for use on dark backgrounds).
+ * light backgrounds) to white (for use on dark backgrounds). Hover
+ * shifts the text one step further in whichever direction it already
+ * leans -- white -> capy-orange-100 (same shade the white nav links and
+ * the audio player's white icon buttons hover to, for consistency),
+ * orange -> capy-orange-500, same as ButtonSecondary/DownloadButton's
+ * orange-side hover -- just applied to text only here since there's no
+ * bg/border of its own to shift.
  */
 export function ButtonTertiary({ children, innerRef, className = '', inverted = false, type = 'button', ...props }) {
   return (
     <button
       ref={innerRef}
       type={type}
-      className={`button-default inline-flex items-center gap-2xs rounded-large bg-transparent px-m py-s ${inverted ? 'text-button-inverted' : 'text-button-primary-orange'} ${className}`}
+      className={`button-default inline-flex cursor-pointer items-center gap-2xs rounded-large bg-transparent px-m py-s transition-colors duration-150 ${
+        inverted ? 'text-button-inverted hover:text-capy-orange-100' : 'text-button-primary-orange hover:text-capy-orange-500'
+      } ${className}`}
       {...props}
     >
       {children}
@@ -133,20 +198,48 @@ export function ButtonTertiary({ children, innerRef, className = '', inverted = 
  * text-button-primary-orange by default, border-button-inverted +
  * text-button-inverted white on white when `inverted`) -- an outlined
  * secondary button, distinct from ButtonTertiary's borderless ghost
- * style.
+ * style. Hover shifts border + text together, same capy-orange-50/
+ * capy-orange-500 pairing as the other two shared buttons.
+ *
+ * `layout` (opt-in, off by default) renders as motion.button with
+ * Framer Motion's layout animation enabled -- for callers whose own
+ * content changes size (e.g. Section 4's Next/Prev label swapping
+ * between differently-long strings), this smoothly animates the
+ * button's own width/height to match instead of snapping instantly.
+ * Callers own the prefers-reduced-motion decision themselves (pass
+ * `layout={!shouldReduceMotion}`), same as everywhere else in this
+ * codebase that checks it explicitly rather than through a global
+ * MotionConfig.
  */
-export function ButtonSecondary({ children, innerRef, className = '', inverted = false, type = 'button', ...props }) {
+export function ButtonSecondary({
+  children,
+  innerRef,
+  className = '',
+  inverted = false,
+  type = 'button',
+  layout = false,
+  transition,
+  ...props
+}) {
+  const Comp = layout ? motion.button : 'button';
   return (
-    <button
+    <Comp
       ref={innerRef}
       type={type}
-      className={`button-default inline-flex items-center gap-2xs rounded-large border bg-transparent px-m py-s ${
-        inverted ? 'border-button-inverted text-button-inverted' : 'border-button-primary-orange text-button-primary-orange'
+      layout={layout || undefined}
+      // Only a real prop on motion.button -- destructured out above so it
+      // never leaks onto a plain <button> (an invalid DOM attribute,
+      // React would warn) when layout is off.
+      transition={layout ? transition : undefined}
+      className={`button-default inline-flex cursor-pointer items-center gap-2xs rounded-large border bg-transparent px-m py-s transition-colors duration-150 ${
+        inverted
+          ? 'border-button-inverted text-button-inverted hover:border-capy-orange-50 hover:text-capy-orange-50'
+          : 'border-button-primary-orange text-button-primary-orange hover:border-capy-orange-500 hover:text-capy-orange-500'
       } ${className}`}
       {...props}
     >
       {children}
-    </button>
+    </Comp>
   );
 }
 
@@ -171,9 +264,22 @@ function NavSpacer() {
   );
 }
 
+// l (1024px, matches the `lg` breakpoint used elsewhere for the fluid card
+// widths) and up keep the scroll-collapsing full bar; below that (m/s/xs)
+// the nav defaults to the hamburger permanently, full stop -- no scroll
+// involved at all, see isLargeScreen's use in showFullBar below.
+const LARGE_SCREEN_QUERY = '(min-width: 1024px)';
+
 export default function Navigation({ sentinelRef, mainRef, activeSection }) {
   const [isOpen, setIsOpen] = useState(false);
   const [sentinelVisible, setSentinelVisible] = useState(true);
+  // Function initializer so the very first render (before any effect runs)
+  // already reflects the real viewport instead of defaulting to one branch
+  // and visibly flipping right after mount. `typeof window` guard is the
+  // usual SSR/no-DOM safety net, even though this app is client-rendered.
+  const [isLargeScreen, setIsLargeScreen] = useState(
+    () => typeof window !== 'undefined' && window.matchMedia(LARGE_SCREEN_QUERY).matches,
+  );
   const shouldReduceMotion = useReducedMotion();
 
   const toggleRef = useRef(null);
@@ -199,6 +305,17 @@ export default function Navigation({ sentinelRef, mainRef, activeSection }) {
     observer.observe(target);
     return () => observer.disconnect();
   }, [sentinelRef]);
+
+  // Keeps isLargeScreen in sync as the viewport crosses 1024px in either
+  // direction (window resize, device rotation, etc.) -- a MediaQueryList
+  // 'change' listener rather than a 'resize' listener, so this only fires
+  // right at the breakpoint crossing instead of on every pixel of drag.
+  useEffect(() => {
+    const mql = window.matchMedia(LARGE_SCREEN_QUERY);
+    const handleChange = (event) => setIsLargeScreen(event.matches);
+    mql.addEventListener('change', handleChange);
+    return () => mql.removeEventListener('change', handleChange);
+  }, []);
 
   const close = useCallback(() => {
     setIsOpen(false);
@@ -291,11 +408,15 @@ export default function Navigation({ sentinelRef, mainRef, activeSection }) {
   // user scrolls back up while the panel is still open, the panel (a fixed
   // inset-0 overlay) covers everything anyway, and the toggle needs to stay
   // mounted regardless of scroll position since it's the panel's own close
-  // control and first focus-trap stop.
-  const showFullBar = sentinelVisible && !isOpen;
+  // control and first focus-trap stop. isLargeScreen gates the whole thing
+  // on top of that: below 1024px (m/s/xs) this is false no matter what
+  // sentinelVisible says, so those breakpoints always fall through to the
+  // hamburger branch -- there's no scroll-triggered collapse to show off
+  // there in the first place.
+  const showFullBar = isLargeScreen && sentinelVisible && !isOpen;
 
   return (
-    <div className="hidden xl:block">
+    <div>
       {showFullBar ? (
         // `absolute`, not `fixed` -- it needs to scroll away WITH Section 1's
         // content (not stay pinned to the viewport) as the user scrolls, and
@@ -329,16 +450,20 @@ export default function Navigation({ sentinelRef, mainRef, activeSection }) {
         // lines up with the Download button's right edge above it.
         <div className="fixed inset-x-0 top-l z-50 h-14">
           <div className="flex h-full w-full items-center justify-end px-page-margin-x">
-            <button
-              ref={toggleRef}
-              type="button"
-              onClick={handleToggleClick}
-              aria-expanded={isOpen}
-              aria-label={isOpen ? 'Close navigation' : 'Open navigation'}
-              className="flex h-14 w-14 items-center justify-center rounded-full bg-button-primary-orange text-button-inverted shadow-[0_8px_16px_rgba(0,0,0,0.08)]"
-            >
-              {isOpen ? <MaterialIcon name="close" size={32} /> : <MaterialIcon name="menu" size={32} />}
-            </button>
+            {isOpen ? (
+              <CloseButton innerRef={toggleRef} onClick={handleToggleClick} label="Close navigation" aria-expanded={isOpen} />
+            ) : (
+              <button
+                ref={toggleRef}
+                type="button"
+                onClick={handleToggleClick}
+                aria-expanded={isOpen}
+                aria-label="Open navigation"
+                className="flex h-14 w-14 cursor-pointer items-center justify-center rounded-full bg-button-primary-orange text-button-inverted transition-colors duration-150 hover:bg-capy-orange-500 shadow-[0_8px_16px_rgba(0,0,0,0.08)]"
+              >
+                <MaterialIcon name="menu" size={32} />
+              </button>
+            )}
           </div>
         </div>
       )}

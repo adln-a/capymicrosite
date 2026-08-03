@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react';
 import { motion, useReducedMotion, useScroll, useTransform } from 'framer-motion';
+import AccessibleHighlightText from './AccessibleHighlightText.jsx';
 import greenScribble from '../assets/Green-Scribble.svg';
 import speechBubbleWhiteEllipse1 from '../assets/Speech-Bubble-White-Ellipse1.svg';
 import speechBubbleWhiteEllipse2 from '../assets/Speech-Bubble-White-Ellipse2.svg';
@@ -207,20 +208,23 @@ function shuffle(array) {
   return result;
 }
 
-function RealProblemHighlight() {
+function RealProblemHighlight({ children }) {
   // Same span-wrap technique as the other scribble highlights, reusing
-  // Green-Scribble.svg (already used for "FOUR" in Section 1) at the same
-  // w-full/hug-the-word sizing that asset already uses there, rather than
-  // a fixed pixel size.
+  // Green-Scribble.svg (already used for "FOUR" in Section 1). Kept at its
+  // own native 138x26 (not stretched to the wrapped words' rendered width).
+  // top: var(--scribble-offset-default) is the shared offset used across
+  // most of the underline/loop scribbles -- a fixed 10px pull-up from the
+  // span's own line-box bottom, same value everywhere.
   return (
     <span className="relative z-0 inline-block whitespace-nowrap">
       <img
         src={greenScribble}
         alt=""
         aria-hidden="true"
-        className="pointer-events-none absolute left-1/2 top-full -z-10 h-auto w-full max-w-none -translate-x-1/2 -translate-y-1/2"
+        className="pointer-events-none absolute left-1/2 -z-10 max-w-none -translate-x-1/2"
+        style={{ width: '138px', height: '26px', top: 'var(--scribble-offset-default)' }}
       />
-      <span className="relative">REAL PROBLEM</span>
+      <span className="heading-2-accent relative">{children}</span>
     </span>
   );
 }
@@ -277,14 +281,7 @@ function SpeechBubbleContent() {
               heading-2's own line-height already spaces wrapped lines
               correctly with no extra gap needed. */}
           <h2 className="heading-2 text-heading-default">
-            {/* Same VoiceOver nested-"items" issue as Section 5's
-                ScribbleHighlight and Section 1's FourHighlight -- same
-                fix: aria-hidden the visual run, sr-only carries the one
-                flat string assistive tech reads. */}
-            <span aria-hidden="true">
-              we learned what the <RealProblemHighlight /> was.
-            </span>
-            <span className="sr-only">we learned what the REAL PROBLEM was.</span>
+            <AccessibleHighlightText before="we learned what the " highlight={<RealProblemHighlight>REAL PROBLEM</RealProblemHighlight>} after=" was." />
           </h2>
         </div>
       </div>

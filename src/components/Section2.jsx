@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef, useState } from 'react';
+import { useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { motion, useReducedMotion, useScroll, useTransform } from 'framer-motion';
 import ScrollSection from './ScrollSection.jsx';
 import bgScene1 from '../assets/Desktop-BG--Frame-2.svg';
@@ -81,7 +81,8 @@ function MatterHighlight() {
         src={pinkScribble}
         alt=""
         aria-hidden="true"
-        className="pointer-events-none absolute left-1/2 top-[120%] -z-10 h-auto max-w-none -translate-x-1/2 -translate-y-1/2"
+        className="pointer-events-none absolute left-1/2 -z-10 h-auto max-w-none -translate-x-1/2"
+        style={{ top: 'var(--scribble-offset-tight)' }}
       />
       <span className="relative">matter</span>
     </span>
@@ -157,19 +158,6 @@ function Scene3Content() {
         living on less often face barriers that are invisible to most:
       </p>
 
-      {/* Rotate step of 4deg isn't in Tailwind's default scale (0,1,2,3,6,
-          12...), so this needs the arbitrary-value form. There is no
-          authored gap between Card 2 and this card -- the visible seam is
-          an emergent side effect of Card 2 being unrotated and this card's
-          own rotate(-1.5deg) (default center transform-origin). */}
-      <img
-        src={greenScotchTape}
-        alt=""
-        aria-hidden="true"
-        className="pointer-events-none absolute origin-top-left rotate-[4deg] mix-blend-multiply"
-        style={{ width: '133px', height: '36px', left: '510px', top: '-21.5px' }}
-      />
-
       {/* z-0 gives this block its own stacking context so the scribble's
           -z-10 stays scoped inside it and paints behind the text (same
           technique as MatterHighlight/FourHighlight, just applied to the
@@ -195,6 +183,53 @@ function Scene3Content() {
   );
 }
 
+// Extracted out of Scene3Content so it isn't nested inside the card's own
+// opacity-animating wrapper -- mix-blend-multiply can't correctly composite
+// against an ancestor whose opacity/transform is actively tweening or even
+// just statically present (same isolated-compositing-layer issue as
+// Section 1/6's tapes), and Scene 3's own crossfade-in is exactly that kind
+// of tween. Rendered as a sibling instead, driven by the same opacity value
+// so it still fades in in lockstep with the rest of the card.
+//
+// The card itself keeps its own default-center-origin rotate(-1.5deg)
+// completely unchanged (it's the tape's SIBLING here, not its ancestor, so
+// the card's own transform can't isolate the tape) -- but since the tape is
+// no longer riding along with that rotation as a nested child, it needs its
+// own compensated position + rotation to land in exactly the same on-screen
+// spot: `rotate` is the composed angle (originally 4deg nested inside a
+// -1.5deg card == 2.5deg standalone), and `left`/`top` are the original
+// (510, -21.5) offset rotated by -1.5deg around the CARD'S OWN CENTER
+// (its default transform-origin -- unlike Section 1/8/13/14's boxes, this
+// card was never given origin-top-left) -- see scene3TapePosition below,
+// computed from the card's actual rendered size (via scene3Width/
+// scene3Height) rather than assumed, since it's not a fixed height.
+function Scene3Tape({ opacity, left, top, rotate }) {
+  return (
+    <motion.img
+      src={greenScotchTape}
+      alt=""
+      aria-hidden="true"
+      className="pointer-events-none absolute origin-top-left mix-blend-multiply"
+      style={{ width: '133px', height: '36px', left: `${left}px`, top: `${top}px`, rotate: `${rotate}deg`, opacity }}
+    />
+  );
+}
+
+// Rotates point (x, y) by angleDeg (CSS's clockwise-positive convention)
+// around (cx, cy), returning the new top-left position for an element that
+// keeps the same own-rotation origin-top-left afterward.
+function rotatePointAround(x, y, cx, cy, angleDeg) {
+  const rad = (angleDeg * Math.PI) / 180;
+  const cos = Math.cos(rad);
+  const sin = Math.sin(rad);
+  const dx = x - cx;
+  const dy = y - cy;
+  return {
+    x: cx + dx * cos - dy * sin,
+    y: cy + dx * sin + dy * cos,
+  };
+}
+
 export default function Section2() {
   const prefersReducedMotion = useReducedMotion();
 
@@ -204,6 +239,7 @@ export default function Section2() {
   const scene3Ref = useRef(null);
   const [scene2Height, setScene2Height] = useState(0);
   const [scene3Height, setScene3Height] = useState(0);
+  const [scene3Width, setScene3Width] = useState(0);
   const [cardGap, setCardGap] = useState(0);
 
   const { scrollYProgress } = useScroll({
@@ -220,6 +256,7 @@ export default function Section2() {
     function measure() {
       setScene2Height(scene2Ref.current?.offsetHeight ?? 0);
       setScene3Height(scene3Ref.current?.offsetHeight ?? 0);
+      setScene3Width(scene3Ref.current?.offsetWidth ?? 0);
       setCardGap(stackRef.current ? parseFloat(getComputedStyle(stackRef.current).rowGap) || 0 : 0);
     }
     measure();
@@ -271,6 +308,16 @@ export default function Section2() {
   // asked for and would look odd.
   const holeColumnColor = useTransform(scrollYProgress, [TRANSITION_1_START, TRANSITION_1_END], ['#1E79AE', '#F3EEE8']);
 
+  // Scene 3's card rotates -1.5deg around its own CENTER (its default
+  // transform-origin -- it was never given origin-top-left), so the tape's
+  // compensated position depends on the card's actual rendered size, not a
+  // guessed constant -- see Scene3Tape's own comment for why this
+  // compensation is needed at all.
+  const scene3TapePosition = useMemo(
+    () => rotatePointAround(510, -21.5, scene3Width / 2, scene3Height / 2, -1.5),
+    [scene3Width, scene3Height],
+  );
+
   if (prefersReducedMotion) {
     // No pin, no scroll-scrub: all three cards stacked in normal flow,
     // existing whileInView fade-up per card, static background. Frame-2C
@@ -297,7 +344,20 @@ export default function Section2() {
               <Scene2Content />
             </div>
           </ScrollSection>
+          {/* Reduced motion: ScrollSection is inert here (no animation is
+              ever applied under prefers-reduced-motion), so there's no
+              actively-tweening ancestor to isolate the tape from anything
+              -- it can stay nested exactly like the original design,
+              rotating together with the card as one rigid unit, no
+              compensation needed. */}
           <ScrollSection className="relative flex w-[640px] max-w-full rotate-[-1.5deg] flex-col items-center justify-start gap-s rounded-small bg-bg-white p-[40px]">
+            <img
+              src={greenScotchTape}
+              alt=""
+              aria-hidden="true"
+              className="pointer-events-none absolute origin-top-left rotate-[4deg] mix-blend-multiply"
+              style={{ width: '133px', height: '36px', left: '510px', top: '-21.5px' }}
+            />
             <Scene3Content />
           </ScrollSection>
         </div>
@@ -359,13 +419,28 @@ export default function Section2() {
               </div>
             </motion.div>
 
-            <motion.div
-              ref={scene3Ref}
-              style={{ opacity: scene3Opacity }}
-              className="relative flex w-[640px] max-w-full rotate-[-1.5deg] flex-col items-center justify-start gap-s rounded-small bg-bg-white p-[40px]"
-            >
-              <Scene3Content />
-            </motion.div>
+            {/* No authored gap between Card 2 and this card -- the visible
+                seam is an emergent side effect of Card 2 being unrotated
+                and this card's own rotate(-1.5deg) (default center
+                transform-origin). This wrapper deliberately carries NO
+                transform of its own (see Scene3Tape's comment on why) --
+                the card keeps its rotate directly on itself, exactly as
+                before. */}
+            <div className="relative w-[640px] max-w-full">
+              <motion.div
+                ref={scene3Ref}
+                style={{ opacity: scene3Opacity, rotate: -1.5 }}
+                className="w-full origin-center flex flex-col items-center justify-start gap-s rounded-small bg-bg-white p-[40px]"
+              >
+                <Scene3Content />
+              </motion.div>
+              <Scene3Tape
+                opacity={scene3Opacity}
+                left={scene3TapePosition.x}
+                top={scene3TapePosition.y}
+                rotate={2.5}
+              />
+            </div>
           </motion.div>
         </div>
       </div>

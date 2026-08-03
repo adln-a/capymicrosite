@@ -1,4 +1,5 @@
 import ScrollSection from './ScrollSection.jsx';
+import AccessibleHighlightText from './AccessibleHighlightText.jsx';
 import bgFrame1 from '../assets/Desktop-BG--Frame-1.svg';
 import fourScribble from '../assets/Green-Scribble.svg';
 
@@ -26,55 +27,96 @@ function PinkPunchHoles() {
   );
 }
 
+// Which of the 18 white-card punch holes is visible starting at which
+// breakpoint. Indices are hand-picked (not a formula) so each tier is an
+// evenly-spread subset of the next: 8 always-visible holes at indices
+// [0,2,5,7,10,12,15,17], +3 more from sm (indices 3,8,13 -> 11 total),
+// +3 more from md (indices 1,9,16 -> 14 total), +4 more from lg (indices
+// 4,6,11,14 -> all 18). See WhitePunchHoles() below for why this needs to
+// scale down at all.
+const HOLE_VISIBILITY = [
+  '', // 0
+  'hidden md:block', // 1
+  '', // 2
+  'hidden sm:block', // 3
+  'hidden lg:block', // 4
+  '', // 5
+  'hidden lg:block', // 6
+  '', // 7
+  'hidden sm:block', // 8
+  'hidden md:block', // 9
+  '', // 10
+  'hidden lg:block', // 11
+  '', // 12
+  'hidden sm:block', // 13
+  'hidden lg:block', // 14
+  '', // 15
+  'hidden md:block', // 16
+  '', // 17
+];
+
 function WhitePunchHoles() {
   // Normal flex-flow child now, not absolutely positioned -- it's the first
   // item in the same flex column as the paragraph text, so the box's own
   // top padding and the column's gap-[24px] space it out naturally. mx-[-40px]
-  // exactly cancels the parent's pr-[40px]/pl-[40px], and w-full makes this
-  // row 100% of the parent's (padding-inset) content width -- together they
-  // pull it back out to the box's full 800px outer width, bleeding past the
-  // padding on both sides while the paragraphs below stay padded normally.
-  // 18 holes at 20px with 24px gaps = 768px, and 800px box width minus
-  // px-s (16px) on each side = 768px too -- the 16px side inset isn't
-  // given explicitly, but the math only works out exactly at that value,
-  // so it's very likely what Figma actually used.
+  // exactly cancels the parent's pr-[40px]/pl-[40px]. IMPORTANT: this row is
+  // a flex ITEM inside that column, and the column is `items-center` (not
+  // `items-stretch`), so it does NOT get 100% width for free -- without an
+  // explicit width it shrinks to its own content (18 holes = 360px) and
+  // `justify-between` has no extra space to distribute, collapsing all the
+  // holes together instead of spreading them. w-[calc(100%+80px)] fixes
+  // that: 100% resolves against the column's own width (the box's
+  // padding-inset content width), and +80px cancels back out the
+  // mx-[-40px] bleed on both sides, landing this row at the box's full
+  // outer width -- fluid with the box itself, not a fixed number.
+  // justify-between (not a fixed gap-[24px]) -- the box's own width is now
+  // fluid, so the fixed 20px holes are spaced evenly across whatever width
+  // is actually available rather than at a hardcoded gap that only ever
+  // fit one constant box width.
+  //
+  // Below the md breakpoint the box itself keeps shrinking (down to real
+  // phone widths, well under the 640px "sm" tier) -- packing all 18 holes
+  // that far down would just cram them shoulder-to-shoulder instead of
+  // staying proportional, and eventually overflow again. So not every
+  // hole is visible at every width: 8 below 640px, 11 from 640-768px, 14
+  // from 768-1024px, all 18 from 1024px+ -- a gradual, roughly-even step up
+  // rather than a steep jump. Each tier's holes are a hand-picked, evenly
+  // spread SUBSET of the next tier's (visible ones stay visible as the row
+  // grows, new ones fill the gaps between them) rather than holes just
+  // being chopped off one end. HOLE_VISIBILITY[i] gives hole i's minimum
+  // breakpoint -- '' means always visible (part of the base 8).
+  // justify-between then spaces however many are currently visible evenly
+  // across the row either way.
   return (
-    <div
-      aria-hidden="true"
-      className="mx-[-40px] flex items-center justify-start gap-[24px] px-s"
-    >
-      {Array.from({ length: 18 }).map((_, i) => (
-        <span key={i} className="h-5 w-5 shrink-0 rounded-full bg-bg-linen-dark" />
+    <div aria-hidden="true" className="mx-[-40px] flex w-[calc(100%+80px)] items-center justify-between px-s">
+      {HOLE_VISIBILITY.map((visibleFrom, i) => (
+        <span key={i} className={`h-5 w-5 shrink-0 rounded-full bg-bg-linen-dark ${visibleFrom}`} />
       ))}
     </div>
   );
 }
 
-function FourHighlight() {
+function FourHighlight({ children }) {
   // Same stacking pattern as before: z-0 on this wrapping span gives it its
   // own stacking context, so -z-10 on the image is scoped safely within it
   // (rather than escaping to some ancestor context, as bit us with the nav
   // shape earlier).
   //
-  // Sizing/position: w-full (not the image's own natural 138px width) ties
-  // the scribble's width to the span's own width, which is set purely by
-  // the "FOUR" text content (the image is absolute, so it can't influence
-  // that width itself) -- so it can never overflow into "over"/"times" on
-  // either side, and stays correctly sized if heading-1 changes size at a
-  // different breakpoint. h-auto preserves the asset's own aspect ratio at
-  // that width. top-full + a small upward translate sits it just below the
-  // word with a slight overlap into the letters' bottoms, rather than
-  // centered on the line (which is what covered the neighboring words
-  // before).
+  // Sizing/position: rendered at Green-Scribble.svg's own native size (no
+  // w-full stretch). top: var(--scribble-offset-default) is the shared
+  // offset used across most of the underline/loop scribbles -- a fixed
+  // 10px pull-up from the span's own line-box bottom, same value
+  // everywhere rather than a per-font-metric calculation.
   return (
     <span className="relative z-0 inline-block whitespace-nowrap">
       <img
         src={fourScribble}
         alt=""
         aria-hidden="true"
-        className="pointer-events-none absolute left-1/2 top-full -z-10 h-auto max-w-none -translate-x-1/2 -translate-y-1/2"
+        className="pointer-events-none absolute left-1/2 -z-10 h-auto max-w-none -translate-x-1/2"
+        style={{ top: 'var(--scribble-offset-default)' }}
       />
-      <span className="relative">FOUR</span>
+      <span className="heading-1-accent relative">{children}</span>
     </span>
   );
 }
@@ -108,63 +150,78 @@ export default function Section1({ sectionRef }) {
       <div className="relative flex w-full flex-col items-center px-page-margin-x">
         {/* Pink box (heading). Animates in first -- this ScrollSection uses
             the wrapper's own default transition (no delay). */}
-        <ScrollSection className="flex w-[800px] max-w-full min-h-[200px] flex-wrap items-center justify-center gap-s rounded-medium bg-bg-pink p-s origin-top-left rotate-1">
+        <ScrollSection className="flex w-[800px] max-w-full min-h-[200px] flex-wrap items-center justify-center gap-s rounded-medium bg-bg-pink p-s origin-top-left rotate-1 md:w-[var(--width-card-content-md)] lg:w-[var(--width-card-content-lg)]">
           <PinkPunchHoles />
           <h1 className="heading-1 flex-1 px-s text-center text-heading-red">
-            {/* FourHighlight's nested span + absolutely-positioned
-                underline image reads to VoiceOver as separate nested
-                "items" inside the heading (each announced at its own DOM
-                depth), even though the image itself is aria-hidden --
-                same issue as Section 5's ScribbleHighlight, same fix:
-                aria-hidden the whole visual run, sr-only carries the one
-                flat string assistive tech actually reads. */}
-            <span aria-hidden="true">
-              Children from low-income families in Singapore are over <FourHighlight /> times more
-              likely to underperform in school compared to their wealthier peers*
-            </span>
-            <span className="sr-only">
-              Children from low-income families in Singapore are over FOUR times more likely to
-              underperform in school compared to their wealthier peers*
-            </span>
+            <AccessibleHighlightText
+              before="Children from low-income families in Singapore are over "
+              highlight={<FourHighlight>FOUR</FourHighlight>}
+              after=" times more likely to underperform in school compared to their wealthier peers*"
+            />
           </h1>
         </ScrollSection>
 
         {/* White box (body) + the tape, staggered ~180ms after the pink
-            box. The tape is a child of this same ScrollSection (not a
-            separate animated element) so it animates in with the box it's
-            visually attached to, on the same timing. Directly below the
-            pink box -- no gap value was given between them, so the two sit
-            flush; the slight visual overlap comes from their opposing
-            1deg/-1deg rotations. */}
-        <ScrollSection
-          transition={{ duration: 0.6, ease: 'easeOut', delay: WHITE_BOX_DELAY }}
-          className={`relative w-[800px] max-w-full origin-top-left -rotate-1 rounded-medium bg-bg-white pt-[16px] pr-[40px] pb-[40px] pl-[40px] ${CARD_SHADOW}`}
-        >
-          <span
-            aria-hidden="true"
-            className="absolute origin-top-left rotate-[10deg] bg-prelude-300 mix-blend-multiply"
-            style={{ width: '107px', height: '38px', left: '710px', top: '-28px' }}
-          />
+            box. Directly below the pink box -- no gap value was given
+            between them, so the two sit flush; the slight visual overlap
+            comes from their opposing 1deg/-1deg rotations. */}
+        <div className="relative w-[800px] max-w-full md:w-[var(--width-card-content-md)] lg:w-[var(--width-card-content-lg)]">
+          <ScrollSection
+            transition={{ duration: 0.6, ease: 'easeOut', delay: WHITE_BOX_DELAY }}
+            className={`w-full origin-top-left -rotate-1 rounded-medium bg-bg-white pt-[16px] pr-[40px] pb-[40px] pl-[40px] ${CARD_SHADOW}`}
+          >
+            <div className="flex flex-col items-center gap-[24px]">
+              <WhitePunchHoles />
+              <p className="body-paragraph text-center text-body-default">
+                Not because they&rsquo;re any less capable, but because
+                they&rsquo;re starting from further behind, with fewer chances to
+                catch up.
+              </p>
+              <p className="body-paragraph text-center text-body-default">
+                Without meaningful support, the gap widens. Poor grades lead to
+                fewer opportunities. Fewer opportunities lead to lower-paying
+                jobs. And the cycle of inequality continues, generation after
+                generation.
+              </p>
+              <p className="caption text-center text-body-default">
+                *Organisation for Economic Cooperation and Development (OECD)
+                Report 2016
+              </p>
+            </div>
+          </ScrollSection>
 
-          <div className="flex flex-col items-center gap-[24px]">
-            <WhitePunchHoles />
-            <p className="body-paragraph text-center text-body-default">
-              Not because they&rsquo;re any less capable, but because
-              they&rsquo;re starting from further behind, with fewer chances to
-              catch up.
-            </p>
-            <p className="body-paragraph text-center text-body-default">
-              Without meaningful support, the gap widens. Poor grades lead to
-              fewer opportunities. Fewer opportunities lead to lower-paying
-              jobs. And the cycle of inequality continues, generation after
-              generation.
-            </p>
-            <p className="caption text-center text-body-default">
-              *Organisation for Economic Cooperation and Development (OECD)
-              Report 2016
-            </p>
-          </div>
-        </ScrollSection>
+          {/* Rendered as its own independently-animated sibling rather than
+              nested inside the card's ScrollSection -- a mix-blend-mode
+              element whose ANCESTOR has opacity/transform actively tweening
+              renders with the wrong, un-blended flat color for a frame or
+              two (same isolated-compositing-layer issue as Section 6's
+              tape). Same transition/delay as the card keeps them visually
+              in sync. IMPORTANT: this wrapper (`.relative w-[800px]
+              max-w-full` above) deliberately carries NO transform of its
+              own -- a static rotate on a shared ancestor would ALSO wall
+              the tape off from blending with whatever's behind/around the
+              box (the pink box above, in this case), same isolation bug,
+              just permanent instead of transient. So instead of inheriting
+              the box's -1deg tilt via a shared wrapper, the tape carries
+              the FULL composed rotation itself (originally 10deg on the
+              tape nested inside a -1deg box == 9deg total on an
+              independent sibling). `right` (not `left`): the wrapper's own
+              width is now fluid (640px-800px across breakpoints); the
+              original left:709.4px was only ever correct at the old
+              constant 800px width, and became a fixed distance from the
+              LEFT edge that increasingly overshot past the box's own
+              (now-narrower) right edge as the box shrank -- anchoring from
+              the right edge instead keeps the tape pinned the same ~16.4px
+              past the box's corner (its original, intentional overhang
+              into the pink box's seam) at any width in the fluid range. */}
+          <ScrollSection
+            as="span"
+            transition={{ duration: 0.6, ease: 'easeOut', delay: WHITE_BOX_DELAY }}
+            aria-hidden="true"
+            className="pointer-events-none absolute origin-top-left rotate-[9deg] bg-prelude-300 mix-blend-multiply"
+            style={{ width: '107px', height: '38px', right: '-16.4px', top: '-40.39px' }}
+          />
+        </div>
       </div>
     </section>
   );

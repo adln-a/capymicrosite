@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import ScrollSection from './ScrollSection.jsx';
-import { ButtonTertiary } from './Navigation.jsx';
+import AccessibleHighlightText from './AccessibleHighlightText.jsx';
+import { ButtonPrimary } from './Navigation.jsx';
 import { MaterialIcon } from './icons.jsx';
 import { NODE_GRAPHICS, CONNECTOR_GRAPHICS, CONNECTOR_DOTS } from './section8ChartData.js';
 import bgWhite from '../assets/Desktop-BGWhite--Frame-8.svg';
@@ -181,12 +182,12 @@ function EnvelopeCard({ innerRef, node, footer }) {
   const bodyColor = node.textVariant === 'inverted' ? 'text-body-inverted' : 'text-body-default';
   const headingColor = node.textVariant === 'inverted' ? 'text-heading-inverted' : 'text-heading-default';
   return (
-    <div ref={innerRef} className="flex min-h-dvh w-full flex-col items-center justify-center gap-xs py-3xl">
+    <div ref={innerRef} className="flex min-h-dvh w-full flex-col items-center justify-center gap-m py-3xl">
       <div className="flex w-[480px] max-w-full flex-col items-start">
         <CardBorderTop color={node.colorVar} />
         <div className={`w-full ${node.bg}`}>
           <ScrollSection className="flex w-full flex-col items-start gap-s pb-l pl-l pr-l pt-s">
-            <h2 className={`heading-3 self-stretch ${headingColor}`}>{node.cardTitle}</h2>
+            <h3 className={`heading-3 self-stretch ${headingColor}`}>{node.cardTitle}</h3>
             {node.body.map((paragraph, i) => (
               <p key={i} className={`body-paragraph self-stretch ${bodyColor}`}>
                 {paragraph}
@@ -232,7 +233,7 @@ export default function Section8() {
   };
 
   return (
-    <section id="section-8" className="relative w-full bg-bg-light-blue px-page-margin-x py-3xl">
+    <section id="section-8" className="relative w-full bg-bg-lightest-blue px-page-margin-x py-3xl">
       <div className="relative mx-auto grid w-full max-w-[1340px]">
         {/* Background artwork: a fixed-size blob (smaller than the section
             it sits in, by design), part of the backdrop rather than page
@@ -264,16 +265,52 @@ export default function Section8() {
           <div className="z-10 flex flex-1 flex-col items-center">
             <div ref={introRef} className="flex min-h-dvh w-full items-center justify-center py-3xl">
               <div className="flex w-[400px] max-w-full flex-col items-center">
-                <ScrollSection className="relative flex origin-top-left rotate-3 flex-col items-center gap-m self-stretch bg-bg-pink p-l">
-                  <span
+                <div className="relative self-stretch">
+                  <ScrollSection className="relative flex w-full origin-top-left rotate-3 flex-col items-center gap-m bg-bg-pink p-l">
+                    {/* Even a plain nested <span> (no image, no
+                        Highlight component) still reads to VoiceOver as a
+                        separate "item" inside the heading -- confirmed via
+                        screen-reader testing, announced as "heading level
+                        2, 2 items ... level 1 MANY HANDS level 1". Same
+                        fix as the scribble highlights: aria-hidden the
+                        visual run, sr-only carries the one flat string. */}
+                    <h2 className="heading-3 self-stretch text-center text-heading-red">
+                      <AccessibleHighlightText
+                        before="We learned that every family’s journey is touched by "
+                        highlight={<span className="heading-3-accent">many hands</span>}
+                      />
+                    </h2>
+                  </ScrollSection>
+
+                  {/* Rendered as its own independently-animated sibling
+                      rather than nested inside the card's ScrollSection --
+                      a mix-blend-mode element whose ancestor has opacity/
+                      transform actively tweening (or even just statically
+                      present) renders with the wrong, un-blended flat color
+                      (same isolated-compositing-layer issue as Section 6's
+                      tape). This wrapper deliberately carries NO transform
+                      of its own -- a static rotate on a shared ancestor
+                      would ALSO wall the tape off from blending with
+                      whatever's behind/around the card, same isolation bug,
+                      just permanent instead of transient. So the card keeps
+                      its own rotate-3 directly on itself (it's the tape's
+                      SIBLING here, not its ancestor). left-1/2/-translate-x-1/2
+                      centers the tape on the container regardless of its
+                      actual rendered width (rather than a fixed left px
+                      value tied to one specific width). */}
+                  {/* bg-chateau-green-600 directly, not the shared
+                      bg-bg-bright-green token -- that token now points to
+                      the darker chateau-green-a11y shade (for text-
+                      contrast reasons elsewhere), but this tape is purely
+                      decorative (aria-hidden), so there's no contrast
+                      reason for it to have shifted from its original -600. */}
+                  <ScrollSection
+                    as="span"
                     aria-hidden="true"
-                    className="pointer-events-none absolute origin-top-left -rotate-[7deg] bg-bg-bright-green mix-blend-multiply"
-                    style={{ width: '127px', height: '42px', left: '138px', top: '0px' }}
+                    className="pointer-events-none absolute left-1/2 origin-top-left -translate-x-1/2 rotate-[-4deg] bg-chateau-green-600 mix-blend-multiply"
+                    style={{ width: '127px', height: '42px', top: '-8px' }}
                   />
-                  <h2 className="heading-3 self-stretch text-center text-heading-red">
-                    We learned that every family&rsquo;s journey is touched by <span className="uppercase">many hands</span>
-                  </h2>
-                </ScrollSection>
+                </div>
 
                 <ScrollSection
                   transition={{ duration: 0.6, ease: 'easeOut', delay: 0.15 }}
@@ -298,12 +335,18 @@ export default function Section8() {
                   innerRef={(el) => {
                     if (el) cardRefs.current.set(node.key, el);
                   }}
+                  // ButtonPrimary inverted (white pill, orange text/icon),
+                  // not ButtonTertiary -- capy-orange-a11y as plain text
+                  // on this section's own bg-bg-lightest-blue only reaches
+                  // ~3.3:1, but on this button's own white surface it's
+                  // back to a clean 4.52:1, since the pill isolates the
+                  // text from the page background behind it.
                   footer={
                     isLast && (
-                      <ButtonTertiary onClick={scrollToIntro}>
+                      <ButtonPrimary inverted onClick={scrollToIntro}>
                         Return to the beginning
                         <MaterialIcon name="refresh" />
-                      </ButtonTertiary>
+                      </ButtonPrimary>
                     )
                   }
                 />

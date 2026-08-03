@@ -1,5 +1,5 @@
 @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;800&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Just+Me+Again+Down+Here&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=block');
 @import "tailwindcss";
@@ -16,11 +16,43 @@
   --font-ibm-plex-mono: 'IBM Plex Mono', monospace;
   --font-handwriting: 'Just Me Again Down Here', cursive;
 
+  --font-weight-space-grotesk-medium: 500;
   --font-weight-space-grotesk-bold: 700;
+  --font-weight-mono-regular: 400;
   --font-weight-mono-medium: 500;
   --font-weight-mono-bold: 800;
 
   --tracking-none: 0em;
+  --tracking-wide: 0.1em;
+
+  /* Shared vertical offsets for the scribble-highlight underline images
+     (Section 1/2/5/6/7/10/11/13/16) -- non-reserved namespace, consumed
+     only via var() in each highlight's inline `top` style, same as
+     --type-*. calc(100% - Npx) pulls the scribble up from the wrapping
+     span's line-box bottom edge by Npx, landing it flush under the text
+     instead of leaving a gap from the font's own line-height leading (see
+     Section 11's RealProblemHighlight comment for the full explanation). */
+  --scribble-offset-tight: calc(100% - 5px);
+  --scribble-offset-default: calc(100% - 10px);
+
+  /* Fluid card-content max-width, first breakpoint of the responsive
+     rework (pilot: Section 1) -- two chained clamp() segments, each a
+     linear interpolation solved to land exactly on its own pair of
+     anchor points, so the width ramps smoothly the whole way instead of
+     snapping at each breakpoint:
+       - below 768px (mobile): cards stay max-w-full (100%, unchanged --
+         already responsive, no token needed for this range).
+       - 768px-1024px (md): 640px -> 720px.
+       - 1024px-1440px (lg): 720px -> 800px (matches -md's own endpoint,
+         so there's no jump at the 1024px seam).
+     Both clamp()s naturally stay pinned at their own upper bound past
+     their range (720px above 1024 for -md, 800px above 1440 for -lg), so
+     applying BOTH via `md:w-[var(--width-card-content-md)]
+     lg:w-[var(--width-card-content-lg)]` at the call site lets the later,
+     more specific breakpoint's rule simply take over at each seam --
+     no separate xl override needed either. */
+  --width-card-content-md: clamp(640px, 400px + 31.25vw, 720px);
+  --width-card-content-lg: clamp(720px, 523.0769px + 19.2308vw, 800px);
 
   /* md (768px) and lg (1024px) stay Tailwind defaults; xl is redefined to
      1440px (from the default 1280px) so there's no in-between layout state
@@ -55,6 +87,13 @@
   --color-capy-orange-800: #9D150F;
   --color-capy-orange-900: #7E1510;
   --color-capy-orange-950: #440606;
+  /* Not one of the regular 50-950 steps -- a custom shade between 600
+     (4.24:1 against white, still short of WCAG AA) and 700 (5.95:1, but
+     noticeably deeper than this design wants). #E72307 lands at 4.52:1,
+     the closest point to 4.5:1 that still clears it, staying much closer
+     to 400/600's original warmth than 700 would. Same approach as
+     --color-chateau-green-a11y above. */
+  --color-capy-orange-a11y: #E72307;
 
   --color-pomegranate-50: #FFF3F1;
   --color-pomegranate-100: #FFE3DF;
@@ -139,6 +178,12 @@
   --color-chateau-green-800: #0A7142;
   --color-chateau-green-900: #0A5D39;
   --color-chateau-green-950: #00341E;
+  /* Not one of the regular 50-950 steps -- a custom shade between 700
+     (4.06:1 against white, still short of WCAG AA) and 800 (6.08:1, but
+     visibly darker than this design wants). #06874C lands at 4.59:1,
+     clearing 4.5:1 with a small safety margin while staying much closer
+     to 600's original brightness than 800 is. */
+  --color-chateau-green-a11y: #06874C;
 
   --color-genoa-50: #EDFFFB;
   --color-genoa-100: #C2FFF3;
@@ -176,19 +221,44 @@
   --color-everglade-900: #183C2B;
   --color-everglade-950: #0D2118;
 
-  --color-primary-orange: var(--color-capy-orange-400);
+  /* capy-orange-a11y, not -400: -400 (#FF6E40) only reaches 2.78:1 against
+     white in either direction (white text on orange, or orange text on
+     white/pink) -- fails WCAG AA at any text size. -a11y (#E72307) reaches
+     4.52:1, clearing AA. This is the site's actual primary/brand orange, so
+     every derived token (button-primary-orange, bg-orange, body-orange,
+     border-orange) shifts with it in one place. */
+  --color-primary-orange: var(--color-capy-orange-a11y);
   --color-primary-teal: var(--color-genoa-700);
 
   --color-heading-default: var(--color-black-900);
-  --color-heading-red: var(--color-pomegranate-600);
+  /* pomegranate-700, not -600: -600 (#EE3A23) only reaches 3.25:1 against
+     pink (#FFE1E3, the harder of the two backgrounds this sits on) and
+     3.99:1 against white -- fails WCAG AA at any text size in either
+     case. -700 (#C8220D) reaches 4.64:1 against pink and 5.69:1 against
+     white. Unlike the orange/green fixes, no synthetic in-between shade
+     was needed here -- nothing lighter than -700 actually clears 4.5:1
+     against pink, so -700 is already close to the tightest fit. */
+  --color-heading-red: var(--color-pomegranate-700);
   --color-heading-blue: var(--color-allports-600);
   --color-heading-inverted: var(--color-black-0);
   --color-body-default: var(--color-black-700);
-  --color-body-disabled: var(--color-black-400);
+  /* black-600, not -400: -400 (#888888) only reaches 2.89:1 against the
+     pink form background Section 18 uses it on -- fails WCAG AA. -600
+     (#5D5D5D) reaches 5.37:1, the lightest step that actually clears
+     4.5:1 (black-500 falls just short, at 4.22:1), while staying visibly
+     lighter than body-default (black-700) so placeholder/unselected
+     states still read as distinct from real filled-in text. */
+  --color-body-disabled: var(--color-black-600);
   --color-body-inverted: var(--color-black-0);
   --color-body-orange: var(--color-primary-orange);
-  --color-body-error: var(--color-pomegranate-600);
-  --color-body-success: var(--color-chateau-green-600);
+  /* Same pomegranate-700 fix as --color-heading-red above. */
+  --color-body-error: var(--color-pomegranate-700);
+  /* chateau-green-a11y, not -600: chateau-green-600 (#00AC5C) only
+     reaches 2.98:1 against white in either direction (green text on
+     white, or white text on a green background) -- fails WCAG AA at any
+     text size. The custom -a11y shade reaches 4.59:1, clearing AA while
+     staying much closer to -600's original brightness than -800 would. */
+  --color-body-success: var(--color-chateau-green-a11y);
 
   --color-button-primary-orange: var(--color-primary-orange);
   --color-button-dark-orange: var(--color-capy-orange-500);
@@ -199,14 +269,31 @@
   --color-bg-linen-dark: var(--color-white-linen-100);
   --color-bg-white: var(--color-black-0);
   --color-bg-teal: var(--color-primary-teal);
-  --color-bg-bright-green: var(--color-chateau-green-600);
+  /* Same chateau-green-a11y fix as --color-body-success above -- backs
+     the white text in Section 12's Set 3 quote card/tab, Section 14's
+     green box, and Section 15's whole-section heading, all of which
+     failed contrast against chateau-green-600. Also used decoratively
+     (Section 6's backdrop, Section 8's tape), where the shift from -600
+     is subtle enough not to matter. */
+  --color-bg-bright-green: var(--color-chateau-green-a11y);
   --color-bg-light-green: var(--color-surf-crest-200);
   --color-bg-orange: var(--color-primary-orange);
-  --color-bg-red: var(--color-pomegranate-600);
+  /* Merged with capy-orange-a11y (the same value --color-primary-orange
+     now resolves to), not pomegranate-600 or -700: pomegranate-600
+     (#EE3A23) only reaches 3.99:1 against white -- enough for large/bold
+     headings (3:1) but not the regular-weight body paragraphs that also
+     sit on this red elsewhere (Section 8/12/14/16/18), which need 4.5:1.
+     pomegranate-700 (#C8220D, 5.69:1) would fix that but reads
+     noticeably darker than this design wants. capy-orange-a11y (#E72307,
+     4.52:1) clears 4.5:1 while staying close to pomegranate-600's
+     original warmth -- close enough to the site's actual primary orange
+     that the two are now intentionally the same color. */
+  --color-bg-red: var(--color-capy-orange-a11y);
   --color-bg-light-pink: var(--color-pink-50);
   --color-bg-pink: var(--color-pink-100);
   --color-bg-blue: var(--color-allports-600);
   --color-bg-light-blue: var(--color-allports-200);
+  --color-bg-lightest-blue: var(--color-allports-100);
   --color-bg-purple: var(--color-prelude-300);
   --color-bg-yellow: var(--color-sunglow-400);
   --color-bg-dark-green: var(--color-everglade-800);
@@ -427,6 +514,68 @@
     }
   }
 
+  /* Same size/line-height as their heading-N counterpart at every
+     breakpoint (reuses the exact same --type-hN-* custom properties) --
+     only the typeface, weight, case, and tracking change: IBM Plex Mono
+     Regular instead of Space Grotesk Bold, uppercased, letter-spacing
+     widened to 10% of the font size (0.1em, so it scales with size
+     rather than staying a fixed px value across heading levels). */
+  .heading-1-accent {
+    font-family: var(--font-ibm-plex-mono);
+    font-weight: var(--font-weight-mono-regular);
+    font-size: var(--type-h1-font-size);
+    line-height: var(--type-h1-line-height);
+    text-transform: uppercase;
+    letter-spacing: var(--tracking-wide);
+
+    @variant xl {
+      font-size: var(--type-h1-font-size-desktop);
+      line-height: var(--type-h1-line-height-desktop);
+    }
+  }
+
+  .heading-2-accent {
+    font-family: var(--font-ibm-plex-mono);
+    font-weight: var(--font-weight-mono-regular);
+    font-size: var(--type-h2-font-size);
+    line-height: var(--type-h2-line-height);
+    text-transform: uppercase;
+    letter-spacing: var(--tracking-wide);
+
+    @variant xl {
+      font-size: var(--type-h2-font-size-desktop);
+      line-height: var(--type-h2-line-height-desktop);
+    }
+  }
+
+  .heading-3-accent {
+    font-family: var(--font-ibm-plex-mono);
+    font-weight: var(--font-weight-mono-regular);
+    font-size: var(--type-h3-font-size);
+    line-height: var(--type-h3-line-height);
+    text-transform: uppercase;
+    letter-spacing: var(--tracking-wide);
+
+    @variant xl {
+      font-size: var(--type-h3-font-size-desktop);
+      line-height: var(--type-h3-line-height-desktop);
+    }
+  }
+
+  .heading-4-accent {
+    font-family: var(--font-ibm-plex-mono);
+    font-weight: var(--font-weight-mono-regular);
+    font-size: var(--type-h4-font-size);
+    line-height: var(--type-h4-line-height);
+    text-transform: uppercase;
+    letter-spacing: var(--tracking-wide);
+
+    @variant xl {
+      font-size: var(--type-h4-font-size-desktop);
+      line-height: var(--type-h4-line-height-desktop);
+    }
+  }
+
   .body-paragraph {
     font-family: var(--font-ibm-plex-mono);
     font-weight: var(--font-weight-mono-medium);
@@ -493,7 +642,7 @@
 
   .nav-default {
     font-family: var(--font-space-grotesk);
-    font-weight: var(--font-weight-space-grotesk-bold);
+    font-weight: var(--font-weight-space-grotesk-medium);
     font-size: var(--type-nav-font-size);
     line-height: var(--type-nav-line-height);
     letter-spacing: var(--tracking-none);

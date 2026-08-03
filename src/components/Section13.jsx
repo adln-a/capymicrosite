@@ -1,4 +1,5 @@
 import ScrollSection from './ScrollSection.jsx';
+import AccessibleHighlightText from './AccessibleHighlightText.jsx';
 import blueScribble from '../assets/Blue-Scribble.svg';
 import bgRight from '../assets/Desktop-BG--Frame-13-Right.svg';
 import bgBottomLeft from '../assets/Desktop-BG--Frame-13-BottomLeft.svg';
@@ -12,25 +13,24 @@ const HEADING_DELAY = 0;
 const PINK_BOX_DELAY = 0.18;
 const BG_DELAY = 0.36;
 
-function ParticipationHighlight() {
+function ParticipationHighlight({ children }) {
   // Same span-wrap technique as the other scribble highlights.
   // Blue-Scribble.svg (not Blue-Line-Scribble.svg -- confirmed by
   // rendering both: Blue-Scribble is the thick highlighter-swipe style
   // that matches the reference under PARTICIPATION, Blue-Line-Scribble is
   // a thin zigzag used elsewhere and doesn't match) is 89x23 natively --
-  // notably smaller than this word's own rendered width, so it's sized
-  // via w-full to hug "PARTICIPATION" itself (FourHighlight/
-  // MatterHighlight's technique) rather than stretched to a fixed
-  // ~140x32px target that would distort its own proportions.
+  // kept at that native size (not stretched to PARTICIPATION's own much
+  // wider rendered width).
   return (
     <span className="relative z-0 inline-block origin-top-left rotate-[-1deg] whitespace-nowrap">
       <img
         src={blueScribble}
         alt=""
         aria-hidden="true"
-        className="pointer-events-none absolute left-1/2 top-full -z-10 h-auto w-full max-w-none -translate-x-1/2"
+        className="pointer-events-none absolute left-1/2 -z-10 max-w-none -translate-x-1/2"
+        style={{ width: '89px', height: '23px', top: 'var(--scribble-offset-default)' }}
       />
-      <span className="relative">PARTICIPATION</span>
+      <span className="heading-2-accent relative">{children}</span>
     </span>
   );
 }
@@ -53,25 +53,55 @@ export default function Section13() {
             transition={{ duration: 0.6, ease: 'easeOut', delay: HEADING_DELAY }}
             className="self-stretch"
           >
+            {/* Even a plain nested <span> (no image, no Highlight
+                component) still reads to VoiceOver as a separate "item"
+                inside the heading -- confirmed via screen-reader testing
+                on Section 8's identical case. Same fix as the scribble
+                highlights: aria-hidden the visual run, sr-only carries the
+                one flat string. */}
             <h2 className="heading-2 text-heading-inverted">
-              Capy Activity Hub would not be the right solution because it&rsquo;s{' '}
-              <span className="uppercase">not</span> a question about access.
+              <AccessibleHighlightText
+                before="Capy Activity Hub would not be the right solution because it’s "
+                highlight={<span className="heading-2-accent">not</span>}
+                after=" a question about access."
+              />
             </h2>
           </ScrollSection>
 
-          <ScrollSection
-            transition={{ duration: 0.6, ease: 'easeOut', delay: PINK_BOX_DELAY }}
-            className="relative flex origin-top-left rotate-1 items-center justify-center gap-xs self-stretch bg-bg-pink px-[40px] py-[24px]"
-          >
-            <h2 className="heading-2 text-heading-red">
-              It&rsquo;s about <ParticipationHighlight />
-            </h2>
-            <span
+          <div className="relative self-stretch">
+            <ScrollSection
+              transition={{ duration: 0.6, ease: 'easeOut', delay: PINK_BOX_DELAY }}
+              className="relative flex w-full origin-top-left rotate-1 items-center justify-center gap-xs bg-bg-pink px-[40px] py-[24px]"
+            >
+              <h2 className="heading-2 text-heading-red">
+                <AccessibleHighlightText before="It’s about " highlight={<ParticipationHighlight>PARTICIPATION</ParticipationHighlight>} />
+              </h2>
+            </ScrollSection>
+
+            {/* Rendered as its own independently-animated sibling rather
+                than nested inside the card's ScrollSection -- a mix-blend-
+                mode element whose ancestor has opacity/transform actively
+                tweening (or even just statically present) renders with the
+                wrong, un-blended flat color (same isolated-compositing-
+                layer issue as Section 6's tape). This wrapper deliberately
+                carries NO transform of its own -- a static rotate on a
+                shared ancestor would ALSO wall the tape off from blending
+                with whatever's behind/around the card, same isolation bug,
+                just permanent instead of transient. So the card keeps its
+                own rotate-1 directly on itself (it's the tape's SIBLING
+                here, not its ancestor), and the tape instead carries the
+                FULL composed rotation (originally -16deg nested inside a
+                1deg card == -15deg standalone), with left/top being the
+                card's own 1deg rotation applied to the original (494, 5)
+                offset. */}
+            <ScrollSection
+              as="span"
+              transition={{ duration: 0.6, ease: 'easeOut', delay: PINK_BOX_DELAY }}
               aria-hidden="true"
-              className="pointer-events-none absolute origin-top-left rotate-[-16deg] bg-bg-purple mix-blend-multiply"
-              style={{ width: '128px', height: '46px', left: '494px', top: '5px' }}
+              className="pointer-events-none absolute origin-top-left rotate-[-15deg] bg-bg-purple mix-blend-multiply"
+              style={{ width: '128px', height: '46px', left: '493.84px', top: '13.62px' }}
             />
-          </ScrollSection>
+          </div>
         </div>
 
         <ScrollSection

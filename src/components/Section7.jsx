@@ -1,4 +1,5 @@
 import ScrollSection from './ScrollSection.jsx';
+import AccessibleHighlightText from './AccessibleHighlightText.jsx';
 import purpleScribble from '../assets/Purple-Scribble.svg';
 import paperClipMetal from '../assets/Paper-Clip-Metal.png';
 import blueEllipse from '../assets/Blue-Ellipse.svg';
@@ -6,12 +7,14 @@ import yellowBeneficiariesShape from '../assets/Yellow-Shape-Beneficiaries-Backg
 
 // Text boxes fade up in sequence first (heading, then the quote box,
 // staggered the same 0.18s used for Section 1's pink/white box pair).
-// The six shapes don't start until the quote box's own fade-up (0.6s
-// duration) has fully finished, then stagger among themselves.
+// Shapes used to wait for the quote box's own fade-up (0.6s duration) to
+// fully FINISH before starting -- a 0.78s wait before anything even
+// began appearing, which read as sluggish. They now start while the
+// quote box is still mid-fade, and stagger among themselves faster too.
 const HEADING_DELAY = 0;
 const QUOTE_BOX_DELAY = 0.18;
-const SHAPES_START = QUOTE_BOX_DELAY + 0.6;
-const SHAPE_STAGGER_STEP = 0.15;
+const SHAPES_START = QUOTE_BOX_DELAY + 0.2;
+const SHAPE_STAGGER_STEP = 0.08;
 
 const SHAPE_TEXT_STYLE = {
   fontFamily: 'var(--font-space-grotesk)',
@@ -25,31 +28,26 @@ const SHAPE_TEXT_STYLE = {
 // never drift out of sync with each other.
 const VOLUNTEERS_OVERLAP = '-10px';
 
-function PeopleHighlight() {
+function PeopleHighlight({ children }) {
   // Same span-wrap technique as FourHighlight/MatterHighlight/
   // ScribbleHighlight: z-0 on the wrapping span gives it its own stacking
-  // context so the image's -z-10 stays scoped inside it. PEOPLE is bigger
-  // than the rest of the heading (32/40 vs 28/36) -- those are exactly
-  // heading-1's and heading-2's own desktop font-size/line-height values,
-  // so they're read from those tokens directly instead of duplicating the
-  // raw numbers. Purple-Scribble.svg is 140x32 natively -- exactly the
-  // ~140x32 target, so no explicit size override is needed.
+  // context so the image's -z-10 stays scoped inside it. The earlier
+  // hardcoded heading-1-desktop font-size override here was a mistake --
+  // PEOPLE matches its surrounding heading-2 context like every other
+  // highlight, so heading-2-accent (which already carries its own correct,
+  // responsive font-size/line-height) is all that's needed. Purple-
+  // Scribble.svg is 140x32 natively -- exactly the ~140x32 target, so no
+  // explicit size override is needed.
   return (
-    <span
-      className="relative z-0 inline-block whitespace-nowrap"
-      style={{
-        fontSize: 'var(--type-h1-font-size-desktop)',
-        lineHeight: 'var(--type-h1-line-height-desktop)',
-      }}
-    >
+    <span className="relative z-0 inline-block whitespace-nowrap">
       <img
         src={purpleScribble}
         alt=""
         aria-hidden="true"
         className="pointer-events-none absolute -z-10 h-auto max-w-none"
-        style={{ left: '-11px', top: '30px' }}
+        style={{ left: '-11px', top: 'var(--scribble-offset-default)' }}
       />
-      <span className="relative">PEOPLE</span>
+      <span className="heading-2-accent relative">{children}</span>
     </span>
   );
 }
@@ -171,7 +169,7 @@ export default function Section7() {
       id="section-7"
       className="relative flex w-full flex-col items-center justify-center bg-white-linen-100 px-page-margin-x py-page-margin-y"
     >
-      <div className="flex w-[720px] flex-col items-start justify-start">
+      <div className="relative flex w-[720px] flex-col items-start justify-start">
         <ScrollSection
           transition={{ duration: 0.6, ease: 'easeOut', delay: HEADING_DELAY }}
           // z-10: both this box and the pink box below are position:relative
@@ -179,19 +177,34 @@ export default function Section7() {
           // would paint over this one's bottom edge at their -24px overlap.
           className="relative z-10 flex w-[576px] flex-wrap items-center justify-center gap-xs bg-bg-red px-[40px] py-[24px]"
         >
-          <span
-            aria-hidden="true"
-            className="pointer-events-none absolute origin-top-left rotate-[-4deg] bg-bg-light-blue mix-blend-multiply"
-            style={{ width: '107px', height: '40px', left: '521px', top: '-16px' }}
-          />
-          {/* Plain natural text wrap, not a forced two-span break -- explicit
-              line breaks read poorly to screen readers, and the heading-2
-              line-height already gives wrapped lines correct spacing on its
-              own, no extra flex/gap needed. */}
           <h2 className="heading-2 text-center text-heading-inverted">
-            Understanding the system meant starting with <PeopleHighlight />
+            <AccessibleHighlightText
+              before="Understanding the system meant starting with "
+              highlight={<PeopleHighlight>PEOPLE</PeopleHighlight>}
+            />
           </h2>
         </ScrollSection>
+
+        {/* Rendered as its own independently-animated sibling rather than
+            nested inside the heading box's ScrollSection -- a mix-blend-mode
+            element whose ancestor has opacity/transform actively tweening
+            renders with the wrong, un-blended flat color for a frame or two
+            (same isolated-compositing-layer issue as Section 1/6's tapes).
+            Same transition/delay as the heading box keeps them visually in
+            sync; left/top are unchanged since the heading box itself has no
+            static rotate, so this wrapper's top-left still matches the
+            box's own. z-20: the heading box carries z-10 (to stay above the
+            pink box below), which -- now that the tape is a DOM sibling
+            instead of a child -- would otherwise also paint above this
+            (unpositioned-by-default) tape and hide the ~60% of it that
+            overlaps the box's own rectangle. */}
+        <ScrollSection
+          as="span"
+          transition={{ duration: 0.6, ease: 'easeOut', delay: HEADING_DELAY }}
+          aria-hidden="true"
+          className="pointer-events-none absolute z-20 origin-top-left rotate-[-4deg] bg-bg-light-blue mix-blend-multiply"
+          style={{ width: '107px', height: '40px', left: '521px', top: '-16px' }}
+        />
 
         <ScrollSection
           transition={{ duration: 0.6, ease: 'easeOut', delay: QUOTE_BOX_DELAY }}
@@ -211,7 +224,7 @@ export default function Section7() {
               We asked questions. We listened. We ran hands-on sessions with children to learn how
               they think, dream, and cope.
             </p>
-            <p
+            <h3
               className="text-heading-red"
               style={{
                 fontFamily: 'var(--font-space-grotesk)',
@@ -221,7 +234,7 @@ export default function Section7() {
               }}
             >
               Our goal wasn&rsquo;t to find quick fixes.
-            </p>
+            </h3>
             <p className="body-paragraph text-body-default">
               It was to understand the quiet barriers, the ones not seen in reports or funding
               sheets.
@@ -244,8 +257,13 @@ export default function Section7() {
             rather than being constrained to the 720px wrapper above, so
             nowrap shape labels (Social Service Agencies, etc.) never get
             squeezed into wrapping by a parent that's narrower than the
-            row actually needs. */}
-        <div className="flex flex-col items-center">
+            row actually needs. aria-hidden: purely decorative -- the
+            quote box above already names every one of these groups
+            ("families, non-profits, donors, and frontline workers") in
+            real prose, so this colorful shape cluster is a visual flourish
+            for sighted users, not additional content a screen reader
+            needs to announce label-by-label. */}
+        <div aria-hidden="true" className="flex flex-col items-center">
           <div className="flex items-end">
             {ROW_1.map((shape, i) => (
               <Shape key={shape.key} shape={shape} index={i} />

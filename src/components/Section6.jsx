@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import Matter from 'matter-js';
 import { useReducedMotion } from 'framer-motion';
 import ScrollSection from './ScrollSection.jsx';
+import AccessibleHighlightText from './AccessibleHighlightText.jsx';
 import blueScribbleMultiple from '../assets/Blue-Scribble-Multiple.svg';
 import paperClipMetal from '../assets/Paper-Clip-Metal.png';
 import receipt1 from '../assets/section-6/Section6--Grocery-Receipt1.png';
@@ -27,7 +28,7 @@ const PINK_CIRCLE_DELAY = 0.18;
 
 const RULED_LINE_COUNT = 9;
 
-function EssentialsHighlight() {
+function EssentialsHighlight({ children }) {
   // Same z-0/-z-10 span-wrap technique as the other scribble highlights.
   // Blue-Scribble-Multiple.svg is 162x28 natively -- an exact match for
   // the target size, no scaling needed.
@@ -37,10 +38,10 @@ function EssentialsHighlight() {
         src={blueScribbleMultiple}
         alt=""
         aria-hidden="true"
-        className="pointer-events-none absolute left-1/2 top-full -z-10 -translate-x-1/2"
-        style={{ width: '162px', height: '28px' }}
+        className="pointer-events-none absolute left-1/2 -z-10 -translate-x-1/2"
+        style={{ width: '162px', height: '28px', top: 'var(--scribble-offset-tight)' }}
       />
-      <span className="relative">ESSENTIALS</span>
+      <span className="heading-3-accent relative">{children}</span>
     </span>
   );
 }
@@ -380,7 +381,14 @@ export default function Section6() {
   return (
     <section
       id="section-6"
-      className="relative flex h-dvh w-full items-center justify-start overflow-hidden bg-bg-bright-green px-page-margin-x py-3xl"
+      // bg-chateau-green-600 directly, not the shared bg-bg-bright-green
+      // token -- that token now points to the darker chateau-green-a11y
+      // shade (for text-contrast reasons elsewhere), but nothing sits
+      // directly on this section's own backdrop (the real content lives
+      // in the white/pink cards on top of it), so there's no contrast
+      // reason for it to have shifted, and the original -600 still looks
+      // right here.
+      className="relative flex h-dvh w-full items-center justify-start overflow-hidden bg-chateau-green-600 px-page-margin-x py-3xl"
     >
       <div className="relative flex flex-col items-end justify-start">
         <ScrollSection
@@ -389,15 +397,11 @@ export default function Section6() {
         >
           <div className="flex flex-1 flex-col items-start justify-start gap-m">
             <h3 className="heading-3 self-stretch text-center text-heading-blue">
-              {/* Same VoiceOver nested-"items" issue as the other
-                  scribble-highlight headings this session (Sections 1,
-                  5, 11, 16) -- same fix: aria-hidden the visual run,
-                  sr-only carries the one flat string assistive tech
-                  reads. */}
-              <span aria-hidden="true">
-                When money is tight, <EssentialsHighlight /> comes first.
-              </span>
-              <span className="sr-only">When money is tight, ESSENTIALS comes first.</span>
+              <AccessibleHighlightText
+                before="When money is tight, "
+                highlight={<EssentialsHighlight>ESSENTIALS</EssentialsHighlight>}
+                after=" comes first."
+              />
             </h3>
             <p className="body-paragraph self-stretch text-center text-body-default">
               But parents still hope their kids can join art class, go on field trips, or just have

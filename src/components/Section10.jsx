@@ -1,4 +1,5 @@
 import ScrollSection from './ScrollSection.jsx';
+import AccessibleHighlightText from './AccessibleHighlightText.jsx';
 import paperBorderTop from '../assets/Paper-Border-Top.png';
 import purpleScribble from '../assets/Purple-Scribble.svg';
 import illustration from '../assets/Desktop-IMG--Frame-10.svg';
@@ -17,20 +18,23 @@ const BORDER_TILE_WIDTH = (760 / 55) * BORDER_TILE_HEIGHT;
 
 const ILLUSTRATION_DELAY = 0.15;
 
-function PerfectSolutionHighlight() {
+function PerfectSolutionHighlight({ children }) {
   // Same span-wrap technique as the other scribble highlights. Purple-
-  // Scribble.svg is 140x32 natively -- exactly the ~140x32 target, so no
-  // explicit size override is needed.
+  // Scribble.svg is kept at its own native 140x32 (not stretched to the
+  // wrapped words' rendered width) and centered under the full "PERFECT
+  // SOLUTION" phrase via left-1/2/-translate-x-1/2, rather than the fixed
+  // left:58px offset this used to have (which only lined up under part of
+  // the phrase, not centered on it).
   return (
     <span className="relative z-0 inline-block origin-top-left rotate-1 whitespace-nowrap">
       <img
         src={purpleScribble}
         alt=""
         aria-hidden="true"
-        className="pointer-events-none absolute -z-10 h-auto max-w-none"
-        style={{ left: '58px', top: '32px' }}
+        className="pointer-events-none absolute left-1/2 -z-10 max-w-none -translate-x-1/2"
+        style={{ width: '140px', height: '32px', top: 'var(--scribble-offset-tight)' }}
       />
-      <span className="relative">PERFECT SOLUTION</span>
+      <span className="heading-2-accent relative">{children}</span>
     </span>
   );
 }
@@ -57,7 +61,10 @@ export default function Section10() {
 
         <div className="flex w-[642px] flex-wrap content-center items-center justify-center bg-bg-white p-[40px]">
           <h2 className="heading-2 text-center text-heading-default">
-            We didn&rsquo;t land on the <PerfectSolutionHighlight />
+            <AccessibleHighlightText
+              before="We didn’t land on the "
+              highlight={<PerfectSolutionHighlight>PERFECT SOLUTION</PerfectSolutionHighlight>}
+            />
           </h2>
         </div>
       </ScrollSection>

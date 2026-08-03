@@ -127,7 +127,16 @@ function TextField({ id, label, type, value, onChange, error, placeholder, autoC
   const errorId = `${id}-error`;
   return (
     <div className="flex flex-col items-start justify-start gap-2xs self-stretch">
-      <label htmlFor={id} className="heading-4 self-stretch text-button-primary-orange">
+      {/* text-heading-red (pomegranate-700), not text-button-primary-orange
+          -- capy-orange-a11y only reaches 3.69:1 against this form's pink
+          background (it was tuned against white), and heading-4 is bold
+          but only 16px, never large enough to drop the requirement below
+          4.5:1. pomegranate-700 already clears pink at 4.64:1 (same fix
+          already proven for headings/errors elsewhere), so it's reused
+          here instead of inventing yet another custom orange shade.
+          border-heading-red matches on the input below so the label and
+          its underline still read as one visual unit. */}
+      <label htmlFor={id} className="heading-4 self-stretch text-heading-red">
         {label}
       </label>
       <input
@@ -143,7 +152,7 @@ function TextField({ id, label, type, value, onChange, error, placeholder, autoC
         autoComplete={autoComplete}
         aria-invalid={error ? 'true' : undefined}
         aria-describedby={error ? errorId : undefined}
-        className="body-paragraph w-full self-stretch border-b border-button-primary-orange bg-transparent py-s text-body-default placeholder:text-body-disabled focus:border-b-2 focus:border-primary-teal focus:outline-none"
+        className="body-paragraph w-full self-stretch border-b border-heading-red bg-transparent py-s text-body-default placeholder:text-body-disabled focus:border-b-2 focus:border-primary-teal focus:outline-none"
       />
       <FieldError id={errorId} message={error} />
     </div>
@@ -154,7 +163,7 @@ function SubjectField({ value, onChange, error, inputRef }) {
   const errorId = 'contact-subject-error';
   return (
     <div className="flex flex-col items-start justify-start gap-2xs self-stretch">
-      <label htmlFor="contact-subject" className="heading-4 self-stretch text-button-primary-orange">
+      <label htmlFor="contact-subject" className="heading-4 self-stretch text-heading-red">
         Subject
       </label>
       <div className="relative self-stretch">
@@ -168,7 +177,7 @@ function SubjectField({ value, onChange, error, inputRef }) {
           onChange={onChange}
           aria-invalid={error ? 'true' : undefined}
           aria-describedby={error ? errorId : undefined}
-          className={`body-paragraph w-full appearance-none border-b border-button-primary-orange bg-transparent py-s pr-2xl focus:border-b-2 focus:border-primary-teal focus:outline-none ${value ? 'text-body-default' : 'text-body-disabled'}`}
+          className={`body-paragraph w-full appearance-none border-b border-heading-red bg-transparent py-s pr-2xl focus:border-b-2 focus:border-primary-teal focus:outline-none ${value ? 'text-body-default' : 'text-body-disabled'}`}
         >
           <option value="" disabled>
             Select one
@@ -180,11 +189,14 @@ function SubjectField({ value, onChange, error, inputRef }) {
           ))}
         </select>
         {/* Purely visual -- the element underneath is a real <select>, so
-            this adds no semantics and needs none. */}
+            this adds no semantics and needs none. text-heading-red to
+            match the label/border this select shares -- not a contrast
+            requirement (icons only need 3:1, and the old orange already
+            cleared that), just keeping the three pieces visually paired. */}
         <MaterialIcon
           name="expand_more"
           size={24}
-          className="pointer-events-none absolute right-0 top-1/2 -translate-y-1/2 text-button-primary-orange"
+          className="pointer-events-none absolute right-0 top-1/2 -translate-y-1/2 text-heading-red"
         />
       </div>
       <FieldError id={errorId} message={error} />
@@ -196,7 +208,7 @@ function MessageField({ value, onChange, error, inputRef }) {
   const errorId = 'contact-message-error';
   return (
     <div className="flex flex-col items-start justify-start gap-xs self-stretch">
-      <label htmlFor="contact-message" className="heading-4 self-stretch text-button-primary-orange">
+      <label htmlFor="contact-message" className="heading-4 self-stretch text-heading-red">
         Message
       </label>
       <div
@@ -379,7 +391,7 @@ export default function Section18({ sectionRef }) {
             type="submit"
             disabled={status === 'submitting'}
             aria-busy={status === 'submitting'}
-            className="button-default inline-flex items-center gap-2xs rounded-large bg-button-primary-orange px-m py-s text-button-inverted disabled:cursor-not-allowed disabled:opacity-70"
+            className="button-default inline-flex cursor-pointer items-center gap-2xs rounded-large bg-button-primary-orange px-m py-s text-button-inverted transition-colors duration-150 hover:bg-capy-orange-500 disabled:cursor-not-allowed disabled:opacity-70 disabled:hover:bg-button-primary-orange"
           >
             {status === 'submitting' ? 'Sending...' : 'Submit'}
           </button>

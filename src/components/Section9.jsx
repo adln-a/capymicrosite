@@ -92,7 +92,7 @@ export default function Section9() {
               <div className="flex items-start justify-start gap-l self-stretch">
                 <div className="flex w-[256px] flex-shrink-0 origin-top-left -rotate-2 items-center justify-start bg-bg-white p-xs">
                   <PillDot />
-                  <span className="heading-3 flex-1 text-center text-heading-red">Capy Activity Hub</span>
+                  <h3 className="heading-3 flex-1 text-center text-heading-red">Capy Activity Hub</h3>
                   <PillDot />
                 </div>
                 <p className="body-paragraph flex-1 text-body-default">
@@ -149,21 +149,31 @@ export default function Section9() {
               though the pink background doesn't. */}
           <div className="mx-auto flex w-[960px] max-w-full flex-col items-center justify-center bg-bg-pink">
             <div className="origin-top-left -rotate-1">
-              <motion.div
+              {/* A plain <ul>/<li> list -- not just a row of <img>s -- so a
+                  screen reader announces "list, 5 items" and "item N of 5"
+                  as it moves through them, giving a sense of position
+                  within the set that a flat sequence of images doesn't.
+                  role="list" is a defensive backstop: Tailwind's preflight
+                  resets list-style to none on every <ul>, and some older
+                  Safari/VoiceOver versions drop the implicit list/listitem
+                  semantics once list-style is none. */}
+              <motion.ul
+                role="list"
                 className="flex items-start justify-start gap-s"
                 animate={{ x: offsetX }}
                 transition={shouldReduceMotion ? { duration: 0 } : { duration: 0.35, ease: 'easeOut' }}
               >
                 {SLIDES.map((slide, i) => (
-                  <img
+                  <li
                     key={slide.src}
-                    src={slide.src}
-                    alt={slide.alt}
-                    className="flex-shrink-0 self-stretch object-cover"
+                    role="listitem"
+                    className="flex-shrink-0"
                     style={{ width: `${SLIDE_WIDTH}px`, height: `${SLIDE_HEIGHT}px` }}
-                  />
+                  >
+                    <img src={slide.src} alt={slide.alt} className="h-full w-full object-cover" />
+                  </li>
                 ))}
-              </motion.div>
+              </motion.ul>
             </div>
           </div>
 
@@ -176,7 +186,15 @@ export default function Section9() {
               row is much wider than the viewport and centered, so a
               720px inset from ITS edge no longer lands anywhere near the
               visible area). page-margin-x keeps the same rhythm as the
-              rest of the page's own side margins. */}
+              rest of the page's own side margins.
+
+              `decorative`: hidden from screen readers/Tab order -- all 5
+              slides stay permanently in the DOM (see the list comment
+              above), so a screen reader user already reaches every image
+              in normal reading order regardless of activeIndex. These
+              arrows only recenter which slide is visually highlighted;
+              they don't gate access to anything an AT user couldn't
+              already reach. */}
           <ArrowButton
             direction="left"
             onClick={goToPrev}
@@ -186,6 +204,7 @@ export default function Section9() {
             bg="bg-bg-linen-light"
             className="absolute top-1/2 -translate-y-1/2 shadow-[0_8px_16px_rgba(0,0,0,0.08)]"
             style={{ left: 'var(--spacing-page-margin-x)' }}
+            decorative
           />
           <ArrowButton
             direction="right"
@@ -196,6 +215,7 @@ export default function Section9() {
             bg="bg-bg-linen-light"
             className="absolute top-1/2 -translate-y-1/2 shadow-[0_8px_16px_rgba(0,0,0,0.08)]"
             style={{ right: 'var(--spacing-page-margin-x)' }}
+            decorative
           />
         </ScrollSection>
       </div>

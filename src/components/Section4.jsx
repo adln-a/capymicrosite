@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
+import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import ScrollSection from './ScrollSection.jsx';
 import { ButtonSecondary, ButtonTertiary } from './Navigation.jsx';
+import TranscriptModal from './TranscriptModal.jsx';
 import { MaterialIcon } from './icons.jsx';
 import antenna from '../assets/Antenna.svg';
 import sandyAudioSrc from '../assets/Sandy-Final-Audio.mp3';
@@ -8,11 +10,6 @@ import joAudioSrc from '../assets/Jo-Audio-Final.mp3';
 
 const TRANSCRIPT_LINE_COUNT = 9;
 const SKIP_SECONDS = 5;
-// Story text starts fading up partway through the TV frame's own 0.6s
-// fade (not after it fully finishes) -- a snappier cascade than waiting
-// the whole duration out, since the frame is already mostly visible by
-// this point.
-const STORY_TEXT_DELAY = 0.3;
 
 // Values are the exact numbers passed to audio.playbackRate -- labels are
 // just how those same numbers are displayed (1 -> "1.0 x", matching the
@@ -31,23 +28,41 @@ const SPEED_OPTIONS = [
 // a numbered sequence.
 const STORIES = [
   {
-    title: '1. Beyond the Bouncy Castles',
+    title: '1. Sandy, 39, Single mother',
     playerTitle: 'What Sandy said',
     audioSrc: sandyAudioSrc,
     paragraphs: [
-      `Sandy watched her kids quietly sketch, wishing she could afford the art classes she didn’t have the money for, or a trip to Universal Studios. But as a single working mother in Singapore, every dollar counts. At local carnivals, her children would stare longingly at the bouncy castles, but at $50, she simply couldn’t justify the cost.`,
-      `She reminded herself that food had to take priority over entertainment. Since big outings weren’t possible, during school holidays, she would treat the kids to the movies instead. Afterwards, she would use these stories to teach them valuable lessons about family love and good behavior. She couldn’t always afford luxuries like the bouncy castles, but Cindy built their confidence daily, telling them to simply “be better than yourself from yesterday”. Through it all, she made sure they thrived on love.`,
+      `Sandy is a single mother of two children living in Singapore. Due to the high cost of living in Singapore, Sandy avoids expensive outings to destinations like Sentosa or Gardens by the Bay.`,
+      `Financial priorities are structured around essential needs, with food taking precedence over entertainment. While her children enjoy carnival games and bouncy castles, purchasing access can cost $50, which exceeds her budget; as a result, her children are often limited to watching. During school holidays, going to the cinema serves as the most cost-effective leisure activity. Sandy intentionally selects movies that provide broader value, aiming to teach her children self-regulation, appropriate social behavior, and the value of family affection.`,
+      `She encourages them to focus on making progress relative to their own past efforts rather than competing with others, aiming to build their self-confidence to handle future challenges.`,
     ],
+    // Real interview transcript (not the paraphrased card text above) --
+    // lightly cleaned up from the raw recording (removed filler words
+    // like "uh"/"um" and false starts) but otherwise Sandy's own words,
+    // unparaphrased.
+    transcript: `I'm a single mother. I have two children, so my daily life is a bit busy. In the morning I wake up, I cook, prepare the snack for my children, and then after that I will go to work. Then after work, come back, we do housework, go to bed about 10 to 10:30. That's all every day, the same.
+
+In Singapore everything is expensive. If we want to go somewhere in Singapore, like Sentosa, it's expensive, Gardens by the Bay, so expensive. So that's the reason why we never really think that we want to go out. We don't dare to spend so much because of course we give priority to the food first, and entertainment is second.
+
+They like to play at the carnival, all the carnival games. Then they've got the bouncy castle. You like the other one, but maybe no money to let you play. So expensive. They can only look. So expensive, I have to pay $50 in order to buy. I don't have enough money for all the games outside.
+
+Sometimes, like during the school holidays, going to the movie is the cheapest compared to the rest. I want them to learn some skills from the movie. They learn something about how they behave well, how they react to certain situations when they really cannot control themselves. So I want it to be meaningful. I want them to realize that family love is more important.
+
+I will encourage them and say that even though they are not compared to other children, they are not that high, but instead of comparing them to others, I would say that you should be better than yourself from yesterday. Then that's good already. You don't need to be better than any other people, just be better than yourself from yesterday. Then that's good already, you will do very well already. So we have to be confident in ourselves. Whatever thing we encounter, I will encourage them so they feel confident.`,
   },
   {
-    title: '2. It’s Worse than School',
+    title: '2. Jo, 8, P3 Student',
     playerTitle: 'What Jo said',
     audioSrc: joAudioSrc,
     paragraphs: [
-      `Jo sat at his desk, wishing the clock would move faster. He didn’t like school, but student care was even worse. He hated the strict rules and how teachers ignored them to scroll on their phones while eating McDonald’s right in front of them. “I hate it!”`,
-      `To escape, Jo’s mind wandered to his favourite hobbies: playing Roblox or Call of Duty. He’d even rather be studying Maths, his favourite subject, simply because he was so good at it. Anything was better than waiting in that room until 5:30 pm.`,
-      `Jo survived the week by dreaming of the weekends. Even with household chores to do, he eagerly awaited his two precious hours of video games. It was his favorite part of the week, a brief window of happiness far away from his tiring daily routine.`,
+      `Jo is a Primary 3 student in Singapore living in a single-parent household with a mother and sibling. Feeling restricted by a lack of financial resources and places to go, Jo expresses strong frustration regarding daily life, school, and student care.`,
+      `Jo finds school tiring, boring, and overwhelming, and describes student care supervisors as strict, unsupportive, and disengaged.`,
     ],
+    // Real interview transcript (not the paraphrased card text above) --
+    // Jo's own words, unparaphrased.
+    transcript: `Every single day no places, nowhere else to go. Because we are broke. I want to die. Yeah. School is hell. It's hell. It's dumb. We can do nothing. I'm sick of school cos it's annoying, tiring, and very boring.
+
+All my friends hate student care, okay. It's because they are strict, first of all. Second of all they make our life hard. Third of all they don't care about us. They just watch their phones all day.`,
   },
 ];
 
@@ -149,7 +164,7 @@ function Scrubber({ currentTime, duration, onSeek }) {
       onPointerDown={handlePointerDown}
       onPointerMove={handlePointerMove}
       onKeyDown={handleKeyDown}
-      className="relative h-[8px] self-stretch bg-black-0"
+      className="relative h-[8px] cursor-pointer touch-none select-none self-stretch bg-black-0"
     >
       <span
         aria-hidden="true"
@@ -166,12 +181,15 @@ function Scrubber({ currentTime, duration, onSeek }) {
 }
 
 export default function Section4() {
+  const shouldReduceMotion = useReducedMotion();
   const audioRef = useRef(null);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const [playbackRate, setPlaybackRate] = useState(1);
   const [storyIndex, setStoryIndex] = useState(0);
+  const [isTranscriptOpen, setIsTranscriptOpen] = useState(false);
+  const transcriptButtonRef = useRef(null);
   const activeHeadingRef = useRef(null);
   // Set right before toggling, consumed by the effect below once the new
   // story has actually rendered (and is no longer aria-hidden/invisible)
@@ -315,12 +333,36 @@ export default function Section4() {
               {STORIES.map((story, index) => {
                 const isActive = index === storyIndex;
                 return (
-                  <ScrollSection
+                  // Not ScrollSection here -- this needs to fade/slide on
+                  // STORYINDEX changes (a click), not on scrolling into
+                  // view (the outer TV-frame ScrollSection above already
+                  // covers that entrance). Both stories stay permanently
+                  // mounted in the same grid cell (per the note above:
+                  // this is what pins the cell's height to the taller of
+                  // the two), but only the active one is ever opaque/
+                  // interactive -- animate (not whileInView) drives that
+                  // purely off isActive, with no scroll dependency and no
+                  // entrance delay, so toggling feels immediate rather
+                  // than laggy. initial={false} skips animating on first
+                  // mount (the very first paint should just show story 1
+                  // already in place, not fade up a second time on top of
+                  // the frame's own reveal).
+                  <motion.div
                     key={story.title}
-                    transition={{ duration: 0.6, ease: 'easeOut', delay: STORY_TEXT_DELAY }}
                     aria-hidden={!isActive}
-                    className={`col-start-1 row-start-1 flex flex-col items-start justify-center gap-m self-stretch ${
-                      isActive ? '' : 'invisible'
+                    initial={false}
+                    animate={{ opacity: isActive ? 1 : 0, y: isActive ? 0 : 24 }}
+                    // opacity resolves in less than half the time y does --
+                    // the incoming story reads as solid almost immediately
+                    // while it's still finishing its slide up, rather than
+                    // looking translucent for the whole 0.4s move.
+                    transition={
+                      shouldReduceMotion
+                        ? { duration: 0 }
+                        : { opacity: { duration: 0.15, ease: 'easeOut' }, y: { duration: 0.4, ease: 'easeOut' } }
+                    }
+                    className={`col-start-1 row-start-1 flex flex-col items-start justify-start gap-m self-stretch ${
+                      isActive ? '' : 'pointer-events-none'
                     }`}
                   >
                     <h2
@@ -338,7 +380,7 @@ export default function Section4() {
                         </p>
                       ))}
                     </div>
-                  </ScrollSection>
+                  </motion.div>
                 );
               })}
             </div>
@@ -347,7 +389,7 @@ export default function Section4() {
           {/* Audio player panel. Not its own fade-up -- it's part of the
               TV frame's single-unit fade above the panel doesn't animate
               separately. */}
-          <div className="flex w-[400px] flex-col items-start justify-start gap-m self-stretch p-m">
+          <div className="flex w-[400px] flex-col items-start justify-start gap-m self-stretch p-l">
             <div className="flex flex-col items-start justify-center gap-m self-stretch">
               <h3 className="heading-3 self-stretch text-heading-inverted">{currentStory.playerTitle}</h3>
 
@@ -369,7 +411,7 @@ export default function Section4() {
                   onClick={togglePlayback}
                   aria-pressed={isPlaying}
                   aria-label={isPlaying ? 'Pause' : 'Play'}
-                  className="flex h-14 w-14 items-center justify-center rounded-full bg-button-primary-orange text-button-inverted shadow-[0_8px_16px_rgba(0,0,0,0.08)]"
+                  className="flex h-14 w-14 cursor-pointer items-center justify-center rounded-full bg-button-primary-orange text-button-inverted transition-colors duration-150 hover:bg-capy-orange-500 shadow-[0_8px_16px_rgba(0,0,0,0.08)]"
                 >
                   <MaterialIcon name={isPlaying ? 'pause' : 'play_arrow'} fill size={32} />
                 </button>
@@ -377,7 +419,7 @@ export default function Section4() {
                   type="button"
                   onClick={() => skip(-SKIP_SECONDS)}
                   aria-label="Rewind 5 seconds"
-                  className="text-button-inverted"
+                  className="cursor-pointer text-button-inverted transition-colors duration-150 hover:text-capy-orange-100"
                 >
                   <MaterialIcon name="replay_5" size={40} />
                 </button>
@@ -385,7 +427,7 @@ export default function Section4() {
                   type="button"
                   onClick={() => skip(SKIP_SECONDS)}
                   aria-label="Fast-forward 5 seconds"
-                  className="text-button-inverted"
+                  className="cursor-pointer text-button-inverted transition-colors duration-150 hover:text-capy-orange-100"
                 >
                   <MaterialIcon name="forward_5" size={40} />
                 </button>
@@ -393,14 +435,14 @@ export default function Section4() {
                   type="button"
                   onClick={cyclePlaybackRate}
                   aria-label={`Playback speed, ${playbackRate}x, press to change`}
-                  className="flex flex-col items-center justify-start gap-[2px] p-2xs text-button-inverted"
+                  className="flex cursor-pointer flex-col items-center justify-start gap-[2px] p-2xs text-button-inverted transition-colors duration-150 hover:text-capy-orange-100"
                 >
                   <span className="body-paragraph">{speedLabel}</span>
                   <span className="body-paragraph">Speed</span>
                 </button>
               </div>
 
-              <ButtonTertiary inverted>
+              <ButtonTertiary inverted innerRef={transcriptButtonRef} onClick={() => setIsTranscriptOpen(true)}>
                 <MaterialIcon name="description" />
                 Read transcript
               </ButtonTertiary>
@@ -421,18 +463,51 @@ export default function Section4() {
                 ))}
               </div>
 
-              <ButtonSecondary inverted onClick={toggleStory}>
-                {storyIndex === 0 ? (
-                  <>
-                    Next: {STORIES[1].title}
-                    <MaterialIcon name="chevron_right" />
-                  </>
-                ) : (
-                  <>
-                    <MaterialIcon name="chevron_left" />
-                    Prev: {STORIES[0].title}
-                  </>
-                )}
+              <ButtonSecondary
+                inverted
+                onClick={toggleStory}
+                layout={!shouldReduceMotion}
+                transition={{ layout: { duration: 0.3, ease: 'easeOut' } }}
+                className="relative overflow-hidden"
+              >
+                {/* popLayout (not "wait"): "wait" keeps the exiting label
+                    in normal flow until it's fully gone, so the button's
+                    own layout-animated width doesn't have anything to
+                    interpolate towards until that exit finishes -- it
+                    just snaps the instant the swap happens. popLayout
+                    pulls the exiting label out of flow (absolute)
+                    immediately, so the entering label's natural size is
+                    already what the button measures throughout the
+                    whole transition, letting `layout` on the button
+                    smoothly tween width the entire time instead of only
+                    at the very end. Label itself is a plain opacity
+                    crossfade, no vertical movement -- adding a y-slide on
+                    top of the button's own simultaneous width tween read
+                    as jumpy/uncoordinated; a subtle fade alone reads much
+                    cleaner alongside it. overflow-hidden above just guards
+                    against any sub-pixel overflow during the width tween. */}
+                <AnimatePresence mode="popLayout" initial={false}>
+                  <motion.span
+                    key={storyIndex}
+                    initial={shouldReduceMotion ? false : { opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={shouldReduceMotion ? undefined : { opacity: 0 }}
+                    transition={shouldReduceMotion ? { duration: 0 } : { duration: 0.15, ease: 'easeOut' }}
+                    className="flex items-center gap-2xs whitespace-nowrap"
+                  >
+                    {storyIndex === 0 ? (
+                      <>
+                        Next: {STORIES[1].title}
+                        <MaterialIcon name="chevron_right" />
+                      </>
+                    ) : (
+                      <>
+                        <MaterialIcon name="chevron_left" />
+                        Prev: {STORIES[0].title}
+                      </>
+                    )}
+                  </motion.span>
+                </AnimatePresence>
               </ButtonSecondary>
             </div>
           </div>
@@ -440,6 +515,14 @@ export default function Section4() {
 
         <div className="h-[16px] w-[900px] max-w-full rounded-bl-[24px] rounded-br-[24px] bg-black-950" />
       </ScrollSection>
+
+      <TranscriptModal
+        isOpen={isTranscriptOpen}
+        onClose={() => setIsTranscriptOpen(false)}
+        subtitle={currentStory.playerTitle}
+        transcript={currentStory.transcript}
+        triggerRef={transcriptButtonRef}
+      />
     </section>
   );
 }
