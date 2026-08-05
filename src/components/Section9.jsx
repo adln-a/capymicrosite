@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
 import ScrollSection from './ScrollSection.jsx';
 import ArrowButton from './ArrowButton.jsx';
+import useMediaQuery from '../hooks/useMediaQuery.js';
 import paperClipBlack from '../assets/Paper-Clip-Black.png';
 import slide1 from '../assets/section-9/Capy-Slide-Item-1.jpg';
 import slide2 from '../assets/section-9/Capy-Slide-Item-2.jpg';
@@ -34,13 +35,25 @@ const SLIDES = [
   },
 ];
 
-// One image's own width, and the row's own gap (spacing-s, fixed at 16px
-// across all breakpoints) -- both feed the translateX math that centers
-// the active slide.
-const SLIDE_WIDTH = 720;
-const SLIDE_HEIGHT = 480;
+// XL keeps its fixed pixel slide size (unchanged). At S each slide fills
+// the full viewport width instead (see the `<li>` below) -- `s` here only
+// supplies that slide's own aspect ratio, so a narrower or wider phone
+// still gets a proportional (not stretched/cropped) image.
+const SLIDE_SIZES = {
+  s: { width: 365.15, height: 246.93 },
+  xl: { width: 720, height: 480 },
+};
 const SLIDE_GAP = 16;
 const CENTER_INDEX = 2;
+
+// Same story for the paper clip -- a deliberate per-tier resize and
+// reposition, not a fluid scale (both sizes share the same ~0.875 aspect
+// ratio, but the S position isn't derivable from the XL one by any
+// simple formula).
+const PAPERCLIP = {
+  s: { width: 38, height: 43.43, left: 323, top: 31.94 },
+  xl: { width: 56, height: 64, left: 904, top: 16 },
+};
 
 function PillDot() {
   return <span aria-hidden="true" className="h-[11.62px] w-[11.62px] flex-shrink-0 origin-top-left rotate-3 rounded-full bg-bg-pink" />;
@@ -55,6 +68,10 @@ export default function Section9() {
   // Centered on slide 3 (index 2) when the section is first reached.
   const [activeIndex, setActiveIndex] = useState(CENTER_INDEX);
   const shouldReduceMotion = useReducedMotion();
+  const isAtLeastSm = useMediaQuery('(min-width: 640px)');
+
+  const { width: SLIDE_WIDTH, height: SLIDE_HEIGHT } = SLIDE_SIZES.xl;
+  const paperclip = isAtLeastSm ? PAPERCLIP.xl : PAPERCLIP.s;
 
   const goToPrev = () => setActiveIndex((i) => (i - 1 + SLIDES.length) % SLIDES.length);
   const goToNext = () => setActiveIndex((i) => (i + 1) % SLIDES.length);
@@ -63,25 +80,31 @@ export default function Section9() {
   // natural (unshifted) center already is -- the row is flex-centered
   // via the parent's `justify-center`, so at CENTER_INDEX (the row's own
   // middle item) no shift is needed at all; every step away from it
-  // shifts by one slide-and-gap.
-  const offsetX = (CENTER_INDEX - activeIndex) * (SLIDE_WIDTH + SLIDE_GAP);
+  // shifts by one slide-and-gap. At S each slide is a full 100vw with no
+  // gap between them (one slide fills the screen at a time), so the step
+  // is expressed in vw rather than a measured pixel width -- this stays
+  // correct at any device width, not just the 375px the reference was
+  // drawn at.
+  const offsetX = isAtLeastSm
+    ? (CENTER_INDEX - activeIndex) * (SLIDE_WIDTH + SLIDE_GAP)
+    : `${(CENTER_INDEX - activeIndex) * 100}vw`;
 
   return (
     <section
       id="section-9"
       className="relative flex w-full flex-col items-center justify-center bg-white-linen-100 px-page-margin-x py-page-margin-y"
     >
-      <div className="flex w-[960px] max-w-full flex-col items-start justify-start">
+      <div className="flex w-full flex-col items-start justify-start sm:w-[960px] sm:max-w-full">
         {/* Header tab + text block animate together as one unit (was two
             separately-staggered ScrollSections) -- the paper clip is
             absolutely positioned against this same wrapper, so it stays
             anchored to the pink block regardless of its content height. */}
         <ScrollSection className="relative flex w-full flex-col items-start justify-start self-stretch">
-          <div className="flex items-start justify-end rounded-t-medium bg-bg-pink px-l py-s">
+          <div className="flex items-start justify-end rounded-t-large bg-bg-pink px-l py-s sm:rounded-t-medium">
             <h2 className="heading-2 text-heading-red">We built and we tested</h2>
           </div>
 
-          <div className="flex w-full items-start justify-end gap-m bg-bg-pink pb-m pl-l pr-s pt-m">
+          <div className="flex w-full items-start justify-end gap-m bg-bg-pink pb-l pl-l pr-s pt-l sm:pb-m sm:pt-m">
             <div className="flex flex-1 flex-col items-start justify-start gap-m">
               <p className="body-paragraph self-stretch text-body-default">
                 Over the past three years, we built, tested, and reworked ideas. Always with families, not just for
@@ -89,8 +112,8 @@ export default function Section9() {
                 further trials.
               </p>
 
-              <div className="flex items-start justify-start gap-l self-stretch">
-                <div className="flex w-[256px] flex-shrink-0 origin-top-left -rotate-2 items-center justify-start bg-bg-white p-xs">
+              <div className="flex flex-col items-start justify-start gap-xl self-stretch sm:flex-row sm:gap-l">
+                <div className="flex w-full flex-shrink-0 origin-top-left -rotate-2 items-center justify-start bg-bg-white p-xs sm:w-[256px]">
                   <PillDot />
                   <h3 className="heading-3 flex-1 text-center text-heading-red">Capy Activity Hub</h3>
                   <PillDot />
@@ -112,8 +135,13 @@ export default function Section9() {
             src={paperClipBlack}
             alt=""
             aria-hidden="true"
-            className="pointer-events-none absolute h-[64px] w-[56px]"
-            style={{ left: '904px', top: '16px' }}
+            className="pointer-events-none absolute"
+            style={{
+              width: `${paperclip.width}px`,
+              height: `${paperclip.height}px`,
+              left: `${paperclip.left}px`,
+              top: `${paperclip.top}px`,
+            }}
           />
         </ScrollSection>
 
@@ -146,8 +174,12 @@ export default function Section9() {
               row needs -- the row itself is wider than this box and
               isn't clipped by it (no overflow-hidden here), so the
               images still visually spill past its left/right edges even
-              though the pink background doesn't. */}
-          <div className="mx-auto flex w-[960px] max-w-full flex-col items-center justify-center bg-bg-pink">
+              though the pink background doesn't. Transparent at S: below
+              sm each slide is already a full 100vw image with no gap
+              between them, so there's no pink to peek through by design --
+              carrying the XL pink chrome down would just show as an
+              unwanted strip of color past the rotated row's bounding box. */}
+          <div className="mx-auto flex w-full max-w-full flex-col items-center justify-center bg-transparent sm:w-[960px] sm:bg-bg-pink">
             <div className="origin-top-left -rotate-1">
               {/* A plain <ul>/<li> list -- not just a row of <img>s -- so a
                   screen reader announces "list, 5 items" and "item N of 5"
@@ -159,7 +191,7 @@ export default function Section9() {
                   semantics once list-style is none. */}
               <motion.ul
                 role="list"
-                className="flex items-start justify-start gap-s"
+                className="flex items-start justify-start gap-0 sm:gap-s"
                 animate={{ x: offsetX }}
                 transition={shouldReduceMotion ? { duration: 0 } : { duration: 0.35, ease: 'easeOut' }}
               >
@@ -168,7 +200,11 @@ export default function Section9() {
                     key={slide.src}
                     role="listitem"
                     className="flex-shrink-0"
-                    style={{ width: `${SLIDE_WIDTH}px`, height: `${SLIDE_HEIGHT}px` }}
+                    style={
+                      isAtLeastSm
+                        ? { width: `${SLIDE_WIDTH}px`, height: `${SLIDE_HEIGHT}px` }
+                        : { width: '100vw', aspectRatio: `${SLIDE_SIZES.s.width} / ${SLIDE_SIZES.s.height}` }
+                    }
                   >
                     <img src={slide.src} alt={slide.alt} className="h-full w-full object-cover" />
                   </li>
@@ -188,13 +224,11 @@ export default function Section9() {
               visible area). page-margin-x keeps the same rhythm as the
               rest of the page's own side margins.
 
-              `decorative`: hidden from screen readers/Tab order -- all 5
-              slides stay permanently in the DOM (see the list comment
-              above), so a screen reader user already reaches every image
-              in normal reading order regardless of activeIndex. These
-              arrows only recenter which slide is visually highlighted;
-              they don't gate access to anything an AT user couldn't
-              already reach. */}
+              Not aria-hidden (see ArrowButton's own comment for why that
+              was tried and reverted) -- these are real, announced
+              controls, and also the ONLY way for a sighted keyboard-only
+              user (no scroll-drag gesture, no tablist arrow-key
+              equivalent here) to change which slide is centered. */}
           <ArrowButton
             direction="left"
             onClick={goToPrev}
@@ -204,7 +238,6 @@ export default function Section9() {
             bg="bg-bg-linen-light"
             className="absolute top-1/2 -translate-y-1/2 shadow-[0_8px_16px_rgba(0,0,0,0.08)]"
             style={{ left: 'var(--spacing-page-margin-x)' }}
-            decorative
           />
           <ArrowButton
             direction="right"
@@ -215,7 +248,6 @@ export default function Section9() {
             bg="bg-bg-linen-light"
             className="absolute top-1/2 -translate-y-1/2 shadow-[0_8px_16px_rgba(0,0,0,0.08)]"
             style={{ right: 'var(--spacing-page-margin-x)' }}
-            decorative
           />
         </ScrollSection>
       </div>

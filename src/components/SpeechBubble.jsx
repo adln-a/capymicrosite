@@ -35,7 +35,7 @@ import { motion } from 'framer-motion';
  * a pure hug box's width is derived from its current text content.
  *
  * Padding uses the shared --spacing-l token (p-l: 24px, 40px from the true
- * xl/1440px breakpoint up) rather than a hardcoded pixel value -- matches
+ * xl/1200px breakpoint up) rather than a hardcoded pixel value -- matches
  * the Figma exports directly (XS/M frames both show padding:24px on this
  * box; only the desktop/XL frame uses 40px), and stays correct automatically
  * if that token's own breakpoint or values ever change, rather than drifting
@@ -85,7 +85,7 @@ export default function SpeechBubble({
         {srText && <span className="sr-only">{srText}</span>}
       </motion.div>
       <div
-        className={`flex w-full items-center px-[24px] ${
+        className={`flex w-full items-center px-l ${
           tailSide === 'left' ? 'justify-start' : 'justify-end'
         }`}
       >

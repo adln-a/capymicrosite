@@ -3,24 +3,24 @@
     "assumption": "We believed that affordability of activities available in Singapore was the main barrier, and that removing the cost would lead to full participation.",
     "reality": "Most of these activities are already funded by donors, so cost was rarely the reason families didn't show up. Families would agree to attend, then cancel last minute because of a sick child or a job that came up without much notice.",
     "quote": "People pay tickets for the beneficiaries to come, they don't come... 20 something people said they would come, 1 family turned up. And they charted a whole bus, a 40-seater bus to bring everyone.",
-    "audioSrc":"src/assets/audio/Card1--Transportation.mp3"
+    "audioSrc": "/audio/Card1--Transportation.mp3"
   },
   "2": {
     "assumption": "We believed that because parents wanted their kids to have the same opportunities as other children, enrichment activities would rank high on their list of priorities.",
     "reality": "For many low-income families, bills and food come first. Enrichment is a luxury. It's only once those immediate needs are covered that there's mental space left to think about enrichment for their kids.",
     "quote": "They are just trying to survive and put bread on the table. What will really help them more is someone who can babysit (their) kids, then (they) can go and work a shift.",
-    "audioSrc":"src/assets/audio/Card2--Trying-To-Survive.mp3"
+    "audioSrc": "/audio/Card2--Trying-to-Survive.mp3"
   },
   "3": {
     "assumption": "Activities like coding classes, zoo trips, and weekend workshops provide valuable enrichment for kids.",
     "reality": "Although parents showed enthusiasm about these activities, creating real impact requires long-term, regular attendance, not just one-offs. Volunteers will also be needed to track children's progress and provide specialised support.",
     "quote": "...this is very one-off and we are in the business of creating more longer-term impact with the children...They have to regularly come for at least like six months.",
-    "audioSrc": "src/assets/audio/Card3--LongTermImpact.mp3"
+    "audioSrc": "/audio/Card3--LongTermImpact.mp3"
   },
   "4": {
     "assumption": "We believed that creating an online platform offering subsidised and free activities would close the gap in opportunities between low-income kids and their peers.",
     "reality": "Putting activities online doesn't solve the problem on its own. Families are supported by a network of donors, volunteers, social service organisations (SSOs), and social workers who stay in close, personal contact, providing empathy and encouragement no platform can offer.",
     "quote": "The programs I run work through communities...If you're going to do this, one way is through the social worker or the SSO, the contact point that's actually seeing the family.",
-    "audioSrc": "src/assets/audio/Card4--System.mp3"
+    "audioSrc": "/audio/Card4--System.mp3"
   }
 }

@@ -78,10 +78,16 @@ function validate(values) {
 }
 
 function InfoCard({ card }) {
+  // rounded-medium (16 base -> 24 at xl), not rounded-large (24 -> 32) --
+  // cross-checked against the reference (Section 18 - Contact Form.html),
+  // which shows these cards at border-radius:24px, matching radius-
+  // medium's own xl value exactly, not radius-large's. rounded-large was
+  // wrong at both tiers (32px XL instead of 24, 24px S instead of 16),
+  // not just an S-specific miss.
   return (
     <div
       style={{ transform: `rotate(${card.rotate}deg)`, transformOrigin: 'top left' }}
-      className={`flex h-[273px] flex-1 flex-col items-start justify-between rounded-large p-m ${card.bg}`}
+      className={`flex h-[200px] flex-none flex-col items-start justify-between rounded-medium p-m sm:h-[273px] sm:flex-1 ${card.bg}`}
     >
       <h3 className={`heading-3 self-stretch ${card.headingColor}`}>{card.heading}</h3>
       <p className={`body-paragraph self-stretch ${card.bodyColor}`}>{card.body}</p>
@@ -318,103 +324,112 @@ export default function Section18({ sectionRef }) {
     <section
       id="contact"
       ref={sectionRef}
-      className="relative flex min-h-[150vh] w-full flex-col items-start justify-end gap-m bg-bg-red px-page-margin-x py-3xl"
+      className="relative flex w-full flex-col items-start justify-end gap-m bg-bg-red px-page-margin-x py-page-margin-y"
     >
-      <div className="flex flex-col items-start justify-start gap-m self-stretch">
-        <h2 className="heading-2 self-stretch text-heading-inverted">Contact us</h2>
-        <p className="body-paragraph self-stretch text-body-inverted">
-          If you're an organisation, NGO, or advocate working on similar issues - we'd love to hear from you.
-        </p>
+      {/* content-cap: the site-wide desktop content cap -- without it,
+          both the card row (4 flex-1 cards, no max-width of their own)
+          and the pink form box (self-stretch) grew to fill however wide
+          the section happened to be at wide viewports, with nothing
+          bounding either one. */}
+      <div className="flex w-full flex-col items-start gap-m content-cap">
+        <div className="flex flex-col items-start justify-start gap-m self-stretch">
+          <h2 className="heading-2 self-stretch text-heading-inverted">Contact us</h2>
+          <p className="body-paragraph self-stretch text-body-inverted">
+            If you're an organisation, NGO, or advocate working on similar issues - we'd love to hear from you.
+          </p>
 
-        <div className="flex items-start justify-start gap-s self-stretch">
-          {CARDS.map((card) => (
-            <InfoCard key={card.key} card={card} />
-          ))}
-        </div>
-      </div>
-
-      <div className="relative flex items-start justify-start gap-s self-stretch bg-bg-pink pb-l pl-s pr-l pt-l">
-        <HoleColumn />
-
-        <form
-          noValidate
-          onSubmit={handleSubmit}
-          className="flex flex-1 flex-col items-start justify-start gap-m"
-        >
-          <TextField
-            id="contact-name"
-            label="Name"
-            type="text"
-            placeholder="Enter your name"
-            autoComplete="name"
-            value={values.name}
-            onChange={updateField('name')}
-            error={errors.name}
-            inputRef={fieldRefs.name}
-          />
-          <TextField
-            id="contact-email"
-            label="Email"
-            type="email"
-            placeholder="Enter your email"
-            autoComplete="email"
-            value={values.email}
-            onChange={updateField('email')}
-            error={errors.email}
-            inputRef={fieldRefs.email}
-          />
-          <SubjectField value={values.subject} onChange={updateField('subject')} error={errors.subject} inputRef={fieldRefs.subject} />
-          <MessageField value={values.message} onChange={updateField('message')} error={errors.message} inputRef={fieldRefs.message} />
-
-          {/* Honeypot: real input, real label, present in the DOM and in
-              normal tab order -- deliberately NOT hidden via aria-hidden,
-              display:none, visibility:hidden, or tabindex=-1, since bots
-              commonly detect and skip fields hidden that way. Pushed
-              off-screen instead, which still fools naive bots without
-              those tells. autoComplete="off" plus an unusual field name
-              keep browser autofill from ever populating it for a real
-              user who does tab through it. */}
-          <div className="absolute -left-[9999px]">
-            <label htmlFor="contact-website">Leave this field blank</label>
-            <input
-              type="text"
-              id="contact-website"
-              name="website"
-              autoComplete="off"
-              tabIndex={0}
-              value={values.website}
-              onChange={updateField('website')}
-            />
+          {/* Single stacked column below sm -- back to the original single
+              flex row of 4 from sm up. */}
+          <div className="flex w-full flex-col items-stretch justify-start gap-s self-stretch sm:flex-row sm:items-start">
+            {CARDS.map((card) => (
+              <InfoCard key={card.key} card={card} />
+            ))}
           </div>
+        </div>
 
-          <button
-            type="submit"
-            disabled={status === 'submitting'}
-            aria-busy={status === 'submitting'}
-            className="button-default inline-flex cursor-pointer items-center gap-2xs rounded-large bg-button-primary-orange px-m py-s text-button-inverted transition-colors duration-150 hover:bg-capy-orange-500 disabled:cursor-not-allowed disabled:opacity-70 disabled:hover:bg-button-primary-orange"
+        <div className="relative flex items-start justify-start gap-s self-stretch bg-bg-pink pb-l pl-s pr-l pt-l">
+          <HoleColumn />
+
+          <form
+            noValidate
+            onSubmit={handleSubmit}
+            className="flex flex-1 flex-col items-start justify-start gap-m"
           >
-            {status === 'submitting' ? 'Sending...' : 'Submit'}
-          </button>
+            <TextField
+              id="contact-name"
+              label="Name"
+              type="text"
+              placeholder="Enter your name"
+              autoComplete="name"
+              value={values.name}
+              onChange={updateField('name')}
+              error={errors.name}
+              inputRef={fieldRefs.name}
+            />
+            <TextField
+              id="contact-email"
+              label="Email"
+              type="email"
+              placeholder="Enter your email"
+              autoComplete="email"
+              value={values.email}
+              onChange={updateField('email')}
+              error={errors.email}
+              inputRef={fieldRefs.email}
+            />
+            <SubjectField value={values.subject} onChange={updateField('subject')} error={errors.subject} inputRef={fieldRefs.subject} />
+            <MessageField value={values.message} onChange={updateField('message')} error={errors.message} inputRef={fieldRefs.message} />
 
-          {status === 'success' && (
-            <p role="status" className="body-paragraph self-stretch text-body-default">
-              Thanks — we've received your message.
-            </p>
-          )}
-          {status === 'error' && (
-            <p role="alert" className="body-paragraph self-stretch text-body-error">
-              Something went wrong and your message wasn't sent. Please try again.
-            </p>
-          )}
-        </form>
+            {/* Honeypot: real input, real label, present in the DOM and in
+                normal tab order -- deliberately NOT hidden via aria-hidden,
+                display:none, visibility:hidden, or tabindex=-1, since bots
+                commonly detect and skip fields hidden that way. Pushed
+                off-screen instead, which still fools naive bots without
+                those tells. autoComplete="off" plus an unusual field name
+                keep browser autofill from ever populating it for a real
+                user who does tab through it. */}
+            <div className="absolute -left-[9999px]">
+              <label htmlFor="contact-website">Leave this field blank</label>
+              <input
+                type="text"
+                id="contact-website"
+                name="website"
+                autoComplete="off"
+                tabIndex={0}
+                value={values.website}
+                onChange={updateField('website')}
+              />
+            </div>
 
-        <img
-          src={contactPaperClip}
-          alt=""
-          aria-hidden="true"
-          className="pointer-events-none absolute"
-          style={{ width: '135px', height: '72px', left: '-56px', top: '445px', transform: 'rotate(-90deg)', transformOrigin: 'top left' }}
-        />
+            <button
+              type="submit"
+              disabled={status === 'submitting'}
+              aria-busy={status === 'submitting'}
+              className="button-default inline-flex cursor-pointer items-center gap-2xs rounded-large bg-button-primary-orange px-m py-s text-button-inverted transition-colors duration-150 hover:bg-capy-orange-500 disabled:cursor-not-allowed disabled:opacity-70 disabled:hover:bg-button-primary-orange"
+            >
+              {status === 'submitting' ? 'Sending...' : 'Submit'}
+            </button>
+
+            {status === 'success' && (
+              <p role="status" className="body-paragraph self-stretch text-body-default">
+                Thanks — we've received your message.
+              </p>
+            )}
+            {status === 'error' && (
+              <p role="alert" className="body-paragraph self-stretch text-body-error">
+                Something went wrong and your message wasn't sent. Please try again.
+              </p>
+            )}
+          </form>
+
+          <img
+            src={contactPaperClip}
+            alt=""
+            aria-hidden="true"
+            className="pointer-events-none absolute"
+            style={{ width: '135px', height: '72px', left: '-56px', top: '445px', transform: 'rotate(-90deg)', transformOrigin: 'top left' }}
+          />
+        </div>
       </div>
     </section>
   );

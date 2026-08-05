@@ -264,11 +264,12 @@ function NavSpacer() {
   );
 }
 
-// l (1024px, matches the `lg` breakpoint used elsewhere for the fluid card
-// widths) and up keep the scroll-collapsing full bar; below that (m/s/xs)
-// the nav defaults to the hamburger permanently, full stop -- no scroll
-// involved at all, see isLargeScreen's use in showFullBar below.
-const LARGE_SCREEN_QUERY = '(min-width: 1024px)';
+// L (992px, matches the `lg` breakpoint used elsewhere) and up -- L
+// follows XL here, same as it does for the rest of the site's layout --
+// keep the scroll-collapsing full bar; below that (S/M only) the nav
+// defaults to the hamburger permanently, full stop -- no scroll involved
+// at all, see isLargeScreen's use in showFullBar below.
+const LARGE_SCREEN_QUERY = '(min-width: 992px)';
 
 export default function Navigation({ sentinelRef, mainRef, activeSection }) {
   const [isOpen, setIsOpen] = useState(false);
@@ -306,7 +307,7 @@ export default function Navigation({ sentinelRef, mainRef, activeSection }) {
     return () => observer.disconnect();
   }, [sentinelRef]);
 
-  // Keeps isLargeScreen in sync as the viewport crosses 1024px in either
+  // Keeps isLargeScreen in sync as the viewport crosses 992px in either
   // direction (window resize, device rotation, etc.) -- a MediaQueryList
   // 'change' listener rather than a 'resize' listener, so this only fires
   // right at the breakpoint crossing instead of on every pixel of drag.
@@ -409,7 +410,7 @@ export default function Navigation({ sentinelRef, mainRef, activeSection }) {
   // inset-0 overlay) covers everything anyway, and the toggle needs to stay
   // mounted regardless of scroll position since it's the panel's own close
   // control and first focus-trap stop. isLargeScreen gates the whole thing
-  // on top of that: below 1024px (m/s/xs) this is false no matter what
+  // on top of that: below 992px (S/M only) this is false no matter what
   // sentinelVisible says, so those breakpoints always fall through to the
   // hamburger branch -- there's no scroll-triggered collapse to show off
   // there in the first place.
@@ -424,8 +425,20 @@ export default function Navigation({ sentinelRef, mainRef, activeSection }) {
         // positioned/fixed ancestor between this and the document root, an
         // absolutely positioned element is placed relative to the page and
         // scrolls normally; only `position: fixed` would pin it in place.
-        <div className="absolute inset-x-0 top-l z-30 h-14">
-          <div className="relative flex h-full w-full items-center justify-between rounded-large px-page-margin-x">
+        <div className="absolute inset-x-0 top-l z-30 h-14 px-page-margin-x">
+          {/* content-cap: the site-wide desktop content cap -- without it,
+              this row's justify-between spread the nav-links pill and
+              Download button all the way to the true page margins at wide
+              viewports, same issue every other uncapped section had.
+              Moved px-page-margin-x up to the outer div (was on this one)
+              so the 1140px measurement matches every other section's own
+              convention -- pure content width, excluding the page margin,
+              rather than the margin eating into the 1140px itself.
+              NavSpacer's own centering trick (see its comment) still
+              works identically at any width, since it only depends on
+              matching the Download button's own size, not the row's total
+              width. */}
+          <div className="relative flex h-full w-full items-center justify-between rounded-large content-cap">
             <NavSpacer />
 
             <nav aria-label="Primary">
@@ -445,11 +458,20 @@ export default function Navigation({ sentinelRef, mainRef, activeSection }) {
           </div>
         </div>
       ) : (
-        // Wrapped in the same px-page-margin-x inset as the full bar (rather
-        // than a separate right-only margin) so the toggle's right edge
-        // lines up with the Download button's right edge above it.
-        <div className="fixed inset-x-0 top-l z-50 h-14">
-          <div className="flex h-full w-full items-center justify-end px-page-margin-x">
+        // Wrapped in the same px-page-margin-x inset AND the same
+        // content-cap as the full bar (rather than a separate right-only
+        // margin) so the toggle's right edge lines up with the Download
+        // button's right edge above it -- without the matching cap here,
+        // the two would agree below xl but diverge above it, since the
+        // full bar's own row now centers within 1140px instead of running
+        // edge-to-edge.
+        // global-nav-toggle: a stable hook (not a styling class) for
+        // Section 12's own S-tier sticky nav to hide this via a body-level
+        // CSS rule (see index.css) while its own sticky number row is
+        // engaged -- the two would otherwise stack/overlap at the top of
+        // the viewport since both are `fixed`/`sticky` at y:0.
+        <div className="global-nav-toggle fixed inset-x-0 top-l z-50 h-14 px-page-margin-x">
+          <div className="flex h-full w-full items-center justify-end content-cap">
             {isOpen ? (
               <CloseButton innerRef={toggleRef} onClick={handleToggleClick} label="Close navigation" aria-expanded={isOpen} />
             ) : (
@@ -483,23 +505,34 @@ export default function Navigation({ sentinelRef, mainRef, activeSection }) {
             animate={{ y: 0 }}
             exit={shouldReduceMotion ? undefined : { y: '-100%' }}
             transition={shouldReduceMotion ? { duration: 0 } : { duration: 0.3, ease: 'easeOut' }}
-            className="fixed inset-x-0 top-0 z-40 flex items-end justify-center gap-xl bg-bg-linen-light px-page-margin-x py-xl shadow-[0_8px_16px_rgba(0,0,0,0.08)]"
+            className="fixed inset-x-0 top-0 z-40 bg-bg-linen-light px-page-margin-x py-xl shadow-[0_8px_16px_rgba(0,0,0,0.08)]"
           >
-            <img src={desktopNav} alt="" aria-hidden="true" className="pointer-events-none h-auto w-[198px] flex-shrink-0" />
+            {/* content-cap: same site-wide desktop cap as every section --
+                without it, this row's own justify-center just centers
+                within the full page-margin-to-page-margin width, which is
+                what the panel used to do directly. Moved flex/items-end/
+                justify-center/gap-xl down from the motion.div itself onto
+                this inner wrapper so the panel's own background/shadow
+                band still spans full-bleed edge-to-edge (matching the
+                comment above about hugging content height, not width),
+                while only the actual content row gets capped+centered. */}
+            <div className="flex w-full items-end justify-center gap-xl content-cap">
+              <img src={desktopNav} alt="" aria-hidden="true" className="pointer-events-none h-auto w-[198px] flex-shrink-0" />
 
-            <div className="flex flex-col items-center justify-start gap-xl">
-              <NavLink href="#section-1" label="Home" isActive={activeSection === 'home'} innerRef={homeRef} />
-              <NavLink href="#contact" label="Contact us" isActive={activeSection === 'contact'} innerRef={contactRef} />
-              <DownloadButton innerRef={downloadRef} />
+              <div className="flex flex-col items-center justify-start gap-xl">
+                <NavLink href="#section-1" label="Home" isActive={activeSection === 'home'} innerRef={homeRef} />
+                <NavLink href="#contact" label="Contact us" isActive={activeSection === 'contact'} innerRef={contactRef} />
+                <DownloadButton innerRef={downloadRef} />
+              </div>
+
+              {/* Invisible twin of the image, same trick as NavSpacer above --
+                  balances the image on the other side of the links column so
+                  justify-center on the row centers the LINKS on the panel's
+                  true center, rather than centering the image+links group as
+                  one block (which would push the links right of center by
+                  roughly half the image's own width). */}
+              <div aria-hidden="true" className="pointer-events-none w-[198px] flex-shrink-0 opacity-0" />
             </div>
-
-            {/* Invisible twin of the image, same trick as NavSpacer above --
-                balances the image on the other side of the links column so
-                justify-center on the row centers the LINKS on the panel's
-                true center, rather than centering the image+links group as
-                one block (which would push the links right of center by
-                roughly half the image's own width). */}
-            <div aria-hidden="true" className="pointer-events-none w-[198px] flex-shrink-0 opacity-0" />
           </motion.div>
         )}
       </AnimatePresence>

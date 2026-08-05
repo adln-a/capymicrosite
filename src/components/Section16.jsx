@@ -1,9 +1,12 @@
 import { useRef } from 'react';
 import { motion, useReducedMotion, useScroll, useTransform } from 'framer-motion';
+import ScrollSection from './ScrollSection.jsx';
 import AccessibleHighlightText from './AccessibleHighlightText.jsx';
+import useMediaQuery from '../hooks/useMediaQuery.js';
 import pinkScribble from '../assets/Pink-Scribble.svg';
 import frameLeft from '../assets/Desktop-IMG-Frame-16-Left.svg';
 import frameRight from '../assets/Desktop-IMG-Frame-16-Right.svg';
+import sIllustration from '../assets/s/S--IMG-Frame16.svg';
 
 // Content + exact colors/rotations transcribed from the reference export
 // (Section 16.html) -- each card's rotation and ruled-line tint is a
@@ -162,12 +165,16 @@ function Header() {
         before="Ways we can work "
         highlight={<TogetherHighlight>TOGETHER</TogetherHighlight>}
         after=" to make meaningful change"
-        visualClassName="flex w-[800px] max-w-full flex-wrap items-center justify-center gap-xs text-center"
+        visualClassName="flex w-full max-w-full flex-wrap items-center justify-center gap-xs text-center sm:w-[800px]"
       />
     </h2>
   );
 }
 
+// XL-only now -- S no longer overlays its illustration absolutely at the
+// bottom of a pinned h-dvh section; it renders its own single image
+// in-flow, stacked below the card stack (see the !isAtLeastSm branch
+// below), so it doesn't need this component at all.
 function Illustrations() {
   return (
     <div className="pointer-events-none absolute inset-x-0 bottom-xs z-30 flex items-end justify-between px-2xl">
@@ -177,7 +184,25 @@ function Illustrations() {
   );
 }
 
-export default function Section16() {
+// Split into two genuinely separate components (mounted/unmounted via
+// the isAtLeastSm check in the default export below), each with its OWN
+// useScroll/useRef instance, rather than one component whose JSX branches
+// conditionally while sharing hooks. That split matters specifically for
+// useScroll: dragging the window from XL to S live (not a fresh page
+// load) previously left the S-side scroll-jack malfunctioning -- Framer
+// Motion's own console warning explained why ("the provided ref is not
+// yet hydrated... call useScroll() in the same component as the ref").
+// sWrapperRef started at null (its branch wasn't rendered at initial XL
+// mount), and useScroll's setup effect ran once against that null target
+// on Section16's OWN mount; it never re-ran just because the ref's
+// `.current` was filled in later when the S branch started rendering,
+// since a ref mutation alone doesn't retrigger an effect. Making these
+// two fully separate components sidesteps the issue entirely: crossing
+// the breakpoint now unmounts one and mounts the other, so useScroll
+// always initializes fresh with an already-attached ref, exactly like a
+// cold page load.
+
+function Section16Desktop() {
   const prefersReducedMotion = useReducedMotion();
   const wrapperRef = useRef(null);
   const { scrollYProgress } = useScroll({ target: wrapperRef, offset: ['start start', 'end end'] });
@@ -186,19 +211,28 @@ export default function Section16() {
     return (
       <section
         id="section-16"
-        className="relative flex h-dvh w-full flex-col items-center justify-start gap-l overflow-hidden bg-bg-linen-dark px-page-margin-x pb-xs pt-3xl"
+        className="relative flex h-dvh w-full flex-col items-center justify-start gap-l overflow-hidden bg-bg-linen-dark px-page-margin-x py-page-margin-y"
       >
-        <Header />
-        <div className="relative w-[640px] max-w-full" style={{ height: `${CARD_HEIGHT + 3 * STACK_PEEK}px` }}>
-          {CARDS.map((card, index) => (
-            <div
-              key={card.key}
-              style={{ transform: `translateY(${index * STACK_PEEK}px) rotate(${card.rotate}deg)`, transformOrigin: 'top left', zIndex: index + 1 }}
-              className={`absolute inset-x-0 top-0 flex h-[355px] flex-col items-center justify-center gap-m overflow-hidden rounded-large px-l ${card.bg}`}
-            >
-              <CardContent card={card} />
-            </div>
-          ))}
+        {/* content-cap: the site-wide desktop content cap, wrapping the
+            heading + card stack only -- Illustrations below stays OUTSIDE
+            this wrapper (a sibling, not a child) so its two
+            frameLeft/frameRight images keep their own inset-x-0 full-bleed
+            positioning against the section itself, same as a background
+            image, free to overflow past the 1140px cap rather than being
+            confined to it. */}
+        <div className="relative flex w-full flex-col items-center gap-l content-cap">
+          <Header />
+          <div className="relative w-[640px] max-w-full" style={{ height: `${CARD_HEIGHT + 3 * STACK_PEEK}px` }}>
+            {CARDS.map((card, index) => (
+              <div
+                key={card.key}
+                style={{ transform: `translateY(${index * STACK_PEEK}px) rotate(${card.rotate}deg)`, transformOrigin: 'top left', zIndex: index + 1 }}
+                className={`absolute inset-x-0 top-0 flex h-[355px] flex-col items-center justify-center gap-m overflow-hidden rounded-large px-l ${card.bg}`}
+              >
+                <CardContent card={card} />
+              </div>
+            ))}
+          </div>
         </div>
         <Illustrations />
       </section>
@@ -207,15 +241,87 @@ export default function Section16() {
 
   return (
     <section id="section-16" ref={wrapperRef} className="relative h-[300vh]">
-      <div className="sticky top-0 flex h-dvh w-full flex-col items-center justify-start gap-l overflow-hidden bg-bg-linen-dark px-page-margin-x pb-xs pt-3xl">
-        <Header />
-        <div className="relative w-[640px] max-w-full" style={{ height: `${CARD_HEIGHT + 3 * STACK_PEEK}px` }}>
-          {CARDS.map((card, index) => (
-            <StackCard key={card.key} card={card} index={index} scrollYProgress={scrollYProgress} />
-          ))}
+      <div className="sticky top-0 flex h-dvh w-full flex-col items-center justify-start gap-l overflow-hidden bg-bg-linen-dark px-page-margin-x py-page-margin-y">
+        {/* Same content-cap treatment as the reduced-motion branch above --
+            see its own comment. */}
+        <div className="relative flex w-full flex-col items-center gap-l content-cap">
+          <Header />
+          <div className="relative w-[640px] max-w-full" style={{ height: `${CARD_HEIGHT + 3 * STACK_PEEK}px` }}>
+            {CARDS.map((card, index) => (
+              <StackCard key={card.key} card={card} index={index} scrollYProgress={scrollYProgress} />
+            ))}
+          </div>
         </div>
         <Illustrations />
       </div>
     </section>
   );
+}
+
+function Section16Mobile() {
+  const prefersReducedMotion = useReducedMotion();
+  const sWrapperRef = useRef(null);
+  const { scrollYProgress } = useScroll({ target: sWrapperRef, offset: ['start start', 'end end'] });
+
+  // Card stack keeps the exact same scroll-jack mechanism as XL (StackCard,
+  // same CARDS/STACK_PEEK/CARD_HEIGHT) -- only the illustration's
+  // placement changes: it's a normal-flow sibling AFTER the h-[300vh] pin
+  // region instead of an absolutely-positioned overlay living inside the
+  // pinned viewport. That's what makes it only scroll into view once the
+  // user has scrolled all the way through the cards and the pin releases,
+  // rather than being visible (overlaid at the bottom) the entire time
+  // the cards are pinned.
+  if (prefersReducedMotion) {
+    // No pin at all here -- consistent with XL's own reduced-motion
+    // branch, which also skips the scroll-jack entirely and just settles
+    // every card at its resting position immediately.
+    return (
+      <section id="section-16" className="relative flex w-full flex-col items-center bg-bg-linen-dark">
+        <div className="relative flex w-full flex-col items-center gap-l px-page-margin-x py-page-margin-y">
+          <Header />
+          <div className="relative w-full max-w-full" style={{ height: `${CARD_HEIGHT + 3 * STACK_PEEK}px` }}>
+            {CARDS.map((card, index) => (
+              <div
+                key={card.key}
+                style={{ transform: `translateY(${index * STACK_PEEK}px) rotate(${card.rotate}deg)`, transformOrigin: 'top left', zIndex: index + 1 }}
+                className={`absolute inset-x-0 top-0 flex h-[355px] flex-col items-center justify-center gap-m overflow-hidden rounded-large px-l ${card.bg}`}
+              >
+                <CardContent card={card} />
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <img src={sIllustration} alt="" aria-hidden="true" className="pointer-events-none h-auto w-full px-page-margin-x py-page-margin-y" />
+      </section>
+    );
+  }
+
+  return (
+    <section id="section-16" className="relative flex w-full flex-col items-center bg-bg-linen-dark">
+      <div ref={sWrapperRef} className="relative w-full" style={{ height: '300vh' }}>
+        <div className="sticky top-0 flex h-dvh w-full flex-col items-center justify-center gap-l overflow-hidden bg-bg-linen-dark px-page-margin-x py-page-margin-y">
+          <Header />
+          <div className="relative w-full max-w-full" style={{ height: `${CARD_HEIGHT + 3 * STACK_PEEK}px` }}>
+            {CARDS.map((card, index) => (
+              <StackCard key={card.key} card={card} index={index} scrollYProgress={scrollYProgress} />
+            ))}
+          </div>
+        </div>
+      </div>
+
+      <ScrollSection
+        as="img"
+        src={sIllustration}
+        alt=""
+        aria-hidden="true"
+        className="pointer-events-none h-auto w-full px-page-margin-x py-page-margin-y"
+      />
+    </section>
+  );
+}
+
+export default function Section16() {
+  const isAtLeastSm = useMediaQuery('(min-width: 640px)');
+  return isAtLeastSm ? <Section16Desktop /> : <Section16Mobile />;
 }

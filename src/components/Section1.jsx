@@ -2,7 +2,7 @@ import ScrollSection from './ScrollSection.jsx';
 import AccessibleHighlightText from './AccessibleHighlightText.jsx';
 import bgFrame1Xl from '../assets/Desktop-BG--Frame-1.svg';
 import bgFrame1M from '../assets/m/M--BG-Frame1.svg';
-import bgFrame1Xs from '../assets/xs/XS--BG-Frame1.svg';
+import bgFrame1Xs from '../assets/s/S--BG-Frame1.svg';
 import fourScribble from '../assets/Green-Scribble.svg';
 
 const CARD_SHADOW = 'shadow-[0_8px_16px_rgba(0,0,0,0.08)]';
@@ -81,7 +81,7 @@ function WhitePunchHoles() {
   // that far down would just cram them shoulder-to-shoulder instead of
   // staying proportional, and eventually overflow again. So not every
   // hole is visible at every width: 8 below 640px, 11 from 640-768px, 14
-  // from 768-1024px, all 18 from 1024px+ -- a gradual, roughly-even step up
+  // from 768-992px, all 18 from 992px+ -- a gradual, roughly-even step up
   // rather than a steep jump. Each tier's holes are a hand-picked, evenly
   // spread SUBSET of the next tier's (visible ones stay visible as the row
   // grows, new ones fill the gaps between them) rather than holes just
@@ -128,7 +128,7 @@ export default function Section1({ sectionRef }) {
     <section
       ref={sectionRef}
       id="section-1"
-      className="relative flex h-dvh items-center bg-white-linen-200 py-4xl"
+      className="relative flex h-dvh items-center bg-white-linen-200"
     >
       {/* Background image layer, sitting on top of the section's own
           bg-white-linen-200 color and behind everything else. As the
@@ -142,18 +142,12 @@ export default function Section1({ sectionRef }) {
           <picture> picks ONE matching <source> (first, top-to-bottom, that
           matches its media query) rather than rendering all four and
           hiding three with CSS -- same breakpoints as the rest of the
-          fluid work (640/1024, matching sm/lg). The plain <img> fallback
-          (no media query, lowest priority) is the XS asset, covering
-          anything below 640px (phone widths). No separate S asset: the
-          "S" tier (640-768px) doesn't have its own export, it just
-          reuses the M asset -- same reasoning as dropping the separate L
-          asset below, one fewer breakpoint-specific file to maintain
-          where the artwork already reads fine shared across a wider
-          range. So the M source's own media query starts at 640px (sm),
-          not 768px (md) -- it's simultaneously serving both the S and M
-          tiers, there's no third source line for S.
-          No separate L asset either: the L export was dropped in favor of
-          just reusing XL from 1024px up.
+          fluid work (640/992, matching sm/lg). The plain <img> fallback
+          (no media query, lowest priority) is the S asset, covering
+          anything below 640px (mobile). No separate L asset: the L
+          export was dropped in favor of just reusing XL from 992px up,
+          one fewer breakpoint-specific file to maintain where the
+          artwork already reads fine shared across a wider range.
           className/alt/aria-hidden all live on the <img>, not <picture>
           itself (a non-rendered wrapper with no styling of its own) --
           `position: absolute` on the <img> still resolves against the
@@ -168,7 +162,7 @@ export default function Section1({ sectionRef }) {
           XL asset, which was already exported/composed to look right
           centered. */}
       <picture>
-        <source media="(min-width: 1024px)" srcSet={bgFrame1Xl} />
+        <source media="(min-width: 992px)" srcSet={bgFrame1Xl} />
         <source media="(min-width: 640px)" srcSet={bgFrame1M} />
         <img
           src={bgFrame1Xs}
@@ -181,8 +175,12 @@ export default function Section1({ sectionRef }) {
       {/* px-page-margin-x lives here (not on the section itself) so the
           background image above -- absolute inset-0 relative to this
           section's padding box -- stays full-bleed edge-to-edge instead of
-          getting inset by the same horizontal padding. */}
-      <div className="relative flex w-full flex-col items-center px-page-margin-x">
+          getting inset by the same horizontal padding. content-cap: the
+          site-wide desktop content cap -- caps this wrapper (and
+          everything inside it) at 1140px from 1200px up, centered,
+          regardless of what fixed widths the cards inside already use on
+          their own. */}
+      <div className="relative flex w-full flex-col items-center content-cap px-page-margin-x">
         {/* Pink box (heading). Animates in first -- this ScrollSection uses
             the wrapper's own default transition (no delay). */}
         <ScrollSection className="flex w-[800px] max-w-full min-h-[200px] flex-wrap items-center justify-center gap-s rounded-medium bg-bg-pink p-s origin-top-left rotate-1 md:w-[var(--width-card-content-md)] lg:w-[var(--width-card-content-lg)]">
@@ -203,9 +201,9 @@ export default function Section1({ sectionRef }) {
         <div className="relative w-[800px] max-w-full md:w-[var(--width-card-content-md)] lg:w-[var(--width-card-content-lg)]">
           <ScrollSection
             transition={{ duration: 0.6, ease: 'easeOut', delay: WHITE_BOX_DELAY }}
-            className={`w-full origin-top-left -rotate-1 rounded-medium bg-bg-white pt-[16px] pr-[40px] pb-[40px] pl-[40px] ${CARD_SHADOW}`}
+            className={`w-full origin-top-left -rotate-1 rounded-medium bg-bg-white pt-s pr-l pb-l pl-l ${CARD_SHADOW}`}
           >
-            <div className="flex flex-col items-center gap-[24px]">
+            <div className="flex flex-col items-center gap-l">
               <WhitePunchHoles />
               <p className="body-paragraph text-center text-body-default">
                 Not because they&rsquo;re any less capable, but because

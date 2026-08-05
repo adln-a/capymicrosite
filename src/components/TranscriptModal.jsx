@@ -28,14 +28,25 @@ export default function TranscriptModal({ isOpen, onClose, subtitle, transcript 
   const closeRef = useRef(null);
   const contentRef = useRef(null);
   const shouldReduceMotion = useReducedMotion();
+  // Guards the focus-restore branch below against firing on a fresh mount
+  // -- Section 12's QuoteCard remounts a brand-new TranscriptModal
+  // instance (isOpen starting false) every time its own key changes
+  // (activeSet), and without this guard that mount's own effect took the
+  // `else` branch and yanked focus onto "Read transcript" even though the
+  // modal was never opened this time around, stealing focus from whatever
+  // the user had just clicked (e.g. Section 12's own Next/Prev arrows).
+  const hasOpenedRef = useRef(false);
 
   // Focus the close button the instant this opens; hand focus back to
   // whatever button opened it once closed -- same pattern as the nav
-  // panel's own open/close focus handling.
+  // panel's own open/close focus handling. Only ever restores focus on a
+  // genuine open-then-close transition (hasOpenedRef only becomes true
+  // once isOpen has actually been true), never on initial mount.
   useEffect(() => {
     if (isOpen) {
+      hasOpenedRef.current = true;
       closeRef.current?.focus();
-    } else {
+    } else if (hasOpenedRef.current) {
       triggerRef?.current?.focus();
     }
   }, [isOpen, triggerRef]);
@@ -102,7 +113,14 @@ export default function TranscriptModal({ isOpen, onClose, subtitle, transcript 
           <CloseButton innerRef={closeRef} onClick={onClose} label="Close transcript" className="fixed right-page-margin-x top-l z-10" />
 
           <div ref={contentRef} tabIndex={0} className="h-full w-full overflow-y-auto px-page-margin-x py-2xl">
-            <div className="flex w-full flex-col items-start justify-start gap-s">
+            {/* content-cap: without it, the transcript paragraph stretched
+                to the full viewport width at wide screens, producing
+                uncomfortably long reading lines -- same site-wide desktop
+                cap as everywhere else. margin-inline:auto centers it fine
+                here despite the parent not being a flex container -- it's
+                a plain block box, and auto margins center block boxes
+                regardless of the parent's own display type. */}
+            <div className="flex w-full flex-col items-start justify-start gap-s content-cap">
               <h2 id={headingId} className="heading-2 self-stretch text-heading-default">
                 Transcript
               </h2>

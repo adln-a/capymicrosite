@@ -45,12 +45,11 @@ export default function Section10() {
       id="section-10"
       className="relative flex h-dvh w-full flex-col items-center justify-center bg-bg-yellow px-page-margin-x"
     >
-      <ScrollSection className="flex origin-top-left -rotate-1 flex-col items-start justify-start">
+      <ScrollSection className="flex w-full origin-top-left -rotate-1 flex-col items-start justify-start sm:w-auto">
         <div
           aria-hidden="true"
-          className="pointer-events-none"
+          className="pointer-events-none w-full sm:w-[640px]"
           style={{
-            width: '640px',
             height: `${BORDER_TILE_HEIGHT}px`,
             backgroundImage: `url(${paperBorderTop})`,
             backgroundSize: `${BORDER_TILE_WIDTH}px ${BORDER_TILE_HEIGHT}px`,
@@ -59,7 +58,7 @@ export default function Section10() {
           }}
         />
 
-        <div className="flex w-[642px] flex-wrap content-center items-center justify-center bg-bg-white p-[40px]">
+        <div className="flex w-full flex-wrap content-center items-center justify-center bg-bg-white p-l sm:w-[642px]">
           <h2 className="heading-2 text-center text-heading-default">
             <AccessibleHighlightText
               before="We didn’t land on the "
@@ -69,6 +68,13 @@ export default function Section10() {
         </div>
       </ScrollSection>
 
+      {/* Width goes fluid (100%) below sm instead of the fixed 550px --
+          height stays auto (not a fixed px, not a dvh value of its own)
+          so the illustration keeps its native aspect ratio as it scales;
+          the section around it is already unconditionally h-dvh, and
+          this row's own height simply flexes to whatever the now-wider
+          heading + this image need, staying vertically centered within
+          that dvh viewport via the section's justify-center. */}
       <ScrollSection
         as="img"
         src={illustration}
@@ -81,8 +87,8 @@ export default function Section10() {
         // regardless of DOM order -- the opposite stacking need from
         // Section 5, where the box needed to win instead of the
         // illustration.
-        style={{ width: '550px', height: '307px', marginTop: '-24px' }}
-        className="relative z-10 h-auto max-w-full"
+        style={{ aspectRatio: '550 / 307', marginTop: '-24px' }}
+        className="relative z-10 h-auto w-full sm:w-[550px]"
       />
     </section>
   );

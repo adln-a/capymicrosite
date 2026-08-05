@@ -1,8 +1,10 @@
 import ScrollSection from './ScrollSection.jsx';
 import AccessibleHighlightText from './AccessibleHighlightText.jsx';
+import useMediaQuery from '../hooks/useMediaQuery.js';
 import blueScribble from '../assets/Blue-Scribble.svg';
 import bgRight from '../assets/Desktop-BG--Frame-13-Right.svg';
 import bgBottomLeft from '../assets/Desktop-BG--Frame-13-BottomLeft.svg';
+import sImgFrame13 from '../assets/s/S--IMG-Frame13.svg';
 
 // H2 fades up first, then the pink box, then both background
 // illustrations -- same staggered-delay convention as Section 1's
@@ -35,74 +37,141 @@ function ParticipationHighlight({ children }) {
   );
 }
 
+// Shared between XL and S -- only the column's own width differs (a
+// fixed 560px at XL, full-width at S), everything else (heading, pink
+// box, tape) is identical.
+function HeadingAndPinkBox({ widthClassName }) {
+  return (
+    <div className={`flex ${widthClassName} flex-col items-start justify-start gap-m`}>
+      <ScrollSection
+        transition={{ duration: 0.6, ease: 'easeOut', delay: HEADING_DELAY }}
+        className="self-stretch"
+      >
+        {/* Even a plain nested <span> (no image, no Highlight
+            component) still reads to VoiceOver as a separate "item"
+            inside the heading -- confirmed via screen-reader testing
+            on Section 8's identical case. Same fix as the scribble
+            highlights: aria-hidden the visual run, sr-only carries the
+            one flat string. */}
+        <h2 className="heading-2 text-heading-inverted">
+          <AccessibleHighlightText
+            before="Capy Activity Hub would not be the right solution because it’s "
+            highlight={<span className="heading-2-accent">not</span>}
+            after=" a question about access."
+          />
+        </h2>
+      </ScrollSection>
+
+      <div className="relative self-stretch">
+        <ScrollSection
+          transition={{ duration: 0.6, ease: 'easeOut', delay: PINK_BOX_DELAY }}
+          className="relative flex w-full origin-top-left rotate-1 items-center justify-center gap-xs bg-bg-pink px-l py-l"
+        >
+          <h2 className="heading-2 text-heading-red">
+            <AccessibleHighlightText before="It’s about " highlight={<ParticipationHighlight>PARTICIPATION</ParticipationHighlight>} />
+          </h2>
+        </ScrollSection>
+
+        {/* Rendered as its own independently-animated sibling rather
+            than nested inside the card's ScrollSection -- a mix-blend-
+            mode element whose ancestor has opacity/transform actively
+            tweening (or even just statically present) renders with the
+            wrong, un-blended flat color (same isolated-compositing-
+            layer issue as Section 6's tape). This wrapper deliberately
+            carries NO transform of its own -- a static rotate on a
+            shared ancestor would ALSO wall the tape off from blending
+            with whatever's behind/around the card, same isolation bug,
+            just permanent instead of transient. So the card keeps its
+            own rotate-1 directly on itself (it's the tape's SIBLING
+            here, not its ancestor), and the tape instead carries the
+            FULL composed rotation (originally -16deg nested inside a
+            1deg card == -15deg standalone).
+
+            Positioned via `right` (a fixed -61.84px overhang past the
+            card's own right edge), not the original fixed `left:493.84px`
+            -- that literal offset was tuned only for the card's old
+            constant 560px width, and at any narrower width (S) it landed
+            far past the card's actual right edge, off in empty space --
+            which is exactly why the tape "disappeared" at S. Anchoring
+            to the right edge instead keeps it correctly hanging off the
+            corner regardless of the card's own width, at both tiers. */}
+        <ScrollSection
+          as="span"
+          transition={{ duration: 0.6, ease: 'easeOut', delay: PINK_BOX_DELAY }}
+          aria-hidden="true"
+          className="pointer-events-none absolute origin-top-left rotate-[-15deg] bg-bg-purple mix-blend-multiply"
+          style={{ width: '128px', height: '46px', right: '-61.84px', top: '13.62px' }}
+        />
+      </div>
+    </div>
+  );
+}
+
 export default function Section13() {
+  const isAtLeastSm = useMediaQuery('(min-width: 640px)');
+
+  if (!isAtLeastSm) {
+    // No h-dvh here (unlike sm+ below): the heading + pink box + full
+    // Frame13 illustration stacked in normal flow runs taller than one
+    // phone screen, so this section just hugs its own content height
+    // instead of forcing/clipping to the viewport -- same fix as
+    // Section 5/Section 3/Section 11 for the same reason. The two XL
+    // background illustrations (bgRight/bgBottomLeft) are replaced
+    // entirely by the one S--IMG-Frame13.svg image, stacked below the
+    // text column in normal flow rather than absolutely positioned.
+    return (
+      <section
+        id="section-13"
+        className="relative flex w-full flex-col items-center justify-start bg-bg-blue px-page-margin-x pt-page-margin-y"
+      >
+        <HeadingAndPinkBox widthClassName="w-full" />
+
+        {/* Full-bleed (100vw, breaking out of the page's own side
+            margins) -- the asset's own native 393px width is a full
+            device-width frame, not a margined column graphic, matching
+            how every other full-bleed image on the site (Section 8's
+            chart, Section 9's carousel) already breaks out the same way.
+            Pulled up over the pink box (negative margin-top) with an
+            explicit z-index above it, rather than just touching edges --
+            the illustration sits in front of the box's lower portion. */}
+        <ScrollSection
+          as="img"
+          src={sImgFrame13}
+          alt=""
+          aria-hidden="true"
+          transition={{ duration: 0.6, ease: 'easeOut', delay: BG_DELAY }}
+          style={{ width: '100vw', marginLeft: 'calc(50% - 50vw)', marginRight: 'calc(50% - 50vw)', marginTop: '-48px' }}
+          className="pointer-events-none relative z-10 block h-auto"
+        />
+      </section>
+    );
+  }
+
   return (
     <section
       id="section-13"
-      className="relative flex h-dvh w-full items-start justify-between bg-bg-blue px-page-margin-x pt-3xl"
+      className="relative flex h-dvh w-full items-start justify-between bg-bg-blue px-page-margin-x"
     >
       {/* Shared positioning context for the left column and the
-          bottom-left illustration -- both need to align to the page
-          margin's left edge (not the true viewport edge, unlike the
-          right-side image below), and the illustration needs to anchor
-          to the bottom of the full section height, not just the left
-          column's own (much shorter) content height. */}
-      <div className="relative h-full">
-        <div className="flex w-[560px] max-w-full flex-col items-start justify-start gap-m">
-          <ScrollSection
-            transition={{ duration: 0.6, ease: 'easeOut', delay: HEADING_DELAY }}
-            className="self-stretch"
-          >
-            {/* Even a plain nested <span> (no image, no Highlight
-                component) still reads to VoiceOver as a separate "item"
-                inside the heading -- confirmed via screen-reader testing
-                on Section 8's identical case. Same fix as the scribble
-                highlights: aria-hidden the visual run, sr-only carries the
-                one flat string. */}
-            <h2 className="heading-2 text-heading-inverted">
-              <AccessibleHighlightText
-                before="Capy Activity Hub would not be the right solution because it’s "
-                highlight={<span className="heading-2-accent">not</span>}
-                after=" a question about access."
-              />
-            </h2>
-          </ScrollSection>
+          bottom-left illustration -- the illustration needs to anchor to
+          the bottom of the full section height, not just the left
+          column's own (much shorter) content height.
 
-          <div className="relative self-stretch">
-            <ScrollSection
-              transition={{ duration: 0.6, ease: 'easeOut', delay: PINK_BOX_DELAY }}
-              className="relative flex w-full origin-top-left rotate-1 items-center justify-center gap-xs bg-bg-pink px-[40px] py-[24px]"
-            >
-              <h2 className="heading-2 text-heading-red">
-                <AccessibleHighlightText before="It’s about " highlight={<ParticipationHighlight>PARTICIPATION</ParticipationHighlight>} />
-              </h2>
-            </ScrollSection>
-
-            {/* Rendered as its own independently-animated sibling rather
-                than nested inside the card's ScrollSection -- a mix-blend-
-                mode element whose ancestor has opacity/transform actively
-                tweening (or even just statically present) renders with the
-                wrong, un-blended flat color (same isolated-compositing-
-                layer issue as Section 6's tape). This wrapper deliberately
-                carries NO transform of its own -- a static rotate on a
-                shared ancestor would ALSO wall the tape off from blending
-                with whatever's behind/around the card, same isolation bug,
-                just permanent instead of transient. So the card keeps its
-                own rotate-1 directly on itself (it's the tape's SIBLING
-                here, not its ancestor), and the tape instead carries the
-                FULL composed rotation (originally -16deg nested inside a
-                1deg card == -15deg standalone), with left/top being the
-                card's own 1deg rotation applied to the original (494, 5)
-                offset. */}
-            <ScrollSection
-              as="span"
-              transition={{ duration: 0.6, ease: 'easeOut', delay: PINK_BOX_DELAY }}
-              aria-hidden="true"
-              className="pointer-events-none absolute origin-top-left rotate-[-15deg] bg-bg-purple mix-blend-multiply"
-              style={{ width: '128px', height: '46px', left: '493.84px', top: '13.62px' }}
-            />
-          </div>
-        </div>
+          content-cap: the Figma source frame for this section's left
+          content is 1140x608, centered within the reference canvas
+          (confirmed against the frame's own margins, roughly equal
+          left/right against the section background) -- same site-wide
+          desktop cap as most other sections, centered the same way. This
+          DOES shift the text/pink-box column rightward off the page
+          margin at xl (previously flush-left) to match. pt-page-margin-y:
+          the reference frame sits 96px below the section's own top edge
+          (64px below xl, following the same token everywhere else), not
+          flush against it -- this section was previously left with no
+          top offset at all (items-start, no padding), which was flagged
+          as never actually producing a deliberate vertical position; this
+          is that position. */}
+      <div className="relative h-full w-full content-cap pt-page-margin-y">
+        <HeadingAndPinkBox widthClassName="w-[560px] max-w-full" />
 
         <ScrollSection
           as="img"

@@ -1,9 +1,10 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
 import { ButtonTertiary } from './Navigation.jsx';
 import { MaterialIcon } from './icons.jsx';
 import ArrowButton from './ArrowButton.jsx';
 import TranscriptModal from './TranscriptModal.jsx';
+import useMediaQuery from '../hooks/useMediaQuery.js';
 import content from '../data/section12-content.json';
 
 // Design-only fields (colors, shapes, rotations) -- these don't change per
@@ -146,7 +147,7 @@ function NumberShape({ shape, fill, size }) {
   );
 }
 
-function NumberButton({ set, isActive, onClick, shouldReduceMotion, innerRef, id, panelId }) {
+function NumberButton({ set, isActive, onClick, shouldReduceMotion, innerRef, id, panelId, asTab = true }) {
   const size = isActive ? 48 : 40;
   const fill = isActive ? set.numberColorVar : 'var(--color-black-200)';
   // Set 3's square rotates slightly when active (per spec); the other
@@ -154,18 +155,21 @@ function NumberButton({ set, isActive, onClick, shouldReduceMotion, innerRef, id
   // reads clearly without it.
   const rotate = isActive && set.shape === 'square' ? -2 : 0;
 
+  // S renders every set's content at once (no swapping panel), so this
+  // is no longer an ARIA APG "tab" (which requires exactly one visible
+  // panel) -- it's a plain scroll-to-section anchor button instead, using
+  // aria-current to mark whichever set is currently in view rather than
+  // aria-selected/aria-controls, and no roving tabindex since there's no
+  // longer a composite tablist widget to manage focus within.
+  const tabProps = asTab
+    ? { role: 'tab', id, 'aria-selected': isActive, 'aria-controls': panelId, tabIndex: isActive ? 0 : -1 }
+    : { 'aria-current': isActive ? 'true' : undefined, tabIndex: 0 };
+
   return (
     <button
       ref={innerRef}
       type="button"
-      role="tab"
-      id={id}
-      aria-selected={isActive}
-      aria-controls={panelId}
-      // Roving tabindex (ARIA APG Tabs pattern): only the selected tab is
-      // a Tab stop -- arrow keys (handled on the tablist, see
-      // handleTabListKeyDown) move focus among the rest.
-      tabIndex={isActive ? 0 : -1}
+      {...tabProps}
       onClick={onClick}
       aria-label={`Insight ${set.number}`}
       className="relative flex cursor-pointer flex-col items-center justify-center p-xs transition-opacity duration-150 hover:opacity-80"
@@ -391,12 +395,38 @@ function AudioPlayer({ trackColor, audioSrc }) {
   );
 }
 
-function AssumptionCard({ set, shouldReduceMotion }) {
+// XL swaps a single tabpanel's content on click, always already on-screen
+// when it mounts, so its cards deal in immediately via plain initial+
+// animate, sliding in from a stacked deck sitting far to the left
+// (stackX, a big negative percentage). S instead mounts all four sets'
+// cards at once up front in a long scrollable page and stacks them
+// vertically at 100% width -- reusing that same large-x offset there is
+// actively broken, not just visually wrong: whileInView's own
+// IntersectionObserver checks the element's REAL on-screen position
+// (initial transform included), and a card sitting ~1-2 viewport-widths
+// off to the left never intersects the viewport at all, so it never
+// fires and stays permanently invisible. That's why Reality/QuoteCard
+// silently never appeared. revealOnScroll therefore uses a plain
+// fade-up (y, no x) instead, matching ScrollSection's own convention
+// used everywhere else on the site, with rotate held constant at its
+// final tilt rather than animated in from the "messy stack" angle.
+function dealMotionProps(shouldReduceMotion, revealOnScroll, stackX, stackRotate, finalRotate, duration, delay) {
+  if (revealOnScroll) {
+    const initial = shouldReduceMotion ? false : { y: 24, rotate: finalRotate, opacity: 0 };
+    const target = { y: 0, rotate: finalRotate, opacity: 1 };
+    const transition = shouldReduceMotion ? { duration: 0 } : { duration: 0.5, ease: 'easeOut', delay };
+    return { initial, whileInView: target, viewport: { once: true, amount: 0.3 }, transition };
+  }
+  const initial = shouldReduceMotion ? false : { x: stackX, rotate: stackRotate, opacity: 0 };
+  const target = { x: 0, rotate: finalRotate, opacity: 1 };
+  const transition = shouldReduceMotion ? { duration: 0 } : { duration, ease: 'easeOut', delay };
+  return { initial, animate: target, transition };
+}
+
+function AssumptionCard({ set, shouldReduceMotion, revealOnScroll = false }) {
   return (
     <motion.div
-      initial={shouldReduceMotion ? false : { x: STACK_X[0], rotate: STACK_ROTATE[0], opacity: 0 }}
-      animate={{ x: 0, rotate: FINAL_ROTATE[0], opacity: 1 }}
-      transition={shouldReduceMotion ? { duration: 0 } : { duration: DEAL_DURATIONS[0], ease: 'easeOut', delay: 0 * DEAL_STAGGER }}
+      {...dealMotionProps(shouldReduceMotion, revealOnScroll, STACK_X[0], STACK_ROTATE[0], FINAL_ROTATE[0], DEAL_DURATIONS[0], 0 * DEAL_STAGGER)}
       className="relative z-[3] flex flex-1 flex-col items-start justify-start gap-s rounded-large bg-bg-white p-l"
     >
       <p className="body-paragraph self-stretch text-body-default">We assumed</p>
@@ -405,12 +435,10 @@ function AssumptionCard({ set, shouldReduceMotion }) {
   );
 }
 
-function RealityCard({ set, shouldReduceMotion }) {
+function RealityCard({ set, shouldReduceMotion, revealOnScroll = false }) {
   return (
     <motion.div
-      initial={shouldReduceMotion ? false : { x: STACK_X[1], rotate: STACK_ROTATE[1], opacity: 0 }}
-      animate={{ x: 0, rotate: FINAL_ROTATE[1], opacity: 1 }}
-      transition={shouldReduceMotion ? { duration: 0 } : { duration: DEAL_DURATIONS[1], ease: 'easeOut', delay: 1 * DEAL_STAGGER }}
+      {...dealMotionProps(shouldReduceMotion, revealOnScroll, STACK_X[1], STACK_ROTATE[1], FINAL_ROTATE[1], DEAL_DURATIONS[1], 1 * DEAL_STAGGER)}
       className={`relative z-[2] flex flex-1 flex-col items-start justify-start gap-s rounded-large p-l ${set.card2Bg}`}
     >
       <p className="body-paragraph self-stretch text-body-default">What really happened</p>
@@ -419,15 +447,13 @@ function RealityCard({ set, shouldReduceMotion }) {
   );
 }
 
-function QuoteCard({ set, shouldReduceMotion }) {
+function QuoteCard({ set, shouldReduceMotion, revealOnScroll = false }) {
   const [isTranscriptOpen, setIsTranscriptOpen] = useState(false);
   const transcriptButtonRef = useRef(null);
 
   return (
     <motion.div
-      initial={shouldReduceMotion ? false : { x: STACK_X[2], rotate: STACK_ROTATE[2], opacity: 0 }}
-      animate={{ x: 0, rotate: FINAL_ROTATE[2], opacity: 1 }}
-      transition={shouldReduceMotion ? { duration: 0 } : { duration: DEAL_DURATIONS[2], ease: 'easeOut', delay: 2 * DEAL_STAGGER }}
+      {...dealMotionProps(shouldReduceMotion, revealOnScroll, STACK_X[2], STACK_ROTATE[2], FINAL_ROTATE[2], DEAL_DURATIONS[2], 2 * DEAL_STAGGER)}
       className={`relative z-[1] flex flex-1 flex-col items-start justify-start gap-s rounded-large p-l ${set.card3Bg}`}
     >
       <p className="body-paragraph self-stretch text-body-inverted">What was said</p>
@@ -464,14 +490,106 @@ function QuoteCard({ set, shouldReduceMotion }) {
 const PANEL_ID = 'section12-panel';
 const tabId = (number) => `section12-tab-${number}`;
 
+// Height of the sticky number row at S -- 48px button + p-xs (8px) top/
+// bottom padding on the row itself, rounded up a little for the row's
+// own py breathing room. Used both as each set's scroll-margin-top (so a
+// click-to-scroll doesn't land a set's top edge underneath the sticky
+// nav) and as the IntersectionObserver's rootMargin top offset (so a set
+// only counts as "current" once it's actually clear of the sticky nav,
+// not merely technically past y=0).
+//
+// The site's own global header (the fixed hamburger-menu toggle) is ALSO
+// fixed at the top of the viewport at every breakpoint, which would
+// otherwise stack/overlap with this nav -- rather than offsetting this
+// nav below it, Section12 hides that global toggle instead (via the
+// `section12-nav-active` body class, see the effect below and its
+// `.global-nav-toggle` CSS rule in index.css) whenever this section is in
+// view, so this nav can just use top:0 and be the only fixed bar.
+const S_STICKY_NAV_HEIGHT = 80;
+
 export default function Section12() {
   const [activeSet, setActiveSet] = useState(1);
+  const [isNavStuck, setIsNavStuck] = useState(false);
   const shouldReduceMotion = useReducedMotion();
+  const isAtLeastSm = useMediaQuery('(min-width: 640px)');
   const set = getSet(activeSet);
   const tabRefs = useRef({});
+  const setSectionRefs = useRef({});
+  const sectionRef = useRef(null);
+  const navSentinelRef = useRef(null);
+
+  // The shadow should only read as "this bar has detached from the page
+  // and is now floating over content" once it's actually stuck -- while
+  // it's still in normal flow at the very top of the section, a shadow
+  // there just looks like an unexplained line under the numbers. No CSS
+  // :stuck selector yet (too new to rely on), so this is the standard
+  // sentinel trick instead: a zero-height marker placed immediately
+  // before the sticky nav in normal flow. The moment it scrolls out from
+  // under the viewport's top edge, the nav (pinned at the same y) must
+  // have taken over that spot -- i.e. gone stuck.
+  useEffect(() => {
+    if (isAtLeastSm || !navSentinelRef.current) return undefined;
+    const observer = new IntersectionObserver(([entry]) => setIsNavStuck(!entry.isIntersecting), { threshold: 0 });
+    observer.observe(navSentinelRef.current);
+    return () => observer.disconnect();
+  }, [isAtLeastSm]);
 
   const goToPrev = () => setActiveSet((s) => (s === 1 ? 4 : s - 1));
   const goToNext = () => setActiveSet((s) => (s === 4 ? 1 : s + 1));
+
+  // Toggles the body class that hides the global nav toggle (see the
+  // S_STICKY_NAV_HEIGHT comment above) for as long as any part of this
+  // section is in view -- not just while its sticky nav is technically
+  // "stuck", since the two would still stack/overlap during the brief
+  // window before it sticks. Cleans the class up on unmount too, so
+  // navigating away mid-section (or a hot-reload) never leaves the
+  // global nav permanently hidden.
+  useEffect(() => {
+    if (isAtLeastSm || !sectionRef.current) return undefined;
+    const observer = new IntersectionObserver(
+      ([entry]) => document.body.classList.toggle('section12-nav-active', entry.isIntersecting),
+      { threshold: 0 },
+    );
+    observer.observe(sectionRef.current);
+    return () => {
+      observer.disconnect();
+      document.body.classList.remove('section12-nav-active');
+    };
+  }, [isAtLeastSm]);
+
+  // S-only scroll-spy: whichever set's own wrapper is crossing the band
+  // just below the sticky nav becomes "active" -- the standard rootMargin
+  // trick (a negative top/bottom margin collapses the observer's
+  // effective viewport to a thin horizontal band) rather than picking
+  // whichever entry has the largest intersection ratio, which gets
+  // noisy when a tall set and a short one are both partly visible at
+  // once. Skips entirely at sm+, where activeSet is click-driven instead
+  // (see goToPrev/goToNext and the tablist's onClick below); re-runs
+  // whenever isAtLeastSm itself changes so a mid-session resize across
+  // the breakpoint re-attaches to whichever set of DOM nodes is current
+  // (same fix as Section 8's own resize bug).
+  useEffect(() => {
+    if (isAtLeastSm) return;
+    const els = SET_DESIGN.map((design) => setSectionRefs.current[design.number]).filter(Boolean);
+    if (els.length === 0) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            setActiveSet(Number(entry.target.dataset.setNumber));
+          }
+        });
+      },
+      { rootMargin: `-${S_STICKY_NAV_HEIGHT}px 0px -70% 0px`, threshold: 0 },
+    );
+    els.forEach((el) => observer.observe(el));
+    return () => observer.disconnect();
+  }, [isAtLeastSm]);
+
+  const scrollToSet = (number) => {
+    setSectionRefs.current[number]?.scrollIntoView({ behavior: shouldReduceMotion ? 'auto' : 'smooth', block: 'start' });
+  };
 
   // "Automatic activation" model: moving focus with an arrow key also
   // switches the active tab/panel immediately, no separate Enter/Space
@@ -504,6 +622,56 @@ export default function Section12() {
     }
   }
 
+  if (!isAtLeastSm) {
+    // No tabs, no arrows: every set's 3-card group renders at once in a
+    // long scrollable page instead of one swapped-in-place panel. The
+    // number row becomes a sticky top-anchored nav -- click jumps to that
+    // set (scrollToSet), and the scroll-spy effect above keeps whichever
+    // number is highlighted in sync with actual scroll position, not the
+    // other way around.
+    return (
+      <section ref={sectionRef} id="section-12" className="relative flex w-full flex-col items-center justify-start bg-white-linen-100">
+        <div ref={navSentinelRef} aria-hidden="true" style={{ height: 0 }} />
+        <div
+          className={`sticky top-0 z-20 flex w-full items-center justify-center gap-2xl bg-white-linen-100 px-page-margin-x py-xs ${isNavStuck ? 'shadow-[0_4px_8px_rgba(0,0,0,0.06)]' : ''}`}
+          style={{ height: `${S_STICKY_NAV_HEIGHT}px` }}
+        >
+          {SET_DESIGN.map((design) => (
+            <NumberButton
+              key={design.number}
+              asTab={false}
+              set={design}
+              isActive={activeSet === design.number}
+              onClick={() => scrollToSet(design.number)}
+              shouldReduceMotion={shouldReduceMotion}
+            />
+          ))}
+        </div>
+
+        <div className="flex w-full flex-col items-stretch justify-start gap-3xl px-page-margin-x py-page-margin-y">
+          {SET_DESIGN.map((design) => {
+            const setData = getSet(design.number);
+            return (
+              <div
+                key={design.number}
+                ref={(el) => {
+                  setSectionRefs.current[design.number] = el;
+                }}
+                data-set-number={design.number}
+                className="flex w-full content-cap flex-col items-stretch justify-start gap-m"
+                style={{ scrollMarginTop: `${S_STICKY_NAV_HEIGHT}px` }}
+              >
+                <AssumptionCard set={setData} shouldReduceMotion={shouldReduceMotion} revealOnScroll />
+                <RealityCard set={setData} shouldReduceMotion={shouldReduceMotion} revealOnScroll />
+                <QuoteCard set={setData} shouldReduceMotion={shouldReduceMotion} revealOnScroll />
+              </div>
+            );
+          })}
+        </div>
+      </section>
+    );
+  }
+
   return (
     <section
       id="section-12"
@@ -526,34 +694,25 @@ export default function Section12() {
         ))}
       </div>
 
-      <div className="relative flex w-full self-stretch">
-        {/* Purely a mouse/touch convenience now -- arrow-key navigation on
-            the tablist above already does exactly this for keyboard/AT
-            users, so these are hidden from both (see ArrowButton's own
-            `decorative` prop comment). */}
-        <ArrowButton
-          direction="left"
-          onClick={goToPrev}
-          label="Previous set"
-          size={48}
-          iconSize={32}
-          bg="bg-bg-linen-light"
-          className="absolute top-1/2 z-10 -translate-y-1/2 shadow-[0_8px_16px_rgba(0,0,0,0.08)]"
-          style={{ left: '-56px' }}
-          decorative
-        />
-        <ArrowButton
-          direction="right"
-          onClick={goToNext}
-          label="Next set"
-          size={48}
-          iconSize={32}
-          bg="bg-bg-linen-light"
-          className="absolute top-1/2 z-10 -translate-y-1/2 shadow-[0_8px_16px_rgba(0,0,0,0.08)]"
-          style={{ right: '-56px' }}
-          decorative
-        />
-
+      {/* content-cap: without it, the three flex-1 cards below stretched
+          to fill however wide the section itself happened to be at wide
+          viewports (1425px+), each growing far wider than its actual text
+          content needed. Its own margin-inline:auto is NOT redundant here
+          despite the section's own items-center (it's flex-col): the
+          pre-existing self-stretch class (now removed) set
+          align-self:stretch on this item, which overrides the parent's
+          items-center and left-aligns the box once max-w shrinks it below
+          the available width instead of centering it -- auto margins take
+          priority over any align-self/align-items in flexbox, so
+          content-cap centers reliably regardless. */}
+      <div className="relative flex w-full content-cap">
+        {/* Tabpanel comes FIRST in DOM/tab order, ahead of the Next/Prev
+            arrows below -- Tab order is: tablist (1/2/3/4, one stop via
+            roving tabIndex) -> this panel's own focusable content (the
+            audio player, "Read transcript") -> Next/Prev. Both arrows are
+            `absolute`-positioned against this same relative wrapper, so
+            moving them after the panel in the DOM doesn't move them
+            on-screen at all, only their place in reading/Tab order. */}
         <div role="tabpanel" id={PANEL_ID} aria-labelledby={tabId(activeSet)} tabIndex={0} className="flex w-full items-stretch justify-center gap-m">
           {/* key={activeSet} forces all three cards to remount on every set
               change, re-triggering the stacked-deck entrance from scratch
@@ -563,6 +722,41 @@ export default function Section12() {
           <RealityCard key={`r-${activeSet}`} set={set} shouldReduceMotion={shouldReduceMotion} />
           <QuoteCard key={`q-${activeSet}`} set={set} shouldReduceMotion={shouldReduceMotion} />
         </div>
+
+        {/* Not aria-hidden (see ArrowButton's own comment for why that was
+            tried and reverted) -- these duplicate the tablist's own
+            Left/Right arrow-key navigation for mouse/touch users, but are
+            real, announced, focusable controls too, so a keyboard-only
+            user has a direct way to move between sets from here, without
+            shifting focus all the way back up to the tablist first. */}
+        <ArrowButton
+          direction="left"
+          onClick={goToPrev}
+          label="Previous set"
+          size={48}
+          iconSize={32}
+          bg="bg-bg-linen-light"
+          className="absolute top-1/2 z-10 -translate-y-1/2 shadow-[0_8px_16px_rgba(0,0,0,0.08)]"
+          // calc(-1 * min(56px, var(--spacing-page-margin-x))) -- the
+          // designed 56px offset, but clamped so it can never exceed the
+          // page's CURRENT margin at any breakpoint. A flat -56px was
+          // only ever safe back when the margin was a fixed 150px at
+          // this tier (94px of slack); now that page-margin-x tops out
+          // at 32px, an unclamped -56px pushes 24px past the true
+          // viewport edge -- exactly the horizontal-overflow amount this
+          // was causing.
+          style={{ left: 'calc(-1 * min(56px, var(--spacing-page-margin-x)))' }}
+        />
+        <ArrowButton
+          direction="right"
+          onClick={goToNext}
+          label="Next set"
+          size={48}
+          iconSize={32}
+          bg="bg-bg-linen-light"
+          className="absolute top-1/2 z-10 -translate-y-1/2 shadow-[0_8px_16px_rgba(0,0,0,0.08)]"
+          style={{ right: 'calc(-1 * min(56px, var(--spacing-page-margin-x)))' }}
+        />
       </div>
     </section>
   );

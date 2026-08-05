@@ -103,13 +103,13 @@ const POSITIONS_M = {
 
 // Unchanged from the original desktop-only build -- no separate L export
 // was given for this section, so (same as Section 1/2's backgrounds) this
-// one dataset just covers the whole merged L/XL range, 1024px and up.
+// one dataset just covers the whole merged L/XL range, 992px and up.
 // teacher-lazy/play-games keep their fixed-width (not hug) workaround here
 // specifically -- see SpeechBubble's own doc comment -- because this is
 // the one tier where the PINNED scroll-scrubbed crossfade (below) actually
 // swaps their text mid-animation; a hug box would visibly resize at that
 // swap. XS/M never do that swap in their own (static) rendering, so hug is
-// safe there -- but note the M tier IS also used while pinned (768-1024px,
+// safe there -- but note the M tier IS also used while pinned (768-992px,
 // see isPinned below), where this same resize risk technically still
 // applies and isn't compensated for -- Figma's own M export shows hug with
 // no fixed width, and there's no measured-safe width to substitute the
@@ -220,17 +220,17 @@ export default function Section3() {
   // Three independent breakpoint checks rather than one combined tier
   // state, because the two things they answer are genuinely different
   // questions: `tier` picks WHICH position dataset to render (XS below
-  // 640px, M from 640-1024px, XL from 1024px up -- S has no dataset of
+  // 640px, M from 640-992px, XL from 992px up -- S has no dataset of
   // its own, it just reuses M, same as the background images), while
   // `isPinned` picks WHETHER the scroll-scrubbed pin interaction runs at
   // all (768px up only, per explicit request -- "keep the stick up to M
   // screen size"). The M tier's own position data straddles that 768px
-  // pin boundary: 640-768px renders it statically, 768-1024px renders the
+  // pin boundary: 640-768px renders it statically, 768-992px renders the
   // exact same positions but pinned/animated.
   const isAtLeast640 = useMediaQuery('(min-width: 640px)');
   const isAtLeast768 = useMediaQuery('(min-width: 768px)');
-  const isAtLeast1024 = useMediaQuery('(min-width: 1024px)');
-  const tier = isAtLeast1024 ? 'xl' : isAtLeast640 ? 'm' : 'xs';
+  const isAtLeast992 = useMediaQuery('(min-width: 992px)');
+  const tier = isAtLeast992 ? 'xl' : isAtLeast640 ? 'm' : 'xs';
   const isPinned = isAtLeast768 && !prefersReducedMotion;
 
   const container = CONTAINERS[tier];
@@ -265,11 +265,13 @@ export default function Section3() {
     // a no-op under prefers-reduced-motion). No h-dvh here (unlike the pin
     // branch) -- the XS/M containers (1003px/869px tall) can run taller
     // than one viewport, so this is left auto-height/normal document flow
-    // rather than force-fit into one screen's worth of height.
+    // (py-page-margin-y -- 64px at S, growing to 96px at xl -- gives it
+    // breathing room instead) rather than force-fit into one screen's
+    // worth of height, which would clip the bubble stack.
     return (
       <section
         id="section-3"
-        className="relative flex w-full flex-col items-center justify-center bg-bg-blue px-page-margin-x py-3xl"
+        className="relative flex w-full flex-col items-center justify-center bg-bg-blue px-page-margin-x py-page-margin-y"
       >
         <div className="relative max-w-full" style={{ width: `${container.width}px`, height: `${container.height}px` }}>
           {bubbles.map((bubble) => (
@@ -284,7 +286,11 @@ export default function Section3() {
 
   return (
     <section id="section-3" ref={wrapperRef} className="relative h-[200vh]">
-      <div className="sticky top-0 flex h-dvh w-full items-center justify-center overflow-hidden bg-bg-blue px-page-margin-x py-3xl">
+      {/* No py-page-margin-y here (unlike the static branch above) -- this
+          is the "Dvh group" treatment (h-dvh, purely flex-centered, no
+          vertical padding fighting that centering), matching every other
+          Dvh-group section site-wide. */}
+      <div className="sticky top-0 flex h-dvh w-full items-center justify-center overflow-hidden bg-bg-blue px-page-margin-x">
         <motion.div
           aria-hidden="true"
           style={{ opacity: bgOverlayOpacity }}

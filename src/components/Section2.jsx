@@ -5,15 +5,15 @@ import AccessibleHighlightText from './AccessibleHighlightText.jsx';
 import bgScene1Xl from '../assets/Desktop-BG--Frame-2.svg';
 import bgScene1L from '../assets/l/L--BG-Frame2.svg';
 import bgScene1M from '../assets/m/M--BG-Frame2.svg';
-import bgScene1Xs from '../assets/xs/XS--BG-Frame2.svg';
+import bgScene1Xs from '../assets/s/S--BG-Frame2.svg';
 import bgScene2Xl from '../assets/Desktop-BG--Frame-2B.svg';
 import bgScene2L from '../assets/l/L--BG-Frame2B.svg';
 import bgScene2M from '../assets/m/M--BG-Frame2B.svg';
-import bgScene2Xs from '../assets/xs/XS--BG-Frame2B.svg';
+import bgScene2Xs from '../assets/s/S--BG-Frame2B.svg';
 import bgScene3Xl from '../assets/Desktop-BG--Frame-2C.svg';
 import bgScene3L from '../assets/l/L--BG-Frame2C.svg';
 import bgScene3M from '../assets/m/M--BG-Frame2C.svg';
-import bgScene3Xs from '../assets/xs/XS--BG-Frame2C.svg';
+import bgScene3Xs from '../assets/s/S--BG-Frame2C.svg';
 import pinkScribble from '../assets/Pink-Scribble.svg';
 import blueScribble from '../assets/Blue-Scribble.svg';
 import paperClip from '../assets/Paper-Clip.png';
@@ -30,21 +30,24 @@ const TRANSITION_1_END = 0.6;
 const TRANSITION_2_START = 0.7;
 const TRANSITION_2_END = 0.9;
 
-// Same breakpoint-swap technique as Section 1's background (640/1024/1440,
+// Same breakpoint-swap technique as Section 1's background (640/992/1200,
 // matching sm/lg/xl) -- <picture> picks ONE matching source rather than
-// rendering all four and hiding three with CSS. No separate S asset: the
-// "S" tier (640-768px) doesn't have its own export, it just reuses the M
-// asset -- same as Section 1, so the M source's own media query starts at
-// 640px (sm), not 768px (md); there's no third source line for S. Always a
-// motion.img (not a plain <img>) even for the reduced-motion fallback
-// below, which never actually animates it -- motion.img renders a normal
-// <img> either way, so there's one code path instead of two near-identical
-// ones.
+// rendering all four and hiding three with CSS. Always a motion.img (not
+// a plain <img>) even for the reduced-motion fallback below, which never
+// actually animates it -- motion.img renders a normal <img> either way,
+// so there's one code path instead of two near-identical ones.
 function SceneBackgroundPicture({ xl, l, m, xs, style, className }) {
+  // absolute on <picture> itself, not just the <img> inside -- the <img>'s
+  // own `absolute` only takes IT out of flow, but <picture> (its parent)
+  // has no positioning of its own and stays a normal-flow flex item. Inside
+  // Section 2's flex-col + gap-m sticky container, three of these
+  // near-zero-height <picture> elements sitting before the content wrapper
+  // each still counted for gap-m, injecting extra invisible gap above the
+  // visible content and pushing it off-center.
   return (
-    <picture>
-      <source media="(min-width: 1440px)" srcSet={xl} />
-      <source media="(min-width: 1024px)" srcSet={l} />
+    <picture className="absolute inset-0">
+      <source media="(min-width: 1200px)" srcSet={xl} />
+      <source media="(min-width: 992px)" srcSet={l} />
       <source media="(min-width: 640px)" srcSet={m} />
       <motion.img src={xs} alt="" aria-hidden="true" style={style} className={className} />
     </picture>
@@ -189,6 +192,34 @@ function Scene2Content() {
   );
 }
 
+// Same span-wrap technique as MatterHighlight above/ParticipationHighlight
+// (Section 13) -- anchors the scribble to this specific word via normal
+// text flow, so it stays correctly centered under "burnout" regardless of
+// how the surrounding paragraph wraps at any width. The previous approach
+// (a paragraph-level flex row + one absolutely-positioned scribble offset
+// a fixed 87px from the card's right edge) was only ever tuned for the
+// card's old constant 640px width -- once the card became fluid (w-full
+// below md), the paragraph could wrap across an extra line at narrower S
+// widths, and the scribble stayed stranded near "and emotional" on the
+// line above instead of following "burnout" down to its own line.
+// Blue-Scribble.svg is 89x23 natively -- kept at that native size
+// (matches Section 13's own identical-asset usage), --scribble-offset-
+// default likewise matches that same sibling usage.
+function BurnoutHighlight({ children }) {
+  return (
+    <span className="relative z-0 inline-block whitespace-nowrap">
+      <img
+        src={blueScribble}
+        alt=""
+        aria-hidden="true"
+        className="pointer-events-none absolute left-1/2 -z-10 max-w-none -translate-x-1/2"
+        style={{ width: '89px', height: '23px', top: 'var(--scribble-offset-default)' }}
+      />
+      <span className="relative">{children}</span>
+    </span>
+  );
+}
+
 function Scene3Content() {
   return (
     <>
@@ -197,36 +228,10 @@ function Scene3Content() {
         living on less often face barriers that are invisible to most:
       </p>
 
-      {/* z-0 gives this block its own stacking context so the scribble's
-          -z-10 stays scoped inside it and paints behind the text (same
-          technique as MatterHighlight/FourHighlight, just applied to the
-          whole block instead of a single wrapped word, since this scribble
-          sits at a fixed offset rather than under one specific word). */}
-      <div className="relative z-0 flex w-full items-center justify-center gap-xs self-stretch">
-        <p className="body-paragraph-large flex-1 text-center text-body-success">
-          Financial stress, unstable routines, limited enrichment, and
-          emotional burnout.
-        </p>
-        {/* Blue-Scribble.svg is 89x23 natively -- essentially exact match
-            for the ~88x22 target (within 1px), so it's used at its own
-            natural size rather than an explicit override. `right` (not
-            `left`): this wrapper is the card's own full content width
-            (w-full of a card that's now itself responsive, w-full below
-            md and 640px from md up), and the original left:384px was only
-            ever correct at the old constant 640px card (560px content
-            width after its old fixed 40px padding, now p-l -- see below)
-            -- anchoring from the right
-            edge instead (560 - (384+89) = 87px) keeps the scribble the
-            same distance from the right edge at any content width,
-            instead of overshooting past it as the card narrows. */}
-        <img
-          src={blueScribble}
-          alt=""
-          aria-hidden="true"
-          className="pointer-events-none absolute -z-10 h-auto max-w-none"
-          style={{ right: '87px', top: '54px' }}
-        />
-      </div>
+      <p className="body-paragraph-large self-stretch text-center text-body-success">
+        Financial stress, unstable routines, limited enrichment, and emotional{' '}
+        <BurnoutHighlight>burnout</BurnoutHighlight>.
+      </p>
     </>
   );
 }
@@ -386,7 +391,7 @@ export default function Section2() {
     // holeColumnColor is set to blue to match this backdrop, rather than
     // the linen-dark used in the two-scene version of this fallback.
     return (
-      <section id="section-2" className="relative flex h-dvh w-full flex-col items-center justify-center gap-m overflow-hidden bg-bg-blue px-page-margin-x py-3xl">
+      <section id="section-2" className="relative flex h-dvh w-full flex-col items-center justify-center gap-m overflow-hidden bg-bg-blue px-page-margin-x">
         <SceneBackgroundPicture
           xl={bgScene3Xl}
           l={bgScene3L}
@@ -394,7 +399,12 @@ export default function Section2() {
           xs={bgScene3Xs}
           className="pointer-events-none absolute inset-0 h-full w-full object-cover"
         />
-        <div className="relative flex flex-col items-center gap-xs">
+        {/* content-cap: site-wide desktop content cap -- its own mx-auto
+            is redundant here (this wrapper's parent is already flex-col
+            items-center, which centers it regardless of width) but
+            harmless, so the shared class is used as-is rather than a
+            one-off variant without margin-inline. */}
+        <div className="relative flex flex-col items-center gap-xs content-cap">
           <ScrollSection className="relative flex w-full rotate-1 flex-row items-center justify-center gap-s rounded-small bg-bg-white pb-s pl-s pr-l pt-s md:w-[640px]">
             <Scene1Content holeColumnColor="#1E79AE" />
           </ScrollSection>
@@ -434,7 +444,7 @@ export default function Section2() {
 
   return (
     <section id="section-2" ref={wrapperRef} className="relative h-[300vh]">
-      <div className="sticky top-0 flex h-dvh w-full flex-col items-center justify-center gap-m overflow-hidden bg-bg-blue px-page-margin-x py-3xl">
+      <div className="sticky top-0 flex h-dvh w-full flex-col items-center justify-center gap-m overflow-hidden bg-bg-blue px-page-margin-x">
         {/* Background color crossfade: bg-bg-blue (the container's own
             class, always present underneath) -> bg-white-linen-200 (this
             overlay, rising then receding again as Scene 3 activates --
@@ -476,7 +486,11 @@ export default function Section2() {
           className="pointer-events-none absolute inset-0 h-full w-full object-cover"
         />
 
-        <div className="relative flex justify-center">
+        {/* content-cap: site-wide desktop content cap -- its own mx-auto
+            is redundant here (this wrapper's parent, the sticky
+            container above, is already flex-col items-center) but
+            harmless, same as Scene 1's own wrapper above. */}
+        <div className="relative flex justify-center content-cap">
           <motion.div ref={stackRef} style={{ y: stackY }} className="flex flex-col items-center gap-xs">
             <motion.div className="relative flex w-full rotate-1 flex-row items-center justify-center gap-s rounded-small bg-bg-white pb-s pl-s pr-l pt-s md:w-[640px]">
               <Scene1Content holeColumnColor={holeColumnColor} />

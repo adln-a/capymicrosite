@@ -42,23 +42,45 @@
      snapping at each breakpoint:
        - below 768px (mobile): cards stay max-w-full (100%, unchanged --
          already responsive, no token needed for this range).
-       - 768px-1024px (md): 640px -> 720px.
-       - 1024px-1440px (lg): 720px -> 800px (matches -md's own endpoint,
-         so there's no jump at the 1024px seam).
+       - 768px-992px (md-lg): 640px -> 720px.
+       - 992px-1200px (lg-xl): 720px -> 800px (matches -md's own endpoint,
+         so there's no jump at the 992px seam).
      Both clamp()s naturally stay pinned at their own upper bound past
-     their range (720px above 1024 for -md, 800px above 1440 for -lg), so
+     their range (720px above 992 for -md, 800px above 1200 for -lg), so
      applying BOTH via `md:w-[var(--width-card-content-md)]
      lg:w-[var(--width-card-content-lg)]` at the call site lets the later,
      more specific breakpoint's rule simply take over at each seam --
-     no separate xl override needed either. */
-  --width-card-content-md: clamp(640px, 400px + 31.25vw, 720px);
-  --width-card-content-lg: clamp(720px, 523.0769px + 19.2308vw, 800px);
+     no separate xl override needed either. Recomputed to the 992px/1200px
+     breakpoints below (was 1024px/1440px) -- the endpoints moved, but the
+     640/720/800 target widths themselves didn't, so only the two
+     coefficients changed, not the underlying design. */
+  --width-card-content-md: clamp(640px, 365.7143px + 35.7143vw, 720px);
+  --width-card-content-lg: clamp(720px, 338.4615px + 38.4615vw, 800px);
 
-  /* md (768px) and lg (1024px) stay Tailwind defaults; xl is redefined to
-     1440px (from the default 1280px) so there's no in-between layout state
-     between lg and the 1440px desktop design — 1024-1439px keeps the lg
-     layout. */
-  --breakpoint-xl: 1440px;
+  /* sm/md are Tailwind defaults (640px/768px) but declared explicitly
+     here anyway, alongside lg/xl's real overrides (992px/1200px, from
+     the defaults 1024px/1280px) -- Tailwind v4 sorts a utility's
+     responsive variants for cascade purposes by when each breakpoint was
+     "customized" in the theme, not by its numeric px value. With only lg
+     and xl explicitly redeclared, they were sorting BEFORE the untouched
+     sm/md in the compiled CSS regardless of their larger px values --
+     e.g. `sm:w-[640px] xl:w-[800px]` on the same element compiled with
+     xl's rule first, so sm's identical-specificity rule (coming later)
+     silently won even at 1440px viewport, permanently stuck at 640px.
+     Redeclaring sm/md here too (same values, zero behavior change on
+     their own) puts all four breakpoints on equal footing, restoring
+     correct numeric sort order (640 < 768 < 992 < 1200) so the intended
+     mobile-first cascade (wider breakpoint's rule wins when multiple
+     apply) actually holds. This matches the site's own S(<640)/
+     M(640-991, tablet portrait)/L(992-1200, tablet landscape)/
+     XL(1200+, desktop) breakpoint scheme -- S and (old) M merged into
+     one tablet-portrait tier starting at sm (640px, itself unchanged in
+     value), so there's no separate token needed for that merge, only
+     lg/xl needed to actually move. */
+  --breakpoint-sm: 640px;
+  --breakpoint-md: 768px;
+  --breakpoint-lg: 992px;
+  --breakpoint-xl: 1200px;
 
   /* Primitives, generated from the Figma export (12 families; Black carries
      an extra 0 shade below 50, so 133 tokens total, not 132). Semantic
@@ -380,8 +402,8 @@
   --type-caption-line-height-md: 20px;
 
   /* Spacing/radius base values are mobile values. Tokens that change at md
-     (768px) or xl (1440px) are overridden in the :root block below — there
-     is no lg (1024px) step for spacing, tablet portrait and landscape share
+     (768px) or xl (1200px) are overridden in the :root block below — there
+     is no lg (992px) step for spacing, tablet portrait and landscape share
      one value. */
   --spacing-0: 0;
   --spacing-3xs: 2px;
@@ -398,10 +420,6 @@
   --spacing-page-margin-x: var(--spacing-s);
   --spacing-page-margin-y: var(--spacing-3xl);
 
-  --spacing-container-margin-s: var(--spacing-s);
-  --spacing-container-margin-m: var(--spacing-m);
-  --spacing-container-margin-l: var(--spacing-l);
-
   --spacing-paragraph: var(--spacing-s);
 
   --radius-small: 16px;
@@ -410,8 +428,8 @@
 }
 
 /* Responsive overrides for the tokens above. Tokens built with var() (page
-   margin y, container margin m/l) inherit their breakpoint changes
-   automatically and don't need entries here. */
+   margin y) inherit their breakpoint changes automatically and don't need
+   entries here. */
 @layer base {
   :root {
     @variant md {
@@ -426,7 +444,6 @@
       --spacing-2xl: 64px;
       --spacing-3xl: 96px;
       --spacing-4xl: 128px;
-      --spacing-page-margin-x: 150px;
       --radius-medium: 24px;
       --radius-large: 32px;
     }
@@ -439,9 +456,48 @@
     outline: 2px solid var(--color-primary-teal);
     outline-offset: 2px;
   }
+
+  /* Safety net for the `width: 100vw; margin-left/right: calc(50% - 50vw)`
+     full-bleed-breakout technique (Section 9's slide band, possibly
+     others later) -- 100vw is defined to include the vertical
+     scrollbar's own width, so on any page tall enough to actually have
+     one (this page, always), an element sized with 100vw renders a few
+     px WIDER than the actually-visible viewport, producing a page-level
+     horizontal scrollbar of its own. This site has no content that's
+     ever meant to be reached by scrolling horizontally, so hiding that
+     overflow here is safe -- it only ever swallows that invisible
+     few-px sliver, never real content (which would still visibly
+     overflow its own container long before it got here). */
+  body {
+    overflow-x: hidden;
+  }
 }
 
 @layer components {
+  /* Site-wide desktop content cap: every section/nav/footer content
+     wrapper gets capped at 1140px and centered once the true XL
+     breakpoint (1200px) hits, regardless of what fixed-width cards or
+     text columns already live inside it -- see BREAKPOINTS.md. Bakes the
+     xl: gating into the class itself (rather than requiring callers to
+     write `xl:mx-auto xl:max-w-[1140px]` every time) so there's one place
+     to change the number or the breakpoint, not ~15. */
+  .content-cap {
+    @variant xl {
+      max-width: 1140px;
+      margin-inline: auto;
+    }
+  }
+
+  /* Section 12's own S-tier sticky number nav is fixed at the top of the
+     viewport just like the global nav's hamburger toggle -- Section12.jsx
+     toggles this class on <body> (via an IntersectionObserver watching
+     its own bounds) while that section is in view, so only one fixed bar
+     ever occupies the top of the screen at once instead of the two
+     stacking/overlapping. */
+  body.section12-nav-active .global-nav-toggle {
+    display: none;
+  }
+
   /* Material Symbols icon font (Rounded style) -- boilerplate from
      Google's own setup docs. Renders via ligature: a <span> containing
      the icon's name (e.g. "play_arrow") as text displays as the glyph
@@ -666,8 +722,8 @@
 
   /* Body Paragraph Default is intentionally flat (16/24 on mobile and desktop)
      and has no entry in this query. Headings do not break here — they hold
-     their mobile/tablet values through 768px and 1024px and only change at
-     1440px, in the dedicated query below. */
+     their mobile/tablet values through 768px and 992px and only change at
+     1200px, in the dedicated query below. */
   @media (min-width: 768px) {
     .body-paragraph-strong {
       font-size: var(--type-body-strong-font-size-md);

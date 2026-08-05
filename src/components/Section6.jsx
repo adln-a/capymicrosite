@@ -1,8 +1,9 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import Matter from 'matter-js';
 import { useReducedMotion } from 'framer-motion';
 import ScrollSection from './ScrollSection.jsx';
 import AccessibleHighlightText from './AccessibleHighlightText.jsx';
+import useMediaQuery from '../hooks/useMediaQuery.js';
 import blueScribbleMultiple from '../assets/Blue-Scribble-Multiple.svg';
 import paperClipMetal from '../assets/Paper-Clip-Metal.png';
 import receipt1 from '../assets/section-6/Section6--Grocery-Receipt1.png';
@@ -62,8 +63,21 @@ function RuledLines() {
   );
 }
 
-const SCENE_WIDTH = 660;
-const SCENE_HEIGHT = 794;
+// Reference canvas sizes per tier -- XL matches the original static build
+// exactly, a fixed 660x794. S has no fixed width: FallingScene measures
+// its own actual rendered width at S instead (see its own comment), so it
+// always spans the section's real 100% content width rather than a
+// guessed reference number. Height still needs an explicit target (there's
+// no equivalent "measure it" for height -- the section's own height is
+// DERIVED from this, not the other way around): 1270px, chosen so the
+// section's total height lands near the ~1350px target given in the
+// reference (64px pt + 1270px canvas + 64px pb) -- items can't spread as
+// wide in a narrower column, so the pile needs more vertical room to
+// settle without overlapping.
+const SCENE_SIZES = {
+  xl: { width: 660, height: 794 },
+  s: { height: 1270 },
+};
 const WALL_THICKNESS = 40;
 // Max px/frame any body can move -- comfortably less than the ground's
 // own 40px thickness, so a body travelling at the cap still can't skip
@@ -164,14 +178,47 @@ const RESTING_POSITIONS = {
  * once (observer disconnects after the first trigger), not replayed on
  * every re-entry, since restarting a settled physics pile on every scroll
  * pass would look wrong.
+ *
+ * sceneWidth/sceneHeight drive every physics dimension below -- ground/
+ * wall placement, spawn-x range, out-of-bounds recovery -- so the same
+ * simulation logic works at any canvas size without a second code path.
+ * Named sceneWidth/sceneHeight (not just width/height) specifically to
+ * avoid colliding with the per-ITEM width/height already destructured off
+ * each body further down (`bodies` stores each item's own dimensions
+ * under those same property names).
+ *
+ * fixedWidth (optional): pass a number (XL: 660) to size the canvas
+ * exactly that wide, matching the original static build. Omit it (S) to
+ * measure the container's own actual rendered width instead, via
+ * ResizeObserver -- S has no fixed reference width at all, so the canvas
+ * always spans 100% of whatever the section's real content width is, not
+ * a guessed number. The physics effect below waits for a real measured
+ * width (skips entirely while it's still 0) since Matter.js needs an
+ * actual number to build the ground/walls against, not "100%".
  */
-function FallingScene() {
+function FallingScene({ sceneWidth: fixedWidth, sceneHeight }) {
   const shouldReduceMotion = useReducedMotion();
   const sceneRef = useRef(null);
   const itemElsRef = useRef({});
+  const [measuredWidth, setMeasuredWidth] = useState(0);
+  const sceneWidth = fixedWidth ?? measuredWidth;
+
+  // Only runs when fixedWidth is omitted (S) -- XL already knows its exact
+  // width upfront and skips this measurement entirely.
+  useLayoutEffect(() => {
+    if (fixedWidth) return undefined;
+    const el = sceneRef.current;
+    if (!el) return undefined;
+    const update = () => setMeasuredWidth(el.offsetWidth);
+    update();
+    const resizeObserver = new ResizeObserver(update);
+    resizeObserver.observe(el);
+    return () => resizeObserver.disconnect();
+  }, [fixedWidth]);
 
   useEffect(() => {
     if (shouldReduceMotion) return undefined;
+    if (!sceneWidth) return undefined;
     const sceneEl = sceneRef.current;
     if (!sceneEl) return undefined;
 
@@ -201,24 +248,24 @@ function FallingScene() {
       engine.gravity.y = 1.4;
 
       const ground = Matter.Bodies.rectangle(
-        SCENE_WIDTH / 2,
-        SCENE_HEIGHT + WALL_THICKNESS / 2,
-        SCENE_WIDTH + WALL_THICKNESS * 2,
+        sceneWidth / 2,
+        sceneHeight + WALL_THICKNESS / 2,
+        sceneWidth + WALL_THICKNESS * 2,
         WALL_THICKNESS,
         { isStatic: true },
       );
       const leftWall = Matter.Bodies.rectangle(
         -WALL_THICKNESS / 2,
-        SCENE_HEIGHT / 2,
+        sceneHeight / 2,
         WALL_THICKNESS,
-        SCENE_HEIGHT * 2,
+        sceneHeight * 2,
         { isStatic: true },
       );
       const rightWall = Matter.Bodies.rectangle(
-        SCENE_WIDTH + WALL_THICKNESS / 2,
-        SCENE_HEIGHT / 2,
+        sceneWidth + WALL_THICKNESS / 2,
+        sceneHeight / 2,
         WALL_THICKNESS,
-        SCENE_HEIGHT * 2,
+        sceneHeight * 2,
         { isStatic: true },
       );
       Matter.Composite.add(engine.world, [ground, leftWall, rightWall]);
@@ -242,7 +289,7 @@ function FallingScene() {
         timeouts.push(
           setTimeout(() => {
             const margin = item.width / 2 + 10;
-            const x = margin + Math.random() * (SCENE_WIDTH - margin * 2);
+            const x = margin + Math.random() * (sceneWidth - margin * 2);
             // Spread starting heights by spawn order (not just a shared
             // random range) so simultaneously-falling items are less
             // likely to spawn directly on top of one another -- the
@@ -295,16 +342,16 @@ function FallingScene() {
         bodies.forEach(({ body, width, height }) => {
           const halfW = width / 2;
           const bottom = body.position.y + height / 2;
-          if (bottom > SCENE_HEIGHT + 2) {
+          if (bottom > sceneHeight + 2) {
             Matter.Body.setPosition(body, {
-              x: Math.min(Math.max(body.position.x, halfW), SCENE_WIDTH - halfW),
-              y: SCENE_HEIGHT - height / 2,
+              x: Math.min(Math.max(body.position.x, halfW), sceneWidth - halfW),
+              y: sceneHeight - height / 2,
             });
             Matter.Body.setVelocity(body, { x: 0, y: 0 });
             Matter.Body.setAngularVelocity(body, 0);
-          } else if (body.position.x - halfW < -2 || body.position.x + halfW > SCENE_WIDTH + 2) {
+          } else if (body.position.x - halfW < -2 || body.position.x + halfW > sceneWidth + 2) {
             Matter.Body.setPosition(body, {
-              x: Math.min(Math.max(body.position.x, halfW), SCENE_WIDTH - halfW),
+              x: Math.min(Math.max(body.position.x, halfW), sceneWidth - halfW),
               y: body.position.y,
             });
             Matter.Body.setVelocity(body, { x: 0, y: body.velocity.y });
@@ -343,12 +390,35 @@ function FallingScene() {
         Matter.Engine.clear(engine);
       }
     };
-  }, [shouldReduceMotion]);
+  }, [shouldReduceMotion, sceneWidth, sceneHeight]);
 
   return (
-    <div ref={sceneRef} className="relative h-[794px] w-[660px] max-w-full flex-shrink-0">
+    <div
+      className={`relative max-w-full flex-shrink-0 ${fixedWidth ? '' : 'w-full'}`}
+      style={{ width: fixedWidth ? `${fixedWidth}px` : undefined, height: `${sceneHeight}px` }}
+      ref={sceneRef}
+    >
       {FALLING_ITEMS.map((item) => {
         const resting = RESTING_POSITIONS[item.key];
+        // RESTING_POSITIONS' left/top were hand-tuned against the XL
+        // canvas specifically (660x794) -- scaled proportionally here so
+        // the reduced-motion static layout still roughly holds together
+        // at any other canvas size (S's 343x1270) instead of using XL's
+        // raw pixel values unchanged, which would bunch everything into
+        // the canvas's own left/top corner at a much narrower width.
+        // Clamped afterward: the scale ratio alone doesn't shrink each
+        // item's own width/height, so an item positioned near XL's right
+        // or bottom edge can still land partly outside a narrower/shorter
+        // canvas after scaling -- this keeps every item fully on-canvas
+        // regardless of the size passed in.
+        const restingLeft = Math.min(
+          Math.max((resting.left / SCENE_SIZES.xl.width) * sceneWidth, 0),
+          sceneWidth - item.width,
+        );
+        const restingTop = Math.min(
+          Math.max((resting.top / SCENE_SIZES.xl.height) * sceneHeight, 0),
+          sceneHeight - item.height,
+        );
         return (
           <img
             key={item.key}
@@ -366,7 +436,7 @@ function FallingScene() {
                 ? {
                     width: `${item.width}px`,
                     height: `${item.height}px`,
-                    transform: `translate(${resting.left}px, ${resting.top}px) rotate(${resting.rotate}deg)`,
+                    transform: `translate(${restingLeft}px, ${restingTop}px) rotate(${resting.rotate}deg)`,
                   }
                 : { width: `${item.width}px`, height: `${item.height}px`, opacity: 0 }
             }
@@ -377,7 +447,182 @@ function FallingScene() {
   );
 }
 
+// The tape's left/top were hand-tuned against the XL card's own fixed
+// 480x232 size specifically (a decorative sticker near its lower-right).
+// Kept here as ratios of that original box so its position can be
+// rescaled against whatever the card's ACTUAL rendered size turns out to
+// be (see cardSize state below) -- needed now that the card is a fluid
+// w-full box at S instead of a fixed 480px one.
+const TAPE_REFERENCE_CARD = { width: 480, height: 232 };
+const TAPE_REFERENCE_POSITION = { left: 189, top: 212 };
+
+// White card + tape + pink circle, shared between the S and XL layouts --
+// only the card's own width behavior actually differs between them (100%
+// at S vs. a fixed 480px at XL), passed in via cardClassName rather than
+// duplicating this whole block per breakpoint. columnClassName also
+// varies: XL's column stays shrink-to-fit (matching the card's own fixed
+// width), but S's needs to be w-full itself so the circle's items-end
+// alignment has the section's actual full width to align against, not
+// just whatever the column would otherwise shrink to.
+//
+// disableFadeIn (S only): the fade-up-into-view animation reads as
+// fussy/slow on mobile scrolling, where the whole column is already
+// close to the top of the viewport by the time it's noticed -- passing
+// initial={false} whileInView={false} to the card and circle's own
+// ScrollSections turns both into plain always-visible elements (see
+// ScrollSection's own `??` override handling for why `false`, not just
+// omitting the prop, is what's needed to actually cancel it out).
+function CardColumn({ columnClassName, cardClassName, disableFadeIn = false }) {
+  const cardRef = useRef(null);
+  const [cardSize, setCardSize] = useState(TAPE_REFERENCE_CARD);
+
+  useLayoutEffect(() => {
+    const el = cardRef.current;
+    if (!el) return undefined;
+    const update = () => setCardSize({ width: el.offsetWidth, height: el.offsetHeight });
+    update();
+    const resizeObserver = new ResizeObserver(update);
+    resizeObserver.observe(el);
+    return () => resizeObserver.disconnect();
+  }, []);
+
+  const tapeLeft = (TAPE_REFERENCE_POSITION.left / TAPE_REFERENCE_CARD.width) * cardSize.width;
+  const tapeTop = (TAPE_REFERENCE_POSITION.top / TAPE_REFERENCE_CARD.height) * cardSize.height;
+
+  return (
+    <div className={columnClassName}>
+      <ScrollSection
+        ref={cardRef}
+        transition={{ duration: 0.6, ease: 'easeOut', delay: WHITE_BOX_DELAY }}
+        initial={disableFadeIn ? false : undefined}
+        whileInView={disableFadeIn ? false : undefined}
+        className={cardClassName}
+      >
+        <div className="flex flex-1 flex-col items-start justify-start gap-m">
+          <h3 className="heading-3 self-stretch text-center text-heading-blue">
+            <AccessibleHighlightText
+              before="When money is tight, "
+              highlight={<EssentialsHighlight>ESSENTIALS</EssentialsHighlight>}
+              after=" comes first."
+            />
+          </h3>
+          <p className="body-paragraph self-stretch text-center text-body-default">
+            But parents still hope their kids can join art class, go on field trips, or just have
+            time to play.
+          </p>
+        </div>
+
+        {/* right:0 (not the original left:372px) -- that fixed value was
+            only ever correct at the card's old constant 480px width
+            (372+108=480, flush with zero overhang past the card's own
+            right edge); anchoring from the right edge instead keeps that
+            same flush position at any card width, including S's now-fluid
+            w-full. */}
+        <img
+          src={paperClipMetal}
+          alt=""
+          aria-hidden="true"
+          className="pointer-events-none absolute"
+          style={{ width: '108px', height: '72px', right: '0px', top: '-55px' }}
+        />
+      </ScrollSection>
+
+      {/* Rendered as its own independently-animated sibling rather than
+          nested inside the card's ScrollSection -- a mix-blend-mode
+          element whose ANCESTOR has opacity/transform actively tweening
+          (exactly what ScrollSection's fade-up does) can render with
+          the wrong, un-blended flat color for a frame or two right as
+          that tween starts/settles, since opacity<1 + transform force
+          the ancestor into an isolated compositing layer the blend
+          mode can't correctly composite into until the layer
+          "catches up". Same transition/delay as the card keeps them
+          visually in sync; the outer wrapper above is `relative` (was
+          static) so this absolute position still resolves against the
+          same box the card itself sits in -- both share that box's
+          left/top edges (the card is its widest child).
+          left/top are now computed from the card's own MEASURED size
+          (tapeLeft/tapeTop above), not the original fixed 189/212 --
+          those were only ever correct at the card's old constant 480x232
+          size. At S, the card reflows to a different (often shorter)
+          height at its new fluid width, and the fixed top:212 landed
+          past the card's own shorter bottom edge entirely -- the tape
+          was rendering, just below the card instead of on it. Scaling by
+          the card's actual measured width/height keeps it anchored to
+          the same relative spot on the card at any size. */}
+      <ScrollSection
+        as="span"
+        transition={{ duration: 0.6, ease: 'easeOut', delay: WHITE_BOX_DELAY }}
+        initial={disableFadeIn ? false : undefined}
+        whileInView={disableFadeIn ? false : undefined}
+        aria-hidden="true"
+        className="pointer-events-none absolute origin-top-left rotate-[5deg] bg-bg-purple mix-blend-multiply"
+        style={{ width: '107px', height: '40px', left: `${tapeLeft}px`, top: `${tapeTop}px` }}
+      />
+
+      <ScrollSection
+        transition={{ duration: 0.6, ease: 'easeOut', delay: PINK_CIRCLE_DELAY }}
+        initial={disableFadeIn ? false : undefined}
+        whileInView={disableFadeIn ? false : undefined}
+        className="relative flex h-[320px] w-[320px] origin-top-left rotate-2 flex-col items-center justify-center gap-2xs overflow-hidden rounded-full bg-bg-pink p-m"
+      >
+        <RuledLines />
+        <p className="body-paragraph-large relative self-stretch text-center text-heading-red">
+          What would it take to make these opportunities easier to access?
+        </p>
+      </ScrollSection>
+    </div>
+  );
+}
+
 export default function Section6() {
+  const isAtLeastSm = useMediaQuery('(min-width: 640px)');
+  const scene = isAtLeastSm ? SCENE_SIZES.xl : SCENE_SIZES.s;
+
+  if (!isAtLeastSm) {
+    // S: card+circle sit in normal flow at the top; FallingScene overlays
+    // the ENTIRE container (absolute inset-0) BEHIND them (z-0, vs. the
+    // card column's own explicit z-10), so items rain and settle in the
+    // background around/behind the card and circle rather than covering
+    // them -- one composited scene, not two side-by-side blocks like XL.
+    // The container's own explicit height (scene.height) is what actually
+    // gives FallingScene's absolute inset-0 something to fill; padding
+    // lives on the <section> itself (py-page-margin-y, 64px at S) rather
+    // than in here, so it doesn't eat into that fixed canvas height. No
+    // sceneWidth passed here (unlike XL) -- FallingScene measures its own
+    // rendered width itself, so it always spans the true 100% content
+    // width rather than a guessed fixed number.
+    //
+    // CardColumn deliberately has NO z-index of its own (just `relative`,
+    // needed regardless as the containing block for the tape/paperclip's
+    // own absolute positioning) -- position:relative + a non-auto
+    // z-index would establish a NEW STACKING CONTEXT, which traps the
+    // tape's mix-blend-multiply inside it, cutting it off from blending
+    // against anything outside that context (like this section's own
+    // green background). CardColumn still paints above FallingScene's
+    // wrapper without one: both are positioned elements at the same
+    // z-index:auto "level", and DOM order (FallingScene's wrapper first,
+    // CardColumn second) settles the tie the same way z-10 would have,
+    // just without the isolation side effect.
+    return (
+      <section
+        id="section-6"
+        className="relative flex w-full items-start justify-center overflow-hidden bg-chateau-green-600 px-page-margin-x py-page-margin-y"
+      >
+        <div className="relative w-full content-cap" style={{ height: `${scene.height}px` }}>
+          <div className="pointer-events-none absolute inset-0 z-0">
+            <FallingScene sceneHeight={scene.height} />
+          </div>
+
+          <CardColumn
+            columnClassName="relative flex w-full flex-col items-end justify-start"
+            cardClassName="relative flex w-full items-center justify-center gap-s rounded-medium bg-bg-white p-l"
+            disableFadeIn
+          />
+        </div>
+      </section>
+    );
+  }
+
   return (
     <section
       id="section-6"
@@ -388,70 +633,24 @@ export default function Section6() {
       // in the white/pink cards on top of it), so there's no contrast
       // reason for it to have shifted, and the original -600 still looks
       // right here.
-      className="relative flex h-dvh w-full items-center justify-start overflow-hidden bg-chateau-green-600 px-page-margin-x py-3xl"
+      className="relative flex h-dvh w-full items-center justify-start overflow-hidden bg-chateau-green-600 px-page-margin-x"
     >
-      <div className="relative flex flex-col items-end justify-start">
-        <ScrollSection
-          transition={{ duration: 0.6, ease: 'easeOut', delay: WHITE_BOX_DELAY }}
-          className="relative flex w-[480px] items-center justify-center gap-s rounded-medium bg-bg-white p-l"
-        >
-          <div className="flex flex-1 flex-col items-start justify-start gap-m">
-            <h3 className="heading-3 self-stretch text-center text-heading-blue">
-              <AccessibleHighlightText
-                before="When money is tight, "
-                highlight={<EssentialsHighlight>ESSENTIALS</EssentialsHighlight>}
-                after=" comes first."
-              />
-            </h3>
-            <p className="body-paragraph self-stretch text-center text-body-default">
-              But parents still hope their kids can join art class, go on field trips, or just have
-              time to play.
-            </p>
-          </div>
-
-          <img
-            src={paperClipMetal}
-            alt=""
-            aria-hidden="true"
-            className="pointer-events-none absolute"
-            style={{ width: '108px', height: '72px', left: '372px', top: '-55px' }}
-          />
-        </ScrollSection>
-
-        {/* Rendered as its own independently-animated sibling rather than
-            nested inside the card's ScrollSection -- a mix-blend-mode
-            element whose ANCESTOR has opacity/transform actively tweening
-            (exactly what ScrollSection's fade-up does) can render with
-            the wrong, un-blended flat color for a frame or two right as
-            that tween starts/settles, since opacity<1 + transform force
-            the ancestor into an isolated compositing layer the blend
-            mode can't correctly composite into until the layer
-            "catches up". Same transition/delay as the card keeps them
-            visually in sync; the outer wrapper above is `relative` (was
-            static) so this absolute position still resolves against the
-            same box the card itself sits in -- both share that box's
-            left/top edges (the card is its widest child), so the pixel
-            values are unchanged from when this lived inside the card. */}
-        <ScrollSection
-          as="span"
-          transition={{ duration: 0.6, ease: 'easeOut', delay: WHITE_BOX_DELAY }}
-          aria-hidden="true"
-          className="pointer-events-none absolute origin-top-left rotate-[5deg] bg-bg-purple mix-blend-multiply"
-          style={{ width: '107px', height: '40px', left: '189px', top: '212px' }}
+      {/* Card column (480px) + FallingScene (660px) sit side by side with
+          no gap, totaling exactly 1140px -- the section itself is
+          row-mode flex with no justify-center (same setup as Section 1's
+          own wrapper), so without this wrapper the pair would just hug
+          the left page margin at any width instead of centering once the
+          1140px site-wide cap actually applies at xl (1200px+). Below xl
+          this is a no-op: w-full keeps the pair pinned left exactly as
+          before. */}
+      <div className="relative flex w-full items-center justify-start content-cap">
+        <CardColumn
+          columnClassName="relative flex flex-col items-end justify-start"
+          cardClassName="relative flex w-[480px] items-center justify-center gap-s rounded-medium bg-bg-white p-l"
         />
 
-        <ScrollSection
-          transition={{ duration: 0.6, ease: 'easeOut', delay: PINK_CIRCLE_DELAY }}
-          className="relative flex h-[320px] w-[320px] origin-top-left rotate-2 flex-col items-center justify-center gap-2xs overflow-hidden rounded-full bg-bg-pink p-m"
-        >
-          <RuledLines />
-          <p className="body-paragraph-large relative self-stretch text-center text-heading-red">
-            What would it take to make these opportunities easier to access?
-          </p>
-        </ScrollSection>
+        <FallingScene sceneWidth={scene.width} sceneHeight={scene.height} />
       </div>
-
-      <FallingScene />
     </section>
   );
 }

@@ -296,7 +296,14 @@ export default function Section4() {
   return (
     <section
       id="section-4"
-      className="relative flex w-full flex-col items-start justify-start gap-xs overflow-hidden bg-bg-red px-page-margin-x py-2xl"
+      // Plain px-page-margin-x -- it now stays flat at 32px past md
+      // forever (no separate xl override needed here anymore; the shared
+      // token itself no longer forces a fixed jump at 1200px, precisely
+      // so a section like this one can have its own content cap the
+      // width instead -- see the TV's own max-w-[1140px] + mx-auto below,
+      // which is what actually produces the growing margin from
+      // ~1204px up (1140 + 2*32, where the TV first reaches its cap).
+      className="relative flex w-full flex-col items-start justify-start gap-xs overflow-hidden bg-bg-red px-page-margin-x py-page-margin-y"
     >
       {/* Not visible -- the custom UI below is the actual interface. */}
       <audio ref={audioRef} src={currentStory.audioSrc} preload="metadata" className="hidden" />
@@ -305,20 +312,62 @@ export default function Section4() {
           rather than each piece separately -- it reads as a single
           object, not a sequence of parts. */}
       <ScrollSection className="flex w-full flex-col items-center justify-start gap-2xs">
-        <img src={antenna} alt="" aria-hidden="true" style={{ width: '87px', height: '88px' }} />
+        {/* 72x72 below sm (640px), 87x88 from sm up -- the only asset size
+            that changes across the XS/S-M/L references; everything else
+            in this TV stays the same 87x88 icon from S-M up through L. */}
+        <img src={antenna} alt="" aria-hidden="true" className="h-[72px] w-[72px] sm:h-[88px] sm:w-[87px]" />
 
-        {/* TV body: black frame. The pomegranate border wraps ONLY the
-            screen (confirmed against the reference image -- the outline's
-            rounded corner ends at the pink card's own edge, and the audio
-            panel to its right is just the TV's own black bg showing
-            through, no border of its own). The audio panel is a sibling
-            of the outlined wrapper here, not nested inside it -- despite
-            how the original spec text indented it, nesting them together
-            under one flex-col wrapper would stack screen-above-panel
-            instead of the side-by-side layout the reference actually
-            shows. */}
-        <div className="relative flex flex-1 flex-row items-start justify-start self-stretch rounded-[32px] bg-black-950">
-          <div className="outline-bg-red flex flex-1 flex-col items-center justify-start gap-m self-stretch rounded-[32px] p-s outline outline-[4px]">
+        {/* TV body: black frame. Stacked (flex-col, screen above audio
+            panel) below lg (992px); side by side (flex-row) from lg up --
+            per the XS/S-M references, which both show the audio panel as
+            part of the same single stacked column rather than a separate
+            side panel; only L introduces the two-column layout.
+
+            The accent border around the screen only (not the audio panel
+            -- confirmed against the reference image, the outline's rounded
+            corner ends at the pink card's own edge) is also responsive:
+            absent below sm (640px, XS has no border at all here), then
+            bg-red from sm up -- the exact same red the section's own
+            background uses (bg-bg-red below, same --color-bg-red token),
+            so it reads as a visible ring against this TV's black interior
+            without being a distinct accent color of its own. L matches
+            this same bg-red treatment rather than the reference's own
+            pomegranate-500 -- an explicit choice to keep L visually
+            consistent with XL (which has no separate reference and never
+            got its own accent color) instead of introducing a one-off
+            color just for the 992-1200px range.
+
+            Same "L follows XL" merge for the row layout/fill behavior:
+            lg:w-full (matching self-stretch's own fill-available-width
+            behavior at every narrower tier) and lg:flex-row both start at
+            L (992px), same as the reference. The 1140px cap itself is the
+            shared content-cap class, not something gated at lg: -- 1140px
+            is a desktop-only (1200px+) number, so it shouldn't exist below
+            that breakpoint at all (content-cap itself bakes in the xl:
+            gating, same as everywhere else it's used). In practice this
+            was already a no-op below ~1204px either way (w-full's own
+            computed width there, viewport minus 2*32px padding, never
+            actually reaches 1140px that early to be capped by it) -- but
+            attaching the cap at the breakpoint it's actually FOR is the
+            correct/honest way to express that, not something that should
+            depend on a coincidence of the specific padding/viewport math
+            happening to make the two breakpoints behave identically.
+            content-cap's own margin-inline:auto centers the TV in the
+            leftover space once the cap actually applies. */}
+        <div className="relative flex flex-1 flex-col items-start justify-start self-stretch rounded-large bg-black-950 content-cap lg:w-full lg:flex-row">
+          {/* flex-[740_740_0%] (not flex-1 + a fixed-width sibling) --
+              screen and audio panel grow PROPORTIONALLY together at a
+              constant 740:400 ratio as the TV's own width fluidly grows
+              from 928px (at the 992px breakpoint start, minus 2*32px
+              padding) up to its 1140px cap, rather than the audio panel
+              staying rigid at a literal 400px while the screen alone
+              absorbs the growth
+              (which would drift the ratio from ~528:400 up to 740:400
+              only once the cap is hit). flex-basis:0% means the 740/400
+              weights are the ONLY thing determining the split -- each
+              panel's own content width is ignored for sizing purposes,
+              matching the classic proportional-flex pattern. */}
+          <div className="flex flex-1 flex-col items-center justify-start gap-l self-stretch rounded-large p-xs outline-0 sm:p-s sm:outline sm:outline-4 sm:outline-bg-red lg:flex-[740_740_0%]">
             {/* grid + both stories stacked in the same cell (col/row-start-1),
                 the inactive one `invisible` rather than unmounted -- this is
                 what pins the screen's height to the TALLER of the two
@@ -329,7 +378,7 @@ export default function Section4() {
                 nothing and aren't focusable/reachable, which also keeps
                 the hidden story's own Prev/Next button out of the tab
                 order for free). */}
-            <div className="grid flex-1 self-stretch overflow-hidden rounded-[32px] bg-bg-pink p-m">
+            <div className="grid flex-1 self-stretch overflow-hidden rounded-large bg-bg-pink p-s lg:p-l">
               {STORIES.map((story, index) => {
                 const isActive = index === storyIndex;
                 return (
@@ -337,13 +386,24 @@ export default function Section4() {
                   // STORYINDEX changes (a click), not on scrolling into
                   // view (the outer TV-frame ScrollSection above already
                   // covers that entrance). Both stories stay permanently
-                  // mounted in the same grid cell (per the note above:
-                  // this is what pins the cell's height to the taller of
-                  // the two), but only the active one is ever opaque/
-                  // interactive -- animate (not whileInView) drives that
-                  // purely off isActive, with no scroll dependency and no
-                  // entrance delay, so toggling feels immediate rather
-                  // than laggy. initial={false} skips animating on first
+                  // mounted in the same grid cell from lg up (per the note
+                  // above: this is what pins the cell's height to the
+                  // taller of the two there, so the side-by-side audio
+                  // panel doesn't jump around when toggling), but only the
+                  // active one is ever opaque/interactive -- animate (not
+                  // whileInView) drives that purely off isActive, with no
+                  // scroll dependency and no entrance delay, so toggling
+                  // feels immediate rather than laggy. Below lg the
+                  // inactive story is display:none (hidden, not just
+                  // invisible) instead -- Jo's story is much shorter than
+                  // Sandy's, and pinning the stacked-layout height to
+                  // whichever is taller left a large empty gap below the
+                  // shorter one; removing the inactive story from the grid
+                  // entirely below lg lets the box hug whichever story is
+                  // actually showing. Trade-off: the toggle becomes an
+                  // instant cut below lg instead of the smooth crossfade
+                  // it still has from lg up, since display:none can't be
+                  // transitioned. initial={false} skips animating on first
                   // mount (the very first paint should just show story 1
                   // already in place, not fade up a second time on top of
                   // the frame's own reveal).
@@ -361,8 +421,8 @@ export default function Section4() {
                         ? { duration: 0 }
                         : { opacity: { duration: 0.15, ease: 'easeOut' }, y: { duration: 0.4, ease: 'easeOut' } }
                     }
-                    className={`col-start-1 row-start-1 flex flex-col items-start justify-start gap-m self-stretch ${
-                      isActive ? '' : 'pointer-events-none'
+                    className={`col-start-1 row-start-1 flex-col items-start justify-start gap-m self-stretch ${
+                      isActive ? 'flex' : 'pointer-events-none hidden lg:flex'
                     }`}
                   >
                     <h2
@@ -388,8 +448,19 @@ export default function Section4() {
 
           {/* Audio player panel. Not its own fade-up -- it's part of the
               TV frame's single-unit fade above the panel doesn't animate
-              separately. */}
-          <div className="flex w-[400px] flex-col items-start justify-start gap-m self-stretch p-l">
+              separately. Full width below lg (part of the same stacked
+              column as the screen there, no separate boxed panel); from
+              lg up it's the 400-weighted side of the screen's
+              flex-[740_740_0%] split above (lg:flex-[400_400_0%], not a
+              fixed lg:w-[400px] -- see that comment for why the ratio
+              needs to stay constant as the TV grows, not just land on
+              400px once it hits its max width). lg:justify-between
+              (rather than relying on gap-m alone) pushes the Next/Prev
+              group down to the panel's own bottom edge at that width,
+              matching the L reference's own layout -- below lg there's no
+              extra vertical space to distribute this way in the first
+              place, so gap-m is what actually governs the spacing there. */}
+          <div className="flex w-full flex-col items-start justify-start gap-m self-stretch p-l lg:flex-[400_400_0%] lg:justify-between">
             <div className="flex flex-col items-start justify-center gap-m self-stretch">
               <h3 className="heading-3 self-stretch text-heading-inverted">{currentStory.playerTitle}</h3>
 
@@ -455,9 +526,18 @@ export default function Section4() {
                 before. "Next"/"Prev" is now a single shared button (one
                 DOM node, label swapping with storyIndex) rather than one
                 per story with the inactive copy hidden, since there's no
-                more per-story column for it to live inside. */}
-            <div className="flex flex-col items-start justify-start gap-m self-stretch">
-              <div className="flex flex-col items-start justify-start gap-s self-stretch">
+                more per-story column for it to live inside.
+
+                items-center centers the button (hug-width, so
+                items-center is what actually moves it, not a width
+                change) on both XS and S-M; lg:items-start reverts to the
+                original left-aligned desktop treatment from 992px up. */}
+            <div className="flex flex-col items-center justify-start gap-m self-stretch lg:items-start">
+              {/* Decorative transcript-line bars: an L-only (992px+)
+                  flourish -- absent from both the XS and S-M references,
+                  which go straight from the Read-transcript button to the
+                  Next/Prev button with nothing in between. */}
+              <div className="hidden flex-col items-start justify-start gap-s self-stretch lg:flex">
                 {Array.from({ length: TRANSCRIPT_LINE_COUNT }).map((_, i) => (
                   <span key={i} aria-hidden="true" className="h-1 self-stretch bg-white" />
                 ))}
@@ -513,7 +593,16 @@ export default function Section4() {
           </div>
         </div>
 
-        <div className="h-[16px] w-[900px] max-w-full rounded-bl-[24px] rounded-br-[24px] bg-black-950" />
+        {/* TV "stand" -- deliberately narrower than the TV body itself at
+            every breakpoint (300px/480px/900px, per the XS/S-M/L
+            references respectively), not a percentage of it: rounded-b
+            uses the shared radius-medium token (16 base -> 20 at md/768
+            -> 24 at xl/1200), which matches XS/S-M/L's own 16/20/20
+            closely enough (its md threshold is 768px, not quite S-M's own
+            640px start, but the same value either side of that gap) that
+            hand-rolling a separate one-off breakpoint set wasn't worth
+            the duplication. */}
+        <div className="h-[16px] w-[300px] max-w-full rounded-b-medium bg-black-950 sm:w-[480px] lg:w-[900px]" />
       </ScrollSection>
 
       <TranscriptModal

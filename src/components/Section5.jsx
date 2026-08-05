@@ -2,7 +2,8 @@ import ScrollSection from './ScrollSection.jsx';
 import AccessibleHighlightText from './AccessibleHighlightText.jsx';
 import paperTearBg from '../assets/Paper-Tear-BG.png';
 import blueLineScribble from '../assets/Blue-Line-Scribble.svg';
-import illustration from '../assets/Desktop-IMG-Frame-5.svg';
+import illustrationXl from '../assets/Desktop-IMG-Frame-5.svg';
+import illustrationS from '../assets/s/S--IMG-Frame5.svg';
 
 function ScribbleHighlight({ children }) {
   // Same span-wrap technique as FourHighlight (Section 1) and
@@ -27,18 +28,27 @@ function ScribbleHighlight({ children }) {
 
 function RuledLines() {
   // 7 evenly-spaced notebook-ruling lines behind the heading/holes -- z-0
-  // is explicit but mostly academic here: as the box's first child, it
-  // already paints behind its later siblings by plain DOM order, so no
-  // negative z-index (and the escaping-stacking-context risk that comes
-  // with one on a merely `relative` ancestor) is needed to sit it "behind"
-  // the text. opacity-50: this box's bg-bg-red is now capy-orange-a11y
-  // (after the bg-red/orange merge), and the border-pomegranate-500 lines
-  // read too loud against it at full strength -- same fix as Section 14's
-  // own RuledLines.
+  // alone does NOT actually put this behind its later siblings: this div
+  // is position:absolute, and absolutely-positioned elements always paint
+  // AFTER non-positioned in-flow content within the same stacking context
+  // regardless of DOM order (the bug that hit HoleColumn above -- see its
+  // own relative z-10 fix, needed because it was NOT positioned at all).
+  // The text wrapper further below stays correctly on top too, but for a
+  // different reason: it's already `relative` with no explicit z-index,
+  // so it shares this div's own "z-index 0" stacking bucket -- and within
+  // that shared bucket, plain DOM order decides (it comes after RuledLines
+  // in the markup), no extra z-10 needed there.
+  //
+  // opacity-50, unconditional at every breakpoint (was sm:opacity-50,
+  // matching the S reference export's own full-opacity lines) -- this
+  // box's bg-bg-red is now capy-orange-a11y (after the bg-red/orange
+  // merge), and the border-pomegranate-500 lines read too loud against it
+  // at full strength regardless of size, same fix as Section 14's own
+  // RuledLines.
   return (
     <div
       aria-hidden="true"
-      className="pointer-events-none absolute inset-x-0 top-[30px] z-0 flex flex-col gap-[40px] opacity-50"
+      className="pointer-events-none absolute inset-x-0 top-[38px] z-0 flex flex-col gap-[32px] opacity-50"
     >
       {Array.from({ length: 7 }).map((_, i) => (
         <div key={i} className="h-0 self-stretch border-t border-pomegranate-500" />
@@ -53,8 +63,14 @@ function HoleColumn() {
   // same idea as Section 2's HoleColumn but with this specific
   // top/pair/bottom split (matches Section 1's punch-hole pattern more
   // than Section 2's plain even stack).
+  //
+  // relative z-10: without it, RuledLines (a DOM-order sibling, rendered
+  // right before this) painted on TOP of these holes -- position:absolute
+  // elements (RuledLines is one) always paint after non-positioned in-flow
+  // content within the same stacking context, DOM order notwithstanding
+  // (same rule that bit Section 14's ruled lines vs. its own text).
   return (
-    <div aria-hidden="true" className="flex h-[220px] flex-col items-start justify-between">
+    <div aria-hidden="true" className="relative z-10 flex h-[220px] flex-col items-start justify-between">
       <span className="h-5 w-5 rounded-full bg-bg-pink" />
       <div className="flex flex-col items-start gap-s">
         <span className="h-5 w-5 rounded-full bg-bg-pink" />
@@ -69,9 +85,28 @@ export default function Section5() {
   return (
     <section
       id="section-5"
-      className="relative flex w-full items-center justify-center bg-bg-pink px-page-margin-x py-page-margin-y"
+      className="relative flex w-full items-center justify-center bg-bg-pink px-page-margin-x py-page-margin-y sm:h-dvh"
     >
-      <div className="flex w-[826px] flex-col items-center justify-start self-stretch">
+      {/* Outer content width: full width below sm -- both the card and the
+          illustration fill 100% of the available viewport width on mobile
+          (not the S reference's own literal 361/360px frames), simply
+          centered within this now-wider wrapper via items-center. Auto
+          (shrink-to-fit its children's own widths) from sm to lg, since
+          the M reference has no outer constraint of its own -- just the
+          640px-wide card group and the illustration, each sized
+          independently, both simply centered by items-center here. 800px
+          fixed from lg up, matching the L reference's own outer frame
+          (which wraps a 640px card and a 720px illustration within it,
+          same as M, just with that extra shared frame added around both).
+
+          sm:h-dvh (not unconditional h-dvh): below sm, this section's
+          content can run taller than one viewport at narrow widths (the
+          heading wraps more, and the illustration + card both stack at
+          full width) -- h-dvh at every size would clip that instead of
+          letting the section hug its own content, same fix as Section 3.
+          py-page-margin-y (64px at S, growing at wider tiers) gives it
+          breathing room in that hugged state. */}
+      <div className="flex w-full flex-col items-center justify-start self-stretch sm:w-auto lg:w-[800px]">
         {/* Card group: plain, unanimated position:relative wrapper -- the
             paper-tear background and tape are absolutely positioned
             children of THIS group (not the red box), so they render
@@ -79,19 +114,35 @@ export default function Section5() {
             fade-in-up, which is scoped to the ScrollSection below instead
             of this whole group. */}
         <div className="relative flex flex-col items-start justify-start">
+          {/* Torn-paper background: absent below sm entirely (hidden, not
+              just invisible) -- the S reference has no equivalent image
+              at all behind the card, only M and L do. */}
           <img
             src={paperTearBg}
             alt=""
             aria-hidden="true"
-            className="pointer-events-none absolute origin-top-left rotate-[-2deg]"
+            className="pointer-events-none absolute hidden origin-top-left rotate-[-2deg] sm:block"
             style={{ width: '621px', height: '248px', left: '-57px', top: '37px' }}
           />
 
-          <ScrollSection className="relative flex w-[800px] flex-row items-center justify-center gap-m rounded-medium bg-bg-red px-[24px] py-[40px]">
+          {/* w-full below sm (card fills the full viewport width on
+              mobile), 640px from sm up through L (identical between the
+              M and L references, so one value covers both), 800px from
+              xl up -- the true desktop width (matching the original,
+              pre-responsive design), not a further extension of L's
+              640px. There was no separate XL reference for this section,
+              but 640px was only ever confirmed for M/L specifically, not
+              "desktop" -- restoring 800px at xl instead of assuming L's
+              value carries forward indefinitely. Padding/gap/radius
+              corrected to match all three references exactly (16/24px
+              padding, 24px gap, 16px radius flat -- not rounded-medium's
+              own growing 16->20->24, which this card deliberately doesn't
+              use). */}
+          <ScrollSection className="relative flex w-full flex-row items-center justify-center gap-l rounded-small bg-bg-red px-s py-l sm:w-[640px] xl:w-[800px]">
             <RuledLines />
             <HoleColumn />
 
-            <div className="relative flex flex-1 flex-wrap content-center items-center justify-start gap-xs px-[24px]">
+            <div className="relative flex flex-1 flex-wrap content-center items-center justify-start gap-xs px-s">
               <div className="flex flex-1 items-center justify-center">
                 <h2 className="heading-2 text-heading-inverted">
                   <AccessibleHighlightText
@@ -104,31 +155,68 @@ export default function Section5() {
             </div>
           </ScrollSection>
 
+          {/* Tape: genuinely different size at S (200x40) vs M/L/XL
+              (240x48), rotate(7deg) at every reference (was rotate-6/6deg,
+              a pre-existing mismatch corrected here alongside the
+              responsive work). Horizontally centered via left-1/2 +
+              -translate-x-1/2 (the tape's own width, so it self-adjusts
+              at any size) rather than the breakpoint-specific left
+              offsets the S/M/L references themselves used (84px/203px/
+              204px) -- those were only ever each individually tuned
+              against ONE specific card width; centering directly is what
+              actually keeps it centered on the card now that the card's
+              own width changes across breakpoints (100%/640px/800px),
+              instead of needing a new hardcoded value every time the
+              card width does. top stays a flat -36px (was -35px, a
+              similar small correction) since vertical position doesn't
+              depend on the card's width. */}
           <div
             aria-hidden="true"
-            className="pointer-events-none absolute origin-top-left rotate-6 bg-bg-light-blue mix-blend-multiply"
-            style={{ width: '240px', height: '48px', left: '283px', top: '-35px' }}
+            className="pointer-events-none absolute left-1/2 top-[-36px] h-[40px] w-[200px] origin-top-left -translate-x-1/2 rotate-[7deg] bg-bg-light-blue mix-blend-multiply sm:h-[48px] sm:w-[240px]"
           />
         </div>
 
-        <ScrollSection
-          as="img"
-          src={illustration}
-          alt=""
-          aria-hidden="true"
-          // -16px pulls the illustration up so its top edge overlaps the
-          // box's bottom edge by exactly 16px, rather than sitting flush
-          // against it (the default with no gap set on the flex-col
-          // wrapper above).
-          style={{ width: '718px', height: '319px', marginTop: '-16px' }}
-          // relative (not just static default) matters here: the red box
-          // is position:relative (needed for its own absolute children),
-          // and positioned elements always paint after plain static
-          // content within the same stacking context, regardless of DOM
-          // order. Without this, the box painted on top of the
-          // illustration even though it comes first in the markup.
-          className="relative h-auto max-w-full"
-        />
+        {/* <picture> swaps to the dedicated S export below sm (360px wide,
+            no separate M/L export was given, so the existing desktop
+            asset -- already close to L's own 720px target -- just
+            carries through unchanged from sm up, same "reuse the nearest
+            larger tier" pattern as Section 1/2/3's backgrounds).
+            block w-full: <picture> has no default box behavior of its
+            own (browsers treat it as an unstyled inline-level wrapper) --
+            without an explicit block+width, its own box shrinks to the
+            image's intrinsic size instead of stretching to fill this
+            column, which silently broke the img's own w-full below (a
+            percentage width resolves against ITS immediate parent, i.e.
+            this <picture>, not the column further out). Same fix as
+            Section 2's own <picture> wrappers. */}
+        <picture className="block w-full">
+          <source media="(min-width: 640px)" srcSet={illustrationXl} />
+          <ScrollSection
+            as="img"
+            src={illustrationS}
+            alt=""
+            aria-hidden="true"
+            // -16px pulls the illustration up so its top edge overlaps the
+            // box's bottom edge by exactly 16px, rather than sitting flush
+            // against it (the default with no gap set on the flex-col
+            // wrapper above).
+            style={{ marginTop: '-16px' }}
+            // relative (not just static default) matters here: the red box
+            // is position:relative (needed for its own absolute children),
+            // and positioned elements always paint after plain static
+            // content within the same stacking context, regardless of DOM
+            // order. Without this, the box painted on top of the
+            // illustration even though it comes first in the markup.
+            //
+            // w-full below sm (was a fixed w-[360px] max-w-full, which
+            // only reached 100% by coincidence on the narrowest phones
+            // where max-w-full happened to clamp it down -- at any wider
+            // S viewport, e.g. 600px, it stayed fixed at 360px instead of
+            // filling the available ~568px), matching the card's own
+            // w-full treatment above.
+            className="relative h-auto w-full sm:w-[718px]"
+          />
+        </picture>
       </div>
     </section>
   );
