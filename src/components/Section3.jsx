@@ -138,6 +138,35 @@ function buildBubbles(tier) {
   return BUBBLE_META.map((meta) => ({ ...meta, ...positions[meta.key] }));
 }
 
+// The bubble canvas is a fixed-size composition of absolutely-positioned
+// children (left/top, plus explicit width/height on some) -- exactly the
+// kind of layout that overflows once its own container is squeezed
+// narrower than its reference width by max-w-full (a real bug: at very
+// narrow phones, "enough"/"no-point"'s explicit widths pushed past the
+// actual viewport edge, since their pixel positions never adapted to
+// the shrunk container). Fixed the same way Section 11's speech-bubble/
+// post-it canvas was: convert every left/top/width/height from a literal
+// px number to a container-query-width percentage (cqw), relative to
+// that TIER's own reference canvas width (CONTAINERS[tier].width) --
+// cqw is relative to the nearest ancestor with `container-type:
+// inline-size` (set below), so using it for every axis (not just
+// horizontal ones) makes the whole composition scale together as one
+// unit, preserving every bubble's relative position/size regardless of
+// how much the container actually shrinks. At each tier's own reference
+// width (the common case, no squeeze), this resolves to the exact same
+// pixel values as before -- it only changes anything once max-w-full
+// actually kicks in.
+function cqw(px, tier) {
+  return `${(px / CONTAINERS[tier].width) * 100}cqw`;
+}
+
+function scaledSize(size, tier) {
+  if (size === 'hug') return 'hug';
+  const scaled = { width: cqw(size.width, tier) };
+  if (size.height !== undefined) scaled.height = cqw(size.height, tier);
+  return scaled;
+}
+
 // Each bg/textColor class's underlying color, so the scroll-driven crossfade
 // (a MotionValue) has real hex strings to interpolate between -- Framer
 // Motion can't animate a CSS class swap, only actual color values. Same
@@ -180,7 +209,7 @@ const CROSSFADE_END = 0.6;
 // the page background is itself halfway between blue and black there.
 const SWAP_POINT = 0.5;
 
-function AnimatedBubble({ bubble, index, scrollYProgress, isSwapped }) {
+function AnimatedBubble({ bubble, index, scrollYProgress, isSwapped, tier }) {
   const revealStart = REVEAL_START + index * REVEAL_STAGGER_STEP;
   const revealEnd = revealStart + REVEAL_FADE_DURATION;
   const opacity = useTransform(scrollYProgress, [revealStart, revealEnd], [0, 1]);
@@ -197,11 +226,11 @@ function AnimatedBubble({ bubble, index, scrollYProgress, isSwapped }) {
   );
 
   return (
-    <motion.div className="absolute" style={{ left: `${bubble.left}px`, top: `${bubble.top}px`, opacity, y }}>
+    <motion.div className="absolute" style={{ left: cqw(bubble.left, tier), top: cqw(bubble.top, tier), opacity, y }}>
       <SpeechBubble
         text={isSwapped ? 'Am I enough?' : bubble.text}
         srText={bubble.text}
-        size={bubble.size}
+        size={scaledSize(bubble.size, tier)}
         bg={bubble.bg}
         textColor={bubble.textColor}
         tailSide={bubble.tailSide}
@@ -273,10 +302,13 @@ export default function Section3() {
         id="section-3"
         className="relative flex w-full flex-col items-center justify-center bg-bg-blue px-page-margin-x py-page-margin-y"
       >
-        <div className="relative max-w-full" style={{ width: `${container.width}px`, height: `${container.height}px` }}>
+        <div
+          className="relative max-w-full"
+          style={{ width: `${container.width}px`, height: cqw(container.height, tier), containerType: 'inline-size' }}
+        >
           {bubbles.map((bubble) => (
-            <ScrollSection key={bubble.key} className="absolute" style={{ left: `${bubble.left}px`, top: `${bubble.top}px` }}>
-              <SpeechBubble text={bubble.text} size={bubble.size} bg={bubble.bg} textColor={bubble.textColor} tailSide={bubble.tailSide} />
+            <ScrollSection key={bubble.key} className="absolute" style={{ left: cqw(bubble.left, tier), top: cqw(bubble.top, tier) }}>
+              <SpeechBubble text={bubble.text} size={scaledSize(bubble.size, tier)} bg={bubble.bg} textColor={bubble.textColor} tailSide={bubble.tailSide} />
             </ScrollSection>
           ))}
         </div>
@@ -297,7 +329,10 @@ export default function Section3() {
           className="pointer-events-none absolute inset-0 bg-black-950"
         />
 
-        <div className="relative max-w-full" style={{ width: `${container.width}px`, height: `${container.height}px` }}>
+        <div
+          className="relative max-w-full"
+          style={{ width: `${container.width}px`, height: cqw(container.height, tier), containerType: 'inline-size' }}
+        >
           {bubbles.map((bubble) => (
             <AnimatedBubble
               key={bubble.key}
@@ -305,6 +340,7 @@ export default function Section3() {
               index={bubble.staggerIndex}
               scrollYProgress={scrollYProgress}
               isSwapped={isSwapped}
+              tier={tier}
             />
           ))}
         </div>

@@ -122,7 +122,16 @@ export default function Section13() {
     return (
       <section
         id="section-13"
-        className="relative flex w-full flex-col items-center justify-start bg-bg-blue px-page-margin-x pt-page-margin-y"
+        // overflow-x-clip, not overflow-x-hidden: `hidden` on only one
+        // axis makes the browser silently auto-pair the OTHER axis to
+        // `auto` too (a real CSS spec quirk, not a typo) -- that turned
+        // this section into its own nested vertical scroll container,
+        // trapping ~24px of its own content behind an internal scrollbar
+        // and causing exactly the jerky "tries to stick" handoff + sudden
+        // scrollbar + clipped illustration reported on mobile. `clip`
+        // achieves the same horizontal clipping without establishing a
+        // scroll container, so it doesn't trigger that pairing at all.
+        className="relative flex w-full flex-col items-center justify-start overflow-x-clip bg-bg-blue px-page-margin-x pt-page-margin-y"
       >
         <HeadingAndPinkBox widthClassName="w-full" />
 
@@ -131,16 +140,14 @@ export default function Section13() {
             device-width frame, not a margined column graphic, matching
             how every other full-bleed image on the site (Section 8's
             chart, Section 9's carousel) already breaks out the same way.
-            Pulled up over the pink box (negative margin-top) with an
-            explicit z-index above it, rather than just touching edges --
-            the illustration sits in front of the box's lower portion. */}
+            No margin-top -- sits directly below the pink box, no overlap. */}
         <ScrollSection
           as="img"
           src={sImgFrame13}
           alt=""
           aria-hidden="true"
           transition={{ duration: 0.6, ease: 'easeOut', delay: BG_DELAY }}
-          style={{ width: '100vw', marginLeft: 'calc(50% - 50vw)', marginRight: 'calc(50% - 50vw)', marginTop: '-48px' }}
+          style={{ width: '100vw', marginLeft: 'calc(50% - 50vw)', marginRight: 'calc(50% - 50vw)', marginTop: '0' }}
           className="pointer-events-none relative z-10 block h-auto"
         />
       </section>

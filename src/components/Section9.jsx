@@ -92,7 +92,12 @@ export default function Section9() {
   return (
     <section
       id="section-9"
-      className="relative flex w-full flex-col items-center justify-center bg-white-linen-100 px-page-margin-x py-page-margin-y"
+      // overflow-x-clip, not overflow-x-hidden -- see Section13's own
+      // comment on the identical fix: `hidden` on just one axis silently
+      // auto-pairs the other to `auto`, turning the section into its own
+      // nested scroll container. `clip` clips the same decorative bleed
+      // without that side effect.
+      className="relative flex w-full flex-col items-center justify-center overflow-x-clip bg-white-linen-100 px-page-margin-x py-page-margin-y"
     >
       <div className="flex w-full flex-col items-start justify-start sm:w-[960px] sm:max-w-full">
         {/* Header tab + text block animate together as one unit (was two

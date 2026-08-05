@@ -33,6 +33,11 @@ import { motion } from 'framer-motion';
  * different length (like the Section 3 Scene 2 crossfade): without a
  * fixed width, the box would visibly resize when the text changes, since
  * a pure hug box's width is derived from its current text content.
+ * width/height are used AS-IS as CSS length values (not treated as bare
+ * numbers with 'px' appended) -- callers pass a complete string like
+ * "200px" or a container-query-width value like "54.9cqw" (Section 3
+ * scales its whole bubble layout this way so it shrinks proportionally
+ * with its container instead of overflowing at narrow widths).
  *
  * Padding uses the shared --spacing-l token (p-l: 24px, 40px from the true
  * xl/1200px breakpoint up) rather than a hardcoded pixel value -- matches
@@ -70,8 +75,8 @@ export default function SpeechBubble({
       <motion.div
         className={`flex items-center justify-center rounded-small p-l ${bg}`}
         style={{
-          ...(hasFixedWidth ? { width: `${size.width}px` } : undefined),
-          ...(hasFixedHeight ? { height: `${size.height}px` } : undefined),
+          ...(hasFixedWidth ? { width: size.width } : undefined),
+          ...(hasFixedHeight ? { height: size.height } : undefined),
           backgroundColor: bgColor,
         }}
       >

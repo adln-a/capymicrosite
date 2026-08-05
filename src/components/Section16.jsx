@@ -1,12 +1,10 @@
 import { useRef } from 'react';
 import { motion, useReducedMotion, useScroll, useTransform } from 'framer-motion';
-import ScrollSection from './ScrollSection.jsx';
 import AccessibleHighlightText from './AccessibleHighlightText.jsx';
 import useMediaQuery from '../hooks/useMediaQuery.js';
 import pinkScribble from '../assets/Pink-Scribble.svg';
 import frameLeft from '../assets/Desktop-IMG-Frame-16-Left.svg';
 import frameRight from '../assets/Desktop-IMG-Frame-16-Right.svg';
-import sIllustration from '../assets/s/S--IMG-Frame16.svg';
 
 // Content + exact colors/rotations transcribed from the reference export
 // (Section 16.html) -- each card's rotation and ruled-line tint is a
@@ -264,13 +262,9 @@ function Section16Mobile() {
   const { scrollYProgress } = useScroll({ target: sWrapperRef, offset: ['start start', 'end end'] });
 
   // Card stack keeps the exact same scroll-jack mechanism as XL (StackCard,
-  // same CARDS/STACK_PEEK/CARD_HEIGHT) -- only the illustration's
-  // placement changes: it's a normal-flow sibling AFTER the h-[300vh] pin
-  // region instead of an absolutely-positioned overlay living inside the
-  // pinned viewport. That's what makes it only scroll into view once the
-  // user has scrolled all the way through the cards and the pin releases,
-  // rather than being visible (overlaid at the bottom) the entire time
-  // the cards are pinned.
+  // same CARDS/STACK_PEEK/CARD_HEIGHT) -- no illustration at S at all (per
+  // direct instruction, for a cleaner mobile look with just the cards),
+  // unlike XL's Illustrations() overlay.
   if (prefersReducedMotion) {
     // No pin at all here -- consistent with XL's own reduced-motion
     // branch, which also skips the scroll-jack entirely and just settles
@@ -291,8 +285,6 @@ function Section16Mobile() {
             ))}
           </div>
         </div>
-
-        <img src={sIllustration} alt="" aria-hidden="true" className="pointer-events-none h-auto w-full px-page-margin-x py-page-margin-y" />
       </section>
     );
   }
@@ -309,14 +301,6 @@ function Section16Mobile() {
           </div>
         </div>
       </div>
-
-      <ScrollSection
-        as="img"
-        src={sIllustration}
-        alt=""
-        aria-hidden="true"
-        className="pointer-events-none h-auto w-full px-page-margin-x py-page-margin-y"
-      />
     </section>
   );
 }

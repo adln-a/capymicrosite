@@ -60,17 +60,26 @@ const HOLE_VISIBILITY = [
 function WhitePunchHoles() {
   // Normal flex-flow child now, not absolutely positioned -- it's the first
   // item in the same flex column as the paragraph text, so the box's own
-  // top padding and the column's gap-[24px] space it out naturally. mx-[-40px]
-  // exactly cancels the parent's pr-[40px]/pl-[40px]. IMPORTANT: this row is
+  // top padding and the column's gap-[24px] space it out naturally.
+  // mx-[calc(-1*var(--spacing-l))] exactly cancels the parent's own
+  // pr-l/pl-l -- NOT a hardcoded -40px (that was this row's original
+  // value, written back when the parent's padding was a flat 40px; once
+  // it became the responsive pl-l/pr-l token (24px base, 40px only at
+  // xl), the hardcoded -40px started over-cancelling by 16px per side at
+  // every tier below xl, pushing this row 32px wider than the box itself
+  // and overflowing the page at S -- referencing the same token the
+  // parent actually uses keeps the two in sync at every tier instead of
+  // just the one this was originally tuned for). IMPORTANT: this row is
   // a flex ITEM inside that column, and the column is `items-center` (not
   // `items-stretch`), so it does NOT get 100% width for free -- without an
   // explicit width it shrinks to its own content (18 holes = 360px) and
   // `justify-between` has no extra space to distribute, collapsing all the
-  // holes together instead of spreading them. w-[calc(100%+80px)] fixes
-  // that: 100% resolves against the column's own width (the box's
-  // padding-inset content width), and +80px cancels back out the
-  // mx-[-40px] bleed on both sides, landing this row at the box's full
-  // outer width -- fluid with the box itself, not a fixed number.
+  // holes together instead of spreading them. w-[calc(100%+(var(--spacing-l)*2))]
+  // fixes that: 100% resolves against the column's own width (the box's
+  // padding-inset content width), and adding the same token back (both
+  // sides) cancels the negative-margin bleed, landing this row at the
+  // box's full outer width -- fluid with the box itself and its actual
+  // current padding, not a fixed number tuned for one tier.
   // justify-between (not a fixed gap-[24px]) -- the box's own width is now
   // fluid, so the fixed 20px holes are spaced evenly across whatever width
   // is actually available rather than at a hardcoded gap that only ever
@@ -90,7 +99,11 @@ function WhitePunchHoles() {
   // justify-between then spaces however many are currently visible evenly
   // across the row either way.
   return (
-    <div aria-hidden="true" className="mx-[-40px] flex w-[calc(100%+80px)] items-center justify-between px-s">
+    <div
+      aria-hidden="true"
+      className="flex items-center justify-between px-s"
+      style={{ marginInline: 'calc(-1 * var(--spacing-l))', width: 'calc(100% + (var(--spacing-l) * 2))' }}
+    >
       {HOLE_VISIBILITY.map((visibleFrom, i) => (
         <span key={i} className={`h-5 w-5 shrink-0 rounded-full bg-bg-linen-dark ${visibleFrom}`} />
       ))}
