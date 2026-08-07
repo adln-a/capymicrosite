@@ -26,7 +26,10 @@ export default function Footer({ activeSection }) {
           relationship between them, same issue every other uncapped
           section had. */}
       <div className="flex w-full flex-col items-start gap-l content-cap">
-        <div className="flex flex-col items-start justify-start gap-m self-stretch">
+        {/* gap-xl sm:gap-m: S gets extra breathing room between the
+            paragraph and the nav links below it (own request) -- M/L/XL
+            keep the original tighter gap-m unchanged. */}
+        <div className="flex flex-col items-start justify-start gap-xl self-stretch sm:gap-m">
           {/* Plain paragraph, not a heading -- this is the footer's own
               brand/identity label (like a wordmark), not a heading that
               introduces the content below it, so it's left out of the
@@ -51,12 +54,23 @@ export default function Footer({ activeSection }) {
               active/default logic (same component the header uses) but with
               this footer's own outline-scribble marker asset and white text
               color, since the header's solid-fill marker and dark text are
-              tuned for its light background, not this dark green one. */}
+              tuned for its light background, not this dark green one.
+
+              S: stacked (flex-col, centered) instead of the M+ row --
+              without this, "Download our design guide" had nowhere near
+              enough room to sit on one line alongside Home/Contact us in
+              the original justify-between row, so each link's own text
+              wrapped internally into a cramped two-line mess instead of
+              cleanly stacking. items-center (not items-start, unlike the
+              rest of this footer's left-aligned content) matches the
+              main nav's own S-tier full-screen panel, which centers its
+              stacked links the same way. sm: reverts to the original
+              row, unchanged. */}
           <ScrollSection
             as="nav"
             aria-label="Footer"
             transition={{ duration: 0.6, ease: 'easeOut', delay: NAV_DELAY }}
-            className="flex items-center justify-between self-stretch"
+            className="flex flex-col items-center justify-start gap-xl self-stretch sm:flex-row sm:justify-between sm:gap-0"
           >
             <NavLink
               href="#section-1"
