@@ -467,12 +467,25 @@ export default function Section4() {
 
               <div className="flex flex-col gap-[2px] self-stretch">
                 <Scrubber currentTime={currentTime} duration={duration} onSeek={seek} />
+                {/* aria-hidden on the visible digits + a separate sr-only
+                    spoken string, rather than an aria-label on the <p>
+                    itself: aria-label overrides the element's ACCESSIBLE
+                    NAME, but doesn't remove the visible text node from the
+                    DOM -- screen readers' continuous/virtual-cursor
+                    reading picks up both, announcing "Elapsed: 34 seconds"
+                    (the label) immediately followed by "0:34" read
+                    digit-by-digit ("zero zero thirty four") from the still-
+                    present visible text. Splitting into two spans (one
+                    hidden from AT, one hidden visually) means exactly one
+                    of them is ever in the accessibility tree at a time. */}
                 <div className="flex items-start justify-between self-stretch">
-                  <p className="body-paragraph text-body-inverted" aria-label={`Elapsed: ${formatTimeSpoken(currentTime)}`}>
-                    {formatTime(currentTime)}
+                  <p className="body-paragraph text-body-inverted">
+                    <span aria-hidden="true">{formatTime(currentTime)}</span>
+                    <span className="sr-only">Elapsed: {formatTimeSpoken(currentTime)}</span>
                   </p>
-                  <p className="body-paragraph text-body-inverted" aria-label={`Duration: ${formatTimeSpoken(duration)}`}>
-                    {formatTime(duration)}
+                  <p className="body-paragraph text-body-inverted">
+                    <span aria-hidden="true">{formatTime(duration)}</span>
+                    <span className="sr-only">Duration: {formatTimeSpoken(duration)}</span>
                   </p>
                 </div>
               </div>

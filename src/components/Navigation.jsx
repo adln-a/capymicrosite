@@ -3,8 +3,13 @@ import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import bgNavActive from '../assets/BG--Nav-Active.svg';
 import desktopNav from '../assets/Desktop-Nav.svg';
 import { DownloadIcon, MaterialIcon } from './icons.jsx';
+import useMediaQuery from '../hooks/useMediaQuery.js';
 
 const DOWNLOAD_LABEL = 'Download our design guide';
+// External link (a Google Drive share link via a shortener, not a file
+// bundled into this repo) -- see DownloadButton's own comment below for
+// why it opens in a new tab.
+const DESIGN_GUIDE_URL = 'https://shorturl.at/C4lfv';
 
 function DownloadButtonContent() {
   return (
@@ -137,27 +142,51 @@ export function NavLink({
  * rather than changing the text color, since primary buttons' whole
  * visual weight IS their filled background.
  */
-export function ButtonPrimary({ children, innerRef, className = '', inverted = false, type = 'button', ...props }) {
+// Renders as a real <a> when `href` is passed (e.g. DownloadButton below)
+// instead of a <button> -- this actually navigates the user away from the
+// site, so it needs anchor semantics (Enter-to-follow, right-click "open
+// in new tab", status-bar preview, etc.), not a button with a JS-driven
+// navigation side effect.
+export function ButtonPrimary({ children, innerRef, className = '', inverted = false, type = 'button', href, ...props }) {
+  const sharedClassName = `button-default inline-flex cursor-pointer items-center gap-2xs rounded-large px-m py-s transition-colors duration-150 ${
+    inverted
+      ? 'bg-bg-white text-button-primary-orange hover:bg-capy-orange-50'
+      : 'bg-button-primary-orange text-button-inverted hover:bg-capy-orange-500'
+  } ${className}`;
+
+  if (href) {
+    return (
+      <a ref={innerRef} href={href} className={sharedClassName} {...props}>
+        {children}
+      </a>
+    );
+  }
+
   return (
-    <button
-      ref={innerRef}
-      type={type}
-      className={`button-default inline-flex cursor-pointer items-center gap-2xs rounded-large px-m py-s transition-colors duration-150 ${
-        inverted
-          ? 'bg-bg-white text-button-primary-orange hover:bg-capy-orange-50'
-          : 'bg-button-primary-orange text-button-inverted hover:bg-capy-orange-500'
-      } ${className}`}
-      {...props}
-    >
+    <button ref={innerRef} type={type} className={sharedClassName} {...props}>
       {children}
     </button>
   );
 }
 
-/** Pre-configured ButtonPrimary carrying the fixed "Download" label + icon. */
+/**
+ * Pre-configured ButtonPrimary carrying the fixed "Download" label + icon
+ * and pointed at DESIGN_GUIDE_URL. target="_blank" + rel="noopener
+ * noreferrer" because this is a real external link, not an in-app action:
+ * noopener stops the opened tab from getting a `window.opener` handle
+ * back to this site (the standard cross-origin-tab-nav hardening), and
+ * noreferrer additionally withholds the Referer header from the request.
+ */
 export function DownloadButton({ innerRef, className = '', inverted = false }) {
   return (
-    <ButtonPrimary innerRef={innerRef} className={`${CARD_SHADOW} ${className}`} inverted={inverted}>
+    <ButtonPrimary
+      innerRef={innerRef}
+      className={`${CARD_SHADOW} ${className}`}
+      inverted={inverted}
+      href={DESIGN_GUIDE_URL}
+      target="_blank"
+      rel="noopener noreferrer"
+    >
       <DownloadButtonContent />
     </ButtonPrimary>
   );
@@ -274,6 +303,9 @@ const LARGE_SCREEN_QUERY = '(min-width: 992px)';
 export default function Navigation({ sentinelRef, mainRef, activeSection }) {
   const [isOpen, setIsOpen] = useState(false);
   const [sentinelVisible, setSentinelVisible] = useState(true);
+  // S (<640px) gets its own full-screen panel layout below -- everything
+  // M and up keeps the existing hug-content row unchanged.
+  const isAtLeastSm = useMediaQuery('(min-width: 640px)');
   // Function initializer so the very first render (before any effect runs)
   // already reflects the real viewport instead of defaulting to one branch
   // and visibly flipping right after mount. `typeof window` guard is the
@@ -490,51 +522,116 @@ export default function Navigation({ sentinelRef, mainRef, activeSection }) {
         </div>
       )}
 
-      {/* Hugs its own content (logo + links + button) rather than covering
-          the full viewport, per the reference -- page content stays
-          visible peeking below the shadow. That's safe precisely because
-          `inert` (above) already pulls the rest of the page out of both
-          the tab order and the accessibility tree the moment this is
-          open; a sighted user can see it, but nothing below is reachable
-          or announced, so it can't be mistaken for interactive content. */}
-      <AnimatePresence>
-        {isOpen && (
-          <motion.div
-            ref={panelRef}
-            initial={shouldReduceMotion ? false : { y: '-100%' }}
-            animate={{ y: 0 }}
-            exit={shouldReduceMotion ? undefined : { y: '-100%' }}
-            transition={shouldReduceMotion ? { duration: 0 } : { duration: 0.3, ease: 'easeOut' }}
-            className="fixed inset-x-0 top-0 z-40 bg-bg-linen-light px-page-margin-x py-xl shadow-[0_8px_16px_rgba(0,0,0,0.08)]"
-          >
-            {/* content-cap: same site-wide desktop cap as every section --
-                without it, this row's own justify-center just centers
-                within the full page-margin-to-page-margin width, which is
-                what the panel used to do directly. Moved flex/items-end/
-                justify-center/gap-xl down from the motion.div itself onto
-                this inner wrapper so the panel's own background/shadow
-                band still spans full-bleed edge-to-edge (matching the
-                comment above about hugging content height, not width),
-                while only the actual content row gets capped+centered. */}
-            <div className="flex w-full items-end justify-center gap-xl content-cap">
-              <img src={desktopNav} alt="" aria-hidden="true" className="pointer-events-none h-auto w-[198px] flex-shrink-0" />
+      {/* M and up: hugs its own content (logo + links + button) rather
+          than covering the full viewport, per the reference -- page
+          content stays visible peeking below the shadow. That's safe
+          precisely because `inert` (above) already pulls the rest of the
+          page out of both the tab order and the accessibility tree the
+          moment this is open; a sighted user can see it, but nothing
+          below is reachable or announced, so it can't be mistaken for
+          interactive content.
 
-              <div className="flex flex-col items-center justify-start gap-xl">
-                <NavLink href="#section-1" label="Home" isActive={activeSection === 'home'} innerRef={homeRef} />
-                <NavLink href="#contact" label="Contact us" isActive={activeSection === 'contact'} innerRef={contactRef} />
+          S: a genuinely different layout, not just a narrower version of
+          the same one -- full-screen (fixed inset-0, not inset-x-0/
+          top-0-only) so nothing of the page is visible OR reachable
+          behind it, matching `inert`'s already-existing accessibility
+          isolation with real visual isolation too. The two NavLinks stack
+          at 100% width (w-full justify-center passed into each, added on
+          top of their own default content-sized styling); the Download
+          button stays its own default content-hugging size instead --
+          only the plain-text links needed the full-width tap target, and
+          stretching the button's own filled pill to match read as an
+          unintentionally oversized CTA rather than matching the links'
+          own treatment on purpose. The logo moves out of the content
+          flow entirely to sit pinned at the bottom-left corner (own
+          comment on the image below) rather than beside the links. */}
+      <AnimatePresence>
+        {isOpen &&
+          (isAtLeastSm ? (
+            <motion.div
+              ref={panelRef}
+              initial={shouldReduceMotion ? false : { y: '-100%' }}
+              animate={{ y: 0 }}
+              exit={shouldReduceMotion ? undefined : { y: '-100%' }}
+              transition={shouldReduceMotion ? { duration: 0 } : { duration: 0.3, ease: 'easeOut' }}
+              className="fixed inset-x-0 top-0 z-40 bg-bg-linen-light px-page-margin-x py-xl shadow-[0_8px_16px_rgba(0,0,0,0.08)]"
+            >
+              {/* content-cap: same site-wide desktop cap as every section --
+                  without it, this row's own justify-center just centers
+                  within the full page-margin-to-page-margin width, which is
+                  what the panel used to do directly. Moved flex/items-end/
+                  justify-center/gap-xl down from the motion.div itself onto
+                  this inner wrapper so the panel's own background/shadow
+                  band still spans full-bleed edge-to-edge (matching the
+                  comment above about hugging content height, not width),
+                  while only the actual content row gets capped+centered. */}
+              <div className="flex w-full items-end justify-center gap-xl content-cap">
+                <img src={desktopNav} alt="" aria-hidden="true" className="pointer-events-none h-auto w-[198px] flex-shrink-0" />
+
+                <div className="flex flex-col items-center justify-start gap-xl">
+                  <NavLink href="#section-1" label="Home" isActive={activeSection === 'home'} innerRef={homeRef} />
+                  <NavLink href="#contact" label="Contact us" isActive={activeSection === 'contact'} innerRef={contactRef} />
+                  <DownloadButton innerRef={downloadRef} />
+                </div>
+
+                {/* Invisible twin of the image, same trick as NavSpacer above --
+                    balances the image on the other side of the links column so
+                    justify-center on the row centers the LINKS on the panel's
+                    true center, rather than centering the image+links group as
+                    one block (which would push the links right of center by
+                    roughly half the image's own width). */}
+                <div aria-hidden="true" className="pointer-events-none w-[198px] flex-shrink-0 opacity-0" />
+              </div>
+            </motion.div>
+          ) : (
+            <motion.div
+              ref={panelRef}
+              initial={shouldReduceMotion ? false : { y: '-100%' }}
+              animate={{ y: 0 }}
+              exit={shouldReduceMotion ? undefined : { y: '-100%' }}
+              transition={shouldReduceMotion ? { duration: 0 } : { duration: 0.3, ease: 'easeOut' }}
+              className="fixed inset-0 z-40 flex flex-col bg-bg-linen-light px-page-margin-x pt-xl shadow-[0_8px_16px_rgba(0,0,0,0.08)]"
+            >
+              <div className="flex w-full flex-1 flex-col items-center justify-center gap-xl">
+                <NavLink
+                  href="#section-1"
+                  label="Home"
+                  isActive={activeSection === 'home'}
+                  innerRef={homeRef}
+                  className="w-full justify-center"
+                />
+                <NavLink
+                  href="#contact"
+                  label="Contact us"
+                  isActive={activeSection === 'contact'}
+                  innerRef={contactRef}
+                  className="w-full justify-center"
+                />
                 <DownloadButton innerRef={downloadRef} />
               </div>
 
-              {/* Invisible twin of the image, same trick as NavSpacer above --
-                  balances the image on the other side of the links column so
-                  justify-center on the row centers the LINKS on the panel's
-                  true center, rather than centering the image+links group as
-                  one block (which would push the links right of center by
-                  roughly half the image's own width). */}
-              <div aria-hidden="true" className="pointer-events-none w-[198px] flex-shrink-0 opacity-0" />
-            </div>
-          </motion.div>
-        )}
+              {/* Pinned to the panel's own bottom-left corner, out of the
+                  centered links' flow entirely. left explicitly reads the
+                  same --spacing-page-margin-x custom property the panel's
+                  own px-page-margin-x padding resolves to (16px at S) --
+                  NOT plain `left-0`, which resolves against this `fixed`
+                  ancestor's BORDER edge rather than its padding edge (so
+                  it landed flush with the true screen edge, ignoring the
+                  16px padding entirely, when tried). This way the image
+                  lines up with the same edge inset every other section
+                  measures its own content from, via the same token,
+                  rather than a hardcoded one-off px value. bottom-[32px]:
+                  the specific offset asked for, distinct from
+                  page-margin-y (a larger value here). */}
+              <img
+                src={desktopNav}
+                alt=""
+                aria-hidden="true"
+                className="pointer-events-none absolute bottom-[32px] h-auto w-[198px]"
+                style={{ left: 'var(--spacing-page-margin-x)' }}
+              />
+            </motion.div>
+          ))}
       </AnimatePresence>
     </div>
   );

@@ -313,8 +313,31 @@ export default function Section2() {
       setCardGap(stackRef.current ? parseFloat(getComputedStyle(stackRef.current).rowGap) || 0 : 0);
     }
     measure();
-    window.addEventListener('resize', measure);
-    return () => window.removeEventListener('resize', measure);
+
+    // Re-measure only on an actual WIDTH change -- everything measured
+    // above (card heights/widths, gap) depends on the cards' own content
+    // wrapping, which is driven by width, never by viewport height alone.
+    // A bare `resize` listener fires on ANY viewport dimension change,
+    // including height-only ones -- and mobile Safari's address bar
+    // collapsing/expanding AS YOU SCROLL (the exact browser behavior
+    // `dvh`, already used for this section's own pinned height, exists
+    // to track) fires exactly that: a height-only resize, mid-gesture.
+    // That was previously re-running measure()'s 4 setState calls (each
+    // preceded by a layout-forcing offsetHeight/offsetWidth read) on
+    // every toolbar transition while the user's finger was still moving
+    // -- a React re-render, forced synchronously ahead of it by those
+    // reads, right in the middle of this section's own scroll-driven
+    // animation. This is the one thing that's genuinely different about
+    // Section2 versus Section3/11/16's own pinned sections, none of which
+    // carry a window resize listener at all.
+    let lastWidth = window.innerWidth;
+    function handleResize() {
+      if (window.innerWidth === lastWidth) return;
+      lastWidth = window.innerWidth;
+      measure();
+    }
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
   }, []);
 
   // The stack (Scene 1 + Scene 2 + Scene 3, in one normal flex column,

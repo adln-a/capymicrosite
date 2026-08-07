@@ -83,6 +83,12 @@ const WALL_THICKNESS = 40;
 // own 40px thickness, so a body travelling at the cap still can't skip
 // past it within one physics step.
 const MAX_BODY_SPEED = 25;
+// Consecutive (not cumulative) frames every body must report
+// `isSleeping` before the render loop actually stops (own comment above
+// `loop()`) -- guards against a single-frame flicker into sleep (e.g.
+// right as two bodies settle against each other) being mistaken for the
+// whole scene having actually finished.
+const SETTLE_FRAMES_REQUIRED = 10;
 
 // Physics-body dimensions. Widths are the same values tuned by eye
 // against the reference in the earlier static build; heights follow each
@@ -242,6 +248,15 @@ function FallingScene({ sceneWidth: fixedWidth, sceneHeight }) {
       // in the render loop below is the hard backstop.
       engine.positionIterations = 10;
       engine.velocityIterations = 8;
+      // Lets Matter itself mark resting bodies `isSleeping` (its own
+      // motion-vs-sleepThreshold bookkeeping, correctly accounting for
+      // the small residual velocity gravity continuously reintroduces
+      // into a body that's actually at rest) -- the settle check in
+      // `loop()` below uses that instead of a hand-picked speed
+      // threshold, which turned out not to reliably trip: a resting
+      // body under this scene's own gravity/friction never quite settled
+      // under a raw speed number, it just oscillated near it forever.
+      engine.enableSleeping = true;
       // A bit brisker than Matter's default (1) -- with the default,
       // items spawned several hundred px above the scene took upwards of
       // 7s to land, which reads as sluggish for a page-load reveal.
@@ -312,6 +327,20 @@ function FallingScene({ sceneWidth: fixedWidth, sceneHeight }) {
         );
       });
 
+      // Once every item has spawned and come to rest, the loop stops
+      // rescheduling itself instead of running requestAnimationFrame
+      // forever -- previously this kept solving physics for ~16 bodies at
+      // 60fps for the rest of the page's lifetime (Section6 never
+      // unmounts), competing with the scroll compositor on every frame
+      // even long after the scene had visually settled and even while the
+      // user had scrolled 12 sections further down. Real main-thread work
+      // fighting scroll like that is exactly what produces the "stutters,
+      // then catches up in a burst" jank iOS Safari is known for.
+      // SETTLE_FRAMES_REQUIRED consecutive under-threshold frames (not
+      // just one) guards against stopping during a momentary lull between
+      // bounces.
+      let settledFrames = 0;
+
       function loop() {
         // Hard backstop against tunneling: clamp any body's speed before
         // integrating this frame, so a collision-resolution impulse from
@@ -365,7 +394,16 @@ function FallingScene({ sceneWidth: fixedWidth, sceneHeight }) {
           const y = body.position.y - height / 2;
           el.style.transform = `translate(${x}px, ${y}px) rotate(${body.angle}rad)`;
         });
-        rafId = requestAnimationFrame(loop);
+
+        const allSpawned = bodies.length === spawnOrder.length;
+        const allAtRest = allSpawned && bodies.every(({ body }) => body.isSleeping);
+        settledFrames = allAtRest ? settledFrames + 1 : 0;
+
+        if (settledFrames < SETTLE_FRAMES_REQUIRED) {
+          rafId = requestAnimationFrame(loop);
+        } else {
+          rafId = undefined;
+        }
       }
       rafId = requestAnimationFrame(loop);
     }

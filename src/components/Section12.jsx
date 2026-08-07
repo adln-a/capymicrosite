@@ -161,9 +161,20 @@ function NumberButton({ set, isActive, onClick, shouldReduceMotion, innerRef, id
   // aria-current to mark whichever set is currently in view rather than
   // aria-selected/aria-controls, and no roving tabindex since there's no
   // longer a composite tablist widget to manage focus within.
+  //
+  // aria-hidden here (S/M only, asTab=false) hides it from SCREEN READERS
+  // specifically -- announcing "Insight 1", "Insight 2"... on this row as
+  // well as on each card itself (AssumptionCard's own sr-only prefix, own
+  // comment) would be the same redundant-announcement problem the
+  // timestamp fix solved. It stays keyboard-focusable (tabIndex: 0, same
+  // as before) and mouse/touch-clickable regardless -- this must remain a
+  // real, reachable keyboard shortcut for sighted keyboard users, who
+  // still need it since S/M's content, while all in the DOM, is a long
+  // scroll to Tab through sequentially otherwise. Only screen reader
+  // announcement is suppressed, not the control itself.
   const tabProps = asTab
     ? { role: 'tab', id, 'aria-selected': isActive, 'aria-controls': panelId, tabIndex: isActive ? 0 : -1 }
-    : { 'aria-current': isActive ? 'true' : undefined, tabIndex: 0 };
+    : { 'aria-current': isActive ? 'true' : undefined, tabIndex: 0, 'aria-hidden': true };
 
   return (
     <button
@@ -244,12 +255,20 @@ function InertAudioPlayer({ trackColor }) {
             style={{ width: '20px', height: '20px', left: `calc(${fillPct}% - 10px)`, top: '-6px', backgroundColor: trackColor }}
           />
         </div>
+        {/* Same aria-hidden-digits + sr-only-spoken-string split as
+            Section 4's own readout -- see AudioPlayer's identical markup
+            below for why an aria-label on the <p> itself isn't used
+            (it overrides the accessible name but leaves the differently-
+            worded visible text still in the DOM, so AT ends up
+            announcing both). */}
         <div className="flex items-start justify-between self-stretch">
-          <p className="body-paragraph text-body-inverted" aria-label={`Elapsed: ${formatTimeSpoken(10)}`}>
-            0:10
+          <p className="body-paragraph text-body-inverted">
+            <span aria-hidden="true">0:10</span>
+            <span className="sr-only">Elapsed: {formatTimeSpoken(10)}</span>
           </p>
-          <p className="body-paragraph text-body-inverted" aria-label={`Duration: ${formatTimeSpoken(62)}`}>
-            1:02
+          <p className="body-paragraph text-body-inverted">
+            <span aria-hidden="true">1:02</span>
+            <span className="sr-only">Duration: {formatTimeSpoken(62)}</span>
           </p>
         </div>
       </div>
@@ -372,12 +391,25 @@ function AudioPlayer({ trackColor, audioSrc }) {
             style={{ width: '20px', height: '20px', left: `calc(${fillPct}% - 10px)`, top: '-6px', backgroundColor: trackColor }}
           />
         </div>
+        {/* aria-hidden on the visible digits + a separate sr-only spoken
+            string, rather than an aria-label on the <p> itself: aria-
+            label overrides the element's ACCESSIBLE NAME, but doesn't
+            remove the visible text node from the DOM -- screen readers'
+            continuous/virtual-cursor reading picks up both, announcing
+            "Elapsed: 34 seconds" (the label) immediately followed by
+            "0:34" read digit-by-digit ("zero zero thirty four") from the
+            still-present visible text. Splitting into two spans (one
+            hidden from AT, one hidden visually) means exactly one of
+            them is ever in the accessibility tree at a time -- same
+            mechanism as Section 4's own readout. */}
         <div className="flex items-start justify-between self-stretch">
-          <p className="body-paragraph text-body-inverted" aria-label={`Elapsed: ${formatTimeSpoken(currentTime)}`}>
-            {formatTime(currentTime)}
+          <p className="body-paragraph text-body-inverted">
+            <span aria-hidden="true">{formatTime(currentTime)}</span>
+            <span className="sr-only">Elapsed: {formatTimeSpoken(currentTime)}</span>
           </p>
-          <p className="body-paragraph text-body-inverted" aria-label={`Duration: ${formatTimeSpoken(duration)}`}>
-            {formatTime(duration)}
+          <p className="body-paragraph text-body-inverted">
+            <span aria-hidden="true">{formatTime(duration)}</span>
+            <span className="sr-only">Duration: {formatTimeSpoken(duration)}</span>
           </p>
         </div>
       </div>
@@ -432,13 +464,28 @@ function dealMotionProps(shouldReduceMotion, revealOnScroll, stackX, stackRotate
 // the now-explicitly-sized card within the wider stretch-by-default
 // column, same auto-margins-beat-align-items technique content-cap's
 // own comment already relies on elsewhere in this file.
-function AssumptionCard({ set, shouldReduceMotion, revealOnScroll = false, widthClassName = '' }) {
+// showInsightPrefix (S/M's own callsite only, own comment there): adds an
+// sr-only "Insight N: " ahead of the visible "We assumed" text -- S/M
+// hides the number row from screen readers entirely (NumberButton's own
+// comment), so without this, a screen reader user landing on this card
+// would have no indication of which insight it belongs to at all. Purely
+// additive to the accessible name (not a duplicate of anything already
+// announced, unlike the timestamp fix), so it's a plain sr-only span
+// ahead of the real text rather than an aria-hidden/sr-only split -- both
+// pieces are meant to be heard together as one phrase. L/XL doesn't pass
+// this (defaults to false/no prefix): its own tab is still reachable and
+// already announces "Insight N" there, so adding it here too would
+// reintroduce that same redundant-announcement problem.
+function AssumptionCard({ set, shouldReduceMotion, revealOnScroll = false, widthClassName = '', showInsightPrefix = false }) {
   return (
     <motion.div
       {...dealMotionProps(shouldReduceMotion, revealOnScroll, STACK_X[0], STACK_ROTATE[0], FINAL_ROTATE[0], DEAL_DURATIONS[0], 0 * DEAL_STAGGER)}
       className={`relative z-[3] flex flex-1 flex-col items-start justify-start gap-s rounded-large bg-bg-white p-l ${widthClassName}`}
     >
-      <p className="body-paragraph self-stretch text-body-default">We assumed</p>
+      <p className="body-paragraph self-stretch text-body-default">
+        {showInsightPrefix && <span className="sr-only">Insight {set.number}: </span>}
+        We assumed
+      </p>
       <p className="heading-3 self-stretch text-heading-default">{set.assumption}</p>
     </motion.div>
   );
@@ -690,6 +737,7 @@ export default function Section12() {
                   set={setData}
                   shouldReduceMotion={shouldReduceMotion}
                   revealOnScroll
+                  showInsightPrefix
                   widthClassName={isM ? 'w-[480px] max-w-full mx-auto' : ''}
                 />
                 <RealityCard
