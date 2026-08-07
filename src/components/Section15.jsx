@@ -4,13 +4,15 @@ import useMediaQuery from '../hooks/useMediaQuery.js';
 import pinkRoundScribble from '../assets/Pink-Round-Scribble.svg';
 import illustration from '../assets/Desktop-IMG-Frame-15.svg';
 import sIllustration from '../assets/s/S--IMG-Frame15.svg';
+import mIllustration from '../assets/m/M--BG-Frame 15.svg';
 
 const ILLUSTRATION_DELAY = 0.18;
 
 // Genuinely different assets per tier (not one image resized), each at
 // its own native aspect ratio -- S's own dedicated Frame15 export, not
-// the XL illustration shrunk down.
+// the XL illustration shrunk down. Same for M's own 624x280 export.
 const XL_ILLUSTRATION = { src: illustration, width: 1039, height: 280 };
+const M_ILLUSTRATION = { src: mIllustration, width: 624, height: 280 };
 const S_ILLUSTRATION = { src: sIllustration, width: 369, height: 303.29 };
 
 function PeopleHighlight({ children, isAtLeastSm }) {
@@ -42,7 +44,16 @@ function PeopleHighlight({ children, isAtLeastSm }) {
 
 export default function Section15() {
   const isAtLeastSm = useMediaQuery('(min-width: 640px)');
-  const illustrationData = isAtLeastSm ? XL_ILLUSTRATION : S_ILLUSTRATION;
+  // Only needed to tell M/L apart from each other and from XL -- the
+  // heading width and the illustration diverge there (own comments
+  // below).
+  const isAtLeastLg = useMediaQuery('(min-width: 992px)');
+  const isAtLeastXl = useMediaQuery('(min-width: 1200px)');
+  const tier = !isAtLeastSm ? 's' : !isAtLeastLg ? 'm' : !isAtLeastXl ? 'l' : 'xl';
+  // L reuses XL's own 1039x280 asset (no dedicated L export was given,
+  // unlike S/M) -- just fluid + capped narrower (own className comment
+  // below) instead of XL's fixed width.
+  const illustrationData = tier === 'm' ? M_ILLUSTRATION : tier === 's' ? S_ILLUSTRATION : XL_ILLUSTRATION;
 
   return (
     <section
@@ -53,10 +64,12 @@ export default function Section15() {
           row/do." divs -- natural wrapping instead of a forced line break,
           same discipline as Section 7/11/13. w-full below sm (100% width,
           per direct instruction) so it wraps to the actual viewport
-          instead of the export's own fixed 540px block; that fixed width
-          only applies from sm up, where it's already correct. */}
+          instead of the export's own fixed 540px block. sm:w-[480px]
+          lg:w-[540px] (was a flat sm:w-[540px]): 480px is the M-specific
+          text-box width asked for here, lg:w-[540px] explicitly restores
+          the original L/XL value. */}
       <ScrollSection>
-        <h2 className="heading-2 w-full max-w-full text-center text-heading-inverted sm:w-[540px]">
+        <h2 className="heading-2 w-full max-w-full text-center text-heading-inverted sm:w-[480px] lg:w-[540px]">
           <AccessibleHighlightText
             before="Products alone don’t solve problems. "
             highlight={<PeopleHighlight isAtLeastSm={isAtLeastSm}>PEOPLE</PeopleHighlight>}
@@ -71,7 +84,12 @@ export default function Section15() {
           never GROWS to fill a wider container, it only ever shrinks, so
           it read as "not full width" on any viewport wider than 369px.
           w-full + aspect-ratio (instead of a fixed height) keeps it
-          undistorted while it scales with the actual container width. */}
+          undistorted while it scales with the actual container width. M
+          gets its own dedicated 624x280 export (not XL's art resized),
+          fluid the same way S is but capped at 640px ("100% width up to
+          640px") via max-w-[640px] instead of S's uncapped max-w-full. L
+          reuses XL's own art (own comment above illustrationData) but
+          fluid + capped at 885px instead of XL's fixed 1039px. */}
       <ScrollSection
         as="img"
         src={illustrationData.src}
@@ -79,11 +97,19 @@ export default function Section15() {
         aria-hidden="true"
         transition={{ duration: 0.6, ease: 'easeOut', delay: ILLUSTRATION_DELAY }}
         style={
-          isAtLeastSm
+          tier === 'xl'
             ? { width: `${XL_ILLUSTRATION.width}px`, height: `${XL_ILLUSTRATION.height}px` }
-            : { aspectRatio: `${S_ILLUSTRATION.width} / ${S_ILLUSTRATION.height}` }
+            : { aspectRatio: `${illustrationData.width} / ${illustrationData.height}` }
         }
-        className={isAtLeastSm ? 'max-w-full' : 'h-auto w-full max-w-full'}
+        className={
+          tier === 'xl'
+            ? 'max-w-full'
+            : tier === 'l'
+              ? 'h-auto w-full max-w-[885px]'
+              : tier === 'm'
+                ? 'h-auto w-full max-w-[640px]'
+                : 'h-auto w-full max-w-full'
+        }
       />
     </section>
   );

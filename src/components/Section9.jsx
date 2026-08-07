@@ -35,12 +35,15 @@ const SLIDES = [
   },
 ];
 
-// XL keeps its fixed pixel slide size (unchanged). At S each slide fills
-// the full viewport width instead (see the `<li>` below) -- `s` here only
+// XL keeps its fixed pixel slide size (unchanged). M gets its own 560px
+// width, same 3:2 aspect ratio as XL (720/480) rather than a different
+// crop -- 560 * (480/720) = 373.33. At S each slide fills the full
+// viewport width instead (see the `<li>` below) -- `s` here only
 // supplies that slide's own aspect ratio, so a narrower or wider phone
 // still gets a proportional (not stretched/cropped) image.
 const SLIDE_SIZES = {
   s: { width: 365.15, height: 246.93 },
+  m: { width: 560, height: 373.33 },
   xl: { width: 720, height: 480 },
 };
 const SLIDE_GAP = 16;
@@ -52,6 +55,16 @@ const CENTER_INDEX = 2;
 // simple formula).
 const PAPERCLIP = {
   s: { width: 38, height: 43.43, left: 323, top: 31.94 },
+  // m: self-adjusting via `right` (not a literal left px) -- the pink
+  // text box is no longer a fixed 960px at M (now 100% width, see the
+  // wrapper's own comment below), so a fixed left offset tuned against
+  // one specific width can't stay flush with the box's actual right
+  // edge across the whole fluid M range. `right: 0` reproduces the same
+  // flush-with-zero-overhang position xl always had (904+56=960, i.e.
+  // exactly the box's own edge) at any width instead. Size/top unchanged
+  // from xl -- nothing about this shape or its vertical anchor depends
+  // on the box's width.
+  m: { width: 56, height: 64, right: 0, top: 16 },
   xl: { width: 56, height: 64, left: 904, top: 16 },
 };
 
@@ -69,9 +82,15 @@ export default function Section9() {
   const [activeIndex, setActiveIndex] = useState(CENTER_INDEX);
   const shouldReduceMotion = useReducedMotion();
   const isAtLeastSm = useMediaQuery('(min-width: 640px)');
+  // Only needed to tell M apart from L/XL (the pink text box width, the
+  // Capy Activity Hub tag/paragraph stacking, and the slide size all
+  // diverge there) -- isAtLeastSm still does all the S-vs-(M-or-XL)
+  // work it always did (px-based slide math vs. 100vw math, etc).
+  const isAtLeastLg = useMediaQuery('(min-width: 992px)');
+  const tier = !isAtLeastSm ? 's' : !isAtLeastLg ? 'm' : 'xl';
 
-  const { width: SLIDE_WIDTH, height: SLIDE_HEIGHT } = SLIDE_SIZES.xl;
-  const paperclip = isAtLeastSm ? PAPERCLIP.xl : PAPERCLIP.s;
+  const { width: SLIDE_WIDTH, height: SLIDE_HEIGHT } = tier === 'xl' ? SLIDE_SIZES.xl : SLIDE_SIZES.m;
+  const paperclip = PAPERCLIP[tier];
 
   const goToPrev = () => setActiveIndex((i) => (i - 1 + SLIDES.length) % SLIDES.length);
   const goToNext = () => setActiveIndex((i) => (i + 1) % SLIDES.length);
@@ -99,7 +118,14 @@ export default function Section9() {
       // without that side effect.
       className="relative flex w-full flex-col items-center justify-center overflow-x-clip bg-white-linen-100 px-page-margin-x py-page-margin-y"
     >
-      <div className="flex w-full flex-col items-start justify-start sm:w-[960px] sm:max-w-full">
+      {/* w-full carries through S AND M now (was sm:w-[960px], applying
+          from 640px up unconditionally) -- "width of the pink text box
+          is 100%" is specifically an M-tier ask; lg:w-[960px] restores
+          the original fixed value from 992px up, unchanged from before.
+          lg:max-w-full stays paired with it (960px is already wider than
+          the available column at the low end of L, e.g. 992-64=928), same
+          safety net the old sm:max-w-full provided. */}
+      <div className="flex w-full flex-col items-start justify-start lg:w-[960px] lg:max-w-full">
         {/* Header tab + text block animate together as one unit (was two
             separately-staggered ScrollSections) -- the paper clip is
             absolutely positioned against this same wrapper, so it stays
@@ -117,8 +143,20 @@ export default function Section9() {
                 further trials.
               </p>
 
-              <div className="flex flex-col items-start justify-start gap-xl self-stretch sm:flex-row sm:gap-l">
-                <div className="flex w-full flex-shrink-0 origin-top-left -rotate-2 items-center justify-start bg-bg-white p-xs sm:w-[256px]">
+              {/* flex-col carries through S AND M now (was sm:flex-row,
+                  applying from 640px up unconditionally) -- "stack Capy
+                  Activity Hub and the paragraph" is an M-tier ask;
+                  lg:flex-row/lg:gap-l restores the original side-by-side
+                  layout from 992px up, unchanged from before. */}
+              <div className="flex flex-col items-start justify-start gap-xl self-stretch lg:flex-row lg:gap-l">
+                {/* w-full stays S-only (unchanged, pre-existing). At M
+                    the tag shouldn't stretch to the stacked column's
+                    full width -- sm:w-fit hugs its own content instead,
+                    staying left-aligned via the parent's items-start.
+                    lg:w-[256px] restores the original fixed width for
+                    the side-by-side row layout, paired with lg:flex-row
+                    above. */}
+                <div className="flex w-full flex-shrink-0 origin-top-left -rotate-2 items-center justify-start bg-bg-white p-xs sm:w-fit lg:w-[256px]">
                   <PillDot />
                   <h3 className="heading-3 flex-1 text-center text-heading-red">Capy Activity Hub</h3>
                   <PillDot />
@@ -144,8 +182,12 @@ export default function Section9() {
             style={{
               width: `${paperclip.width}px`,
               height: `${paperclip.height}px`,
-              left: `${paperclip.left}px`,
               top: `${paperclip.top}px`,
+              // m uses a self-adjusting `right` instead of a literal
+              // `left` px (see PAPERCLIP's own comment) -- spread
+              // whichever one this tier's entry actually has, rather
+              // than assuming left always exists.
+              ...(paperclip.right !== undefined ? { right: `${paperclip.right}px` } : { left: `${paperclip.left}px` }),
             }}
           />
         </ScrollSection>

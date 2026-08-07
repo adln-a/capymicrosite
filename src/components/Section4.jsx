@@ -55,8 +55,9 @@ I will encourage them and say that even though they are not compared to other ch
     playerTitle: 'What Jo said',
     audioSrc: joAudioSrc,
     paragraphs: [
-      `Jo is a Primary 3 student in Singapore living in a single-parent household with a mother and sibling. Feeling restricted by a lack of financial resources and places to go, Jo expresses strong frustration regarding daily life, school, and student care.`,
-      `Jo finds school tiring, boring, and overwhelming, and describes student care supervisors as strict, unsupportive, and disengaged.`,
+      `Jo is a Primary 3 student in Singapore living with his mother and sibling; his parents are separated. His routine is structured around school followed by student care, with his mother or father collecting him only at the end of the day. This leaves him with little unstructured time and few opportunities to choose how he spends his afternoons.`,
+      `Jo describes school as tiring, boring, and overwhelming, going as far as calling it “hell.” Student care offers him little relief; he describes the supervisors there as strict, unsupportive, and disengaged. Across both settings, his frustration centers on a lack of autonomy and a sense that the adults around him are enforcing rules rather than engaging with him.`,
+      `With limited resources and few places to go, Jo has fewer options to break up his routine. The combination of a repetitive daily schedule and limited financial and physical mobility appears to leave him feeling frustrated, restricted and unheard.`,
     ],
     // Real interview transcript (not the paraphrased card text above) --
     // Jo's own words, unparaphrased.

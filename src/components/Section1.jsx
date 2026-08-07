@@ -33,12 +33,22 @@ function PinkPunchHoles() {
 // breakpoint. Indices are hand-picked (not a formula) so each tier is an
 // evenly-spread subset of the next: 8 always-visible holes at indices
 // [0,2,5,7,10,12,15,17], +3 more from sm (indices 3,8,13 -> 11 total),
-// +3 more from md (indices 1,9,16 -> 14 total), +4 more from lg (indices
-// 4,6,11,14 -> all 18). See WhitePunchHoles() below for why this needs to
-// scale down at all.
+// +7 more from lg (indices 1,4,6,9,11,14,16 -> all 18).
+//
+// No separate md step anymore: the card's own width is a flat 560px for
+// the ENTIRE M tier (640-991px, see the box's sm:w-[560px] below) -- it
+// only grows again at 992px (lg), when the fluid --width-card-content-lg
+// clamp takes over. The old md:block group (+3 more at 768px) predates
+// that -- back when the box was still fluidly widening across 640-992px,
+// each hole-count step tracked an actual width increase. Now that step
+// lands mid-way through a width that never changes, going 11->14 holes
+// at 768px with no wider box to fit them in just packs them tighter for
+// no reason (34px gaps -> 21.5px gaps). Folded into the lg group instead,
+// so the whole M tier stays at a consistent 11 holes/34px gaps, and the
+// jump to all 18 happens together with the box actually growing again.
 const HOLE_VISIBILITY = [
   '', // 0
-  'hidden md:block', // 1
+  'hidden lg:block', // 1
   '', // 2
   'hidden sm:block', // 3
   'hidden lg:block', // 4
@@ -46,14 +56,14 @@ const HOLE_VISIBILITY = [
   'hidden lg:block', // 6
   '', // 7
   'hidden sm:block', // 8
-  'hidden md:block', // 9
+  'hidden lg:block', // 9
   '', // 10
   'hidden lg:block', // 11
   '', // 12
   'hidden sm:block', // 13
   'hidden lg:block', // 14
   '', // 15
-  'hidden md:block', // 16
+  'hidden lg:block', // 16
   '', // 17
 ];
 
@@ -196,7 +206,7 @@ export default function Section1({ sectionRef }) {
       <div className="relative flex w-full flex-col items-center content-cap px-page-margin-x">
         {/* Pink box (heading). Animates in first -- this ScrollSection uses
             the wrapper's own default transition (no delay). */}
-        <ScrollSection className="flex w-[800px] max-w-full min-h-[200px] flex-wrap items-center justify-center gap-s rounded-medium bg-bg-pink p-s origin-top-left rotate-1 md:w-[var(--width-card-content-md)] lg:w-[var(--width-card-content-lg)]">
+        <ScrollSection className="flex w-[800px] max-w-full min-h-[200px] flex-wrap items-center justify-center gap-s rounded-medium bg-bg-pink p-s origin-top-left rotate-1 sm:w-[560px] lg:w-[var(--width-card-content-lg)]">
           <PinkPunchHoles />
           <h1 className="heading-1 flex-1 px-s text-center text-heading-red">
             <AccessibleHighlightText
@@ -211,7 +221,7 @@ export default function Section1({ sectionRef }) {
             box. Directly below the pink box -- no gap value was given
             between them, so the two sit flush; the slight visual overlap
             comes from their opposing 1deg/-1deg rotations. */}
-        <div className="relative w-[800px] max-w-full md:w-[var(--width-card-content-md)] lg:w-[var(--width-card-content-lg)]">
+        <div className="relative w-[800px] max-w-full sm:w-[560px] lg:w-[var(--width-card-content-lg)]">
           <ScrollSection
             transition={{ duration: 0.6, ease: 'easeOut', delay: WHITE_BOX_DELAY }}
             className={`w-full origin-top-left -rotate-1 rounded-medium bg-bg-white pt-s pr-l pb-l pl-l ${CARD_SHADOW}`}

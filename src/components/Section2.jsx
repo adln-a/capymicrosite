@@ -405,10 +405,10 @@ export default function Section2() {
             harmless, so the shared class is used as-is rather than a
             one-off variant without margin-inline. */}
         <div className="relative flex flex-col items-center gap-xs content-cap">
-          <ScrollSection className="relative flex w-full rotate-1 flex-row items-center justify-center gap-s rounded-small bg-bg-white pb-s pl-s pr-l pt-s md:w-[640px]">
+          <ScrollSection className="relative flex w-full rotate-1 flex-row items-center justify-center gap-s rounded-small bg-bg-white pb-s pl-s pr-l pt-s sm:w-[560px]">
             <Scene1Content holeColumnColor="#1E79AE" />
           </ScrollSection>
-          <ScrollSection className="relative w-full md:w-[640px]">
+          <ScrollSection className="relative w-full sm:w-[560px]">
             <TopBorderImage />
             <div className="max-w-full bg-bg-white p-l">
               <Scene2Content />
@@ -420,14 +420,14 @@ export default function Section2() {
               -- it can stay nested exactly like the original design,
               rotating together with the card as one rigid unit, no
               compensation needed. `right` (not `left`): the card's own
-              width is now responsive (w-full below md, 640px from md up),
+              width is now responsive (w-full below sm, 560px from sm up),
               and the original left:510px was only ever correct at the old
               constant 640px width -- it already intentionally overhung the
               card's right edge by 3px there (510+133-640=3), so anchoring
               from the right edge at that same -3px keeps the same
               intentional overhang at ANY width instead of overshooting
               further as the card narrows. */}
-          <ScrollSection className="relative flex w-full rotate-[-1.5deg] flex-col items-center justify-start gap-s rounded-small bg-bg-white p-l md:w-[640px]">
+          <ScrollSection className="relative flex w-full rotate-[-1.5deg] flex-col items-center justify-start gap-s rounded-small bg-bg-white p-l sm:w-[560px]">
             <img
               src={greenScotchTape}
               alt=""
@@ -492,11 +492,11 @@ export default function Section2() {
             harmless, same as Scene 1's own wrapper above. */}
         <div className="relative flex justify-center content-cap">
           <motion.div ref={stackRef} style={{ y: stackY }} className="flex flex-col items-center gap-xs">
-            <motion.div className="relative flex w-full rotate-1 flex-row items-center justify-center gap-s rounded-small bg-bg-white pb-s pl-s pr-l pt-s md:w-[640px]">
+            <motion.div className="relative flex w-full rotate-1 flex-row items-center justify-center gap-s rounded-small bg-bg-white pb-s pl-s pr-l pt-s sm:w-[560px]">
               <Scene1Content holeColumnColor={holeColumnColor} />
             </motion.div>
 
-            <motion.div ref={scene2Ref} style={{ opacity: scene2Opacity }} className="relative w-full md:w-[640px]">
+            <motion.div ref={scene2Ref} style={{ opacity: scene2Opacity }} className="relative w-full sm:w-[560px]">
               <TopBorderImage />
               <div className="max-w-full bg-bg-white p-l">
                 <Scene2Content />
@@ -510,7 +510,7 @@ export default function Section2() {
                 transform of its own (see Scene3Tape's comment on why) --
                 the card keeps its rotate directly on itself, exactly as
                 before. */}
-            <div className="relative w-full md:w-[640px]">
+            <div className="relative w-full sm:w-[560px]">
               <motion.div
                 ref={scene3Ref}
                 style={{ opacity: scene3Opacity, rotate: -1.5 }}

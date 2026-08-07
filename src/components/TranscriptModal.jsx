@@ -26,7 +26,9 @@ const PLACEHOLDER_TRANSCRIPT = PLACEHOLDER_SENTENCE.repeat(19).trim();
 export default function TranscriptModal({ isOpen, onClose, subtitle, transcript = PLACEHOLDER_TRANSCRIPT, triggerRef }) {
   const headingId = useId();
   const closeRef = useRef(null);
-  const contentRef = useRef(null);
+  const headingRef = useRef(null);
+  const subtitleRef = useRef(null);
+  const transcriptRef = useRef(null);
   const shouldReduceMotion = useReducedMotion();
   // Guards the focus-restore branch below against firing on a fresh mount
   // -- Section 12's QuoteCard remounts a brand-new TranscriptModal
@@ -67,13 +69,15 @@ export default function TranscriptModal({ isOpen, onClose, subtitle, transcript 
     return () => root.removeAttribute('inert');
   }, [isOpen]);
 
-  // Two focusable stops in this dialog -- the close button and the
-  // scrollable content region (tabIndex=0 below) -- so keyboard users can
-  // Tab into the transcript body itself (to scroll/read it with arrow
-  // keys/Page Down, same as a screen reader's virtual cursor already
-  // could) and then Tab again to loop back to the close button, instead
-  // of Tab always snapping back to the close button and skipping the
-  // content entirely.
+  // Four focusable stops in this dialog -- close button, heading,
+  // subtitle, transcript body -- cycled in that order so each piece of
+  // content gets its own Tab stop and is announced on its own, instead of
+  // the close button's only alternative being one big tabIndex=0 wrapper
+  // around all three (heading/subtitle/transcript together), which read
+  // as a single group in one shot rather than three separate stops.
+  // subtitleRef drops out of `stops` on its own (via the .filter(Boolean)
+  // below) whenever no subtitle was passed, since its <h3> then never
+  // renders and the ref never attaches.
   useEffect(() => {
     if (!isOpen) return undefined;
 
@@ -85,7 +89,7 @@ export default function TranscriptModal({ isOpen, onClose, subtitle, transcript 
       }
       if (event.key !== 'Tab') return;
       event.preventDefault();
-      const stops = [closeRef.current, contentRef.current].filter(Boolean);
+      const stops = [closeRef.current, headingRef.current, subtitleRef.current, transcriptRef.current].filter(Boolean);
       if (stops.length === 0) return;
       const currentIndex = stops.indexOf(document.activeElement);
       const delta = event.shiftKey ? -1 : 1;
@@ -112,7 +116,7 @@ export default function TranscriptModal({ isOpen, onClose, subtitle, transcript 
         >
           <CloseButton innerRef={closeRef} onClick={onClose} label="Close transcript" className="fixed right-page-margin-x top-l z-10" />
 
-          <div ref={contentRef} tabIndex={0} className="h-full w-full overflow-y-auto px-page-margin-x py-2xl">
+          <div className="h-full w-full overflow-y-auto px-page-margin-x py-2xl">
             {/* content-cap: without it, the transcript paragraph stretched
                 to the full viewport width at wide screens, producing
                 uncomfortably long reading lines -- same site-wide desktop
@@ -121,11 +125,25 @@ export default function TranscriptModal({ isOpen, onClose, subtitle, transcript 
                 a plain block box, and auto margins center block boxes
                 regardless of the parent's own display type. */}
             <div className="flex w-full flex-col items-start justify-start gap-s content-cap">
-              <h2 id={headingId} className="heading-2 self-stretch text-heading-default">
+              {/* tabIndex=0 on each of these three (rather than one
+                  tabIndex=0 wrapper around all of them, the previous
+                  approach): each becomes its own Tab stop -- see the
+                  keydown handler's own comment above -- and focusing an
+                  element inside a scrollable ancestor already brings it
+                  into view natively, so the transcript body stays
+                  reachable/scrollable via Tab without a dedicated
+                  scroll-container stop. */}
+              <h2 id={headingId} ref={headingRef} tabIndex={0} className="heading-2 self-stretch text-heading-default">
                 Transcript
               </h2>
-              {subtitle && <h3 className="heading-3 self-stretch text-heading-default">{subtitle}</h3>}
-              <p className="body-paragraph self-stretch text-body-default">{transcript}</p>
+              {subtitle && (
+                <h3 ref={subtitleRef} tabIndex={0} className="heading-3 self-stretch text-heading-default">
+                  {subtitle}
+                </h3>
+              )}
+              <p ref={transcriptRef} tabIndex={0} className="body-paragraph self-stretch text-body-default">
+                {transcript}
+              </p>
             </div>
           </div>
         </motion.div>

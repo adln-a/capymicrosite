@@ -35,26 +35,20 @@
   --scribble-offset-tight: calc(100% - 5px);
   --scribble-offset-default: calc(100% - 10px);
 
-  /* Fluid card-content max-width, first breakpoint of the responsive
-     rework (pilot: Section 1) -- two chained clamp() segments, each a
-     linear interpolation solved to land exactly on its own pair of
-     anchor points, so the width ramps smoothly the whole way instead of
-     snapping at each breakpoint:
-       - below 768px (mobile): cards stay max-w-full (100%, unchanged --
-         already responsive, no token needed for this range).
-       - 768px-992px (md-lg): 640px -> 720px.
-       - 992px-1200px (lg-xl): 720px -> 800px (matches -md's own endpoint,
-         so there's no jump at the 992px seam).
-     Both clamp()s naturally stay pinned at their own upper bound past
-     their range (720px above 992 for -md, 800px above 1200 for -lg), so
-     applying BOTH via `md:w-[var(--width-card-content-md)]
-     lg:w-[var(--width-card-content-lg)]` at the call site lets the later,
-     more specific breakpoint's rule simply take over at each seam --
-     no separate xl override needed either. Recomputed to the 992px/1200px
-     breakpoints below (was 1024px/1440px) -- the endpoints moved, but the
-     640/720/800 target widths themselves didn't, so only the two
-     coefficients changed, not the underlying design. */
-  --width-card-content-md: clamp(640px, 365.7143px + 35.7143vw, 720px);
+  /* Card-content width, first breakpoint of the responsive rework
+     (pilot: Section 1):
+       - below 640px (S): cards stay max-w-full (100%, already
+         responsive, no token needed for this range).
+       - 640px-992px (M, sm-lg): a fixed 560px -- not fluid, per direct
+         instruction, applied at the call site via `sm:w-[560px]`.
+       - 992px-1200px (lg-xl): 720px -> 800px, a clamp() linear
+         interpolation solved to land exactly on that pair of anchor
+         points so the width ramps smoothly instead of snapping at
+         1200px. Stays pinned at its own 800px upper bound past 1200
+         (no separate xl override needed). Recomputed to the 992px/1200px
+         breakpoints below (was 1024px/1440px) -- the endpoints moved,
+         but the 720/800 target widths themselves didn't, so only the
+         two coefficients changed, not the underlying design. */
   --width-card-content-lg: clamp(720px, 338.4615px + 38.4615vw, 800px);
 
   /* sm/md are Tailwind defaults (640px/768px) but declared explicitly
@@ -432,8 +426,15 @@
    entries here. */
 @layer base {
   :root {
-    @variant md {
+    @variant sm {
+      /* M starts at 640px (sm), not 768px (md) -- per BREAKPOINTS.md.
+         This was previously gated at md, meaning 640-767px (still M)
+         incorrectly stayed at the S value (16px) instead of picking up
+         M's own 32px. */
       --spacing-page-margin-x: 32px;
+    }
+
+    @variant md {
       --radius-medium: 20px;
     }
 

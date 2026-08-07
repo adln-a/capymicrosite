@@ -90,14 +90,18 @@ export default function Section5() {
       {/* Outer content width: full width below sm -- both the card and the
           illustration fill 100% of the available viewport width on mobile
           (not the S reference's own literal 361/360px frames), simply
-          centered within this now-wider wrapper via items-center. Auto
-          (shrink-to-fit its children's own widths) from sm to lg, since
-          the M reference has no outer constraint of its own -- just the
-          640px-wide card group and the illustration, each sized
-          independently, both simply centered by items-center here. 800px
-          fixed from lg up, matching the L reference's own outer frame
-          (which wraps a 640px card and a 720px illustration within it,
-          same as M, just with that extra shared frame added around both).
+          centered within this now-wider wrapper via items-center. Stays
+          at w-full from sm to lg too (M tier), now capped at max-w-680px
+          -- the illustration inside is itself w-full (see its own
+          comment below), so this cap is what actually gives M's
+          "illustration at 100% width, max 680px" its ceiling; the
+          560px-wide card (narrower than the illustration at every M
+          width) just centers within whatever width this wrapper actually
+          resolves to. lg:max-w-none cancels that cap again for L/XL,
+          where the wrapper reverts to the original fixed 800px it always
+          had (matching the L reference's own outer frame, which wraps a
+          640px card and a 720px illustration within it, same as M, just
+          with that extra shared frame added around both).
 
           sm:h-dvh (not unconditional h-dvh): below sm, this section's
           content can run taller than one viewport at narrow widths (the
@@ -105,8 +109,22 @@ export default function Section5() {
           full width) -- h-dvh at every size would clip that instead of
           letting the section hug its own content, same fix as Section 3.
           py-page-margin-y (64px at S, growing at wider tiers) gives it
-          breathing room in that hugged state. */}
-      <div className="flex w-full flex-col items-center justify-start self-stretch sm:w-auto lg:w-[800px]">
+          breathing room in that hugged state.
+
+          justify-start (base) + self-stretch is a real bug at M: self-
+          stretch makes this wrapper fill the section's ENTIRE h-dvh
+          cross-space (not just its own content height), so the section's
+          own items-center has nothing left to center -- it's already
+          looking at a full-height child. justify-start then packs this
+          wrapper's own children (the card group + illustration) against
+          its top edge, so the actual visible content sits pinned under
+          the top padding with all the leftover vertical space silently
+          collected below it, not evenly split top/bottom -- the exact
+          opposite of "vertically centered". sm:justify-center fixes that
+          for M specifically (640-991px) by centering the children WITHIN
+          this now-full-height wrapper instead. lg:justify-start reverts
+          to the original packed-to-top behavior from L up, unchanged. */}
+      <div className="flex w-full flex-col items-center justify-start self-stretch sm:max-w-[680px] sm:justify-center lg:w-[800px] lg:max-w-none lg:justify-start">
         {/* Card group: plain, unanimated position:relative wrapper -- the
             paper-tear background and tape are absolutely positioned
             children of THIS group (not the red box), so they render
@@ -116,29 +134,41 @@ export default function Section5() {
         <div className="relative flex flex-col items-start justify-start">
           {/* Torn-paper background: absent below sm entirely (hidden, not
               just invisible) -- the S reference has no equivalent image
-              at all behind the card, only M and L do. */}
+              at all behind the card, only M and L do. Sized/positioned
+              proportionally to the card's own current width (this img's
+              nearest positioned ancestor is the group div directly above,
+              which shrink-wraps to the card's width) rather than one flat
+              pixel size for the whole sm+ range: the original 621x248/
+              left:-57px was tuned against the shared M/L 640px card, so
+              at M's new narrower 560px card (560/640 = 0.875 scale) it's
+              scaled down to 543x217/-49.88px to keep the same
+              proportional overhang, then explicitly reverts to the
+              original untouched 621x248/-57px from lg up, matching the
+              still-640px L card exactly as before. top stays flat --
+              it's a vertical anchor to the group's own top-left corner,
+              not width-dependent. */}
           <img
             src={paperTearBg}
             alt=""
             aria-hidden="true"
-            className="pointer-events-none absolute hidden origin-top-left rotate-[-2deg] sm:block"
-            style={{ width: '621px', height: '248px', left: '-57px', top: '37px' }}
+            className="pointer-events-none absolute hidden top-[37px] origin-top-left rotate-[-2deg] sm:block sm:w-[543px] sm:h-[217px] sm:left-[-49.88px] lg:w-[621px] lg:h-[248px] lg:left-[-57px]"
           />
 
           {/* w-full below sm (card fills the full viewport width on
-              mobile), 640px from sm up through L (identical between the
-              M and L references, so one value covers both), 800px from
-              xl up -- the true desktop width (matching the original,
-              pre-responsive design), not a further extension of L's
-              640px. There was no separate XL reference for this section,
-              but 640px was only ever confirmed for M/L specifically, not
-              "desktop" -- restoring 800px at xl instead of assuming L's
-              value carries forward indefinitely. Padding/gap/radius
-              corrected to match all three references exactly (16/24px
-              padding, 24px gap, 16px radius flat -- not rounded-medium's
-              own growing 16->20->24, which this card deliberately doesn't
-              use). */}
-          <ScrollSection className="relative flex w-full flex-row items-center justify-center gap-l rounded-small bg-bg-red px-s py-l sm:w-[640px] xl:w-[800px]">
+              mobile), 560px for M specifically (640-991px -- see
+              BREAKPOINTS.md, sm is where M starts), reverting to 640px
+              from lg up (matching the L reference, identical to the old
+              M/L-shared value) through L, 800px from xl up -- the true
+              desktop width (matching the original, pre-responsive
+              design). There was no separate XL reference for this
+              section, but 640px was only ever confirmed for M/L
+              specifically, not "desktop" -- restoring 800px at xl instead
+              of assuming L's value carries forward indefinitely.
+              Padding/gap/radius corrected to match all three references
+              exactly (16/24px padding, 24px gap, 16px radius flat -- not
+              rounded-medium's own growing 16->20->24, which this card
+              deliberately doesn't use). */}
+          <ScrollSection className="relative flex w-full flex-row items-center justify-center gap-l rounded-small bg-bg-red px-s py-l sm:w-[560px] lg:w-[640px] xl:w-[800px]">
             <RuledLines />
             <HoleColumn />
 
@@ -213,8 +243,14 @@ export default function Section5() {
             // where max-w-full happened to clamp it down -- at any wider
             // S viewport, e.g. 600px, it stayed fixed at 360px instead of
             // filling the available ~568px), matching the card's own
-            // w-full treatment above.
-            className="relative h-auto w-full sm:w-[718px]"
+            // w-full treatment above. Stays w-full through M too now (was
+            // a flat sm:w-[718px] covering M AND L/XL alike) -- the outer
+            // wrapper's own new sm:max-w-[680px] (see its comment) is what
+            // actually caps this at M, so 100% here means "fill up to
+            // 680px, shrink below that on narrower M viewports" rather
+            // than a fixed number. lg:w-[718px] explicitly restores the
+            // exact original flat value from L up, unchanged.
+            className="relative h-auto w-full lg:w-[718px]"
           />
         </picture>
       </div>

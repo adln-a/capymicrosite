@@ -5,6 +5,7 @@ import blueLineScribble from '../assets/Blue-Line-Scribble.svg';
 import paperClipMetal2 from '../assets/Paper-Clip-Metal2.png';
 import illustration from '../assets/Desktop-IMG-Frame-14.svg';
 import sIllustration from '../assets/s/S--IMG-Frame14.svg';
+import mIllustration from '../assets/m/M--BG-Frame 14.svg';
 
 // Cards fade up in sequence (alone card -> green box -> red note),
 // then the illustration last -- same staggered-delay convention as
@@ -84,21 +85,38 @@ function HoleRow({ left, top }) {
 
 export default function Section14() {
   const isAtLeastSm = useMediaQuery('(min-width: 640px)');
+  // Only needed to tell M apart from L/XL -- M reuses S's whole stacked
+  // layout wholesale (own comment below), just with each card capped at
+  // 560px instead of S's true full-width.
+  const isAtLeastLg = useMediaQuery('(min-width: 992px)');
 
-  if (!isAtLeastSm) {
-    // No h-dvh here (unlike sm+ below): all 3 cards stacked at 100%
-    // width plus the illustration run taller than one phone screen, so
-    // this section just hugs its own content height instead of forcing/
-    // clipping to the viewport -- same fix as Section 5/3/11/13. The
-    // side-by-side alone-card + green-box row also becomes a plain
-    // vertical stack (no row wrapper) since both are full-width now,
-    // there's nothing left for "side by side" to mean.
+  if (!isAtLeastLg) {
+    // S and M share this branch: no h-dvh here (unlike lg+ below) -- all
+    // 3 cards stacked plus the illustration run taller than one phone
+    // screen, so this section just hugs its own content height instead
+    // of forcing/clipping to the viewport -- same fix as Section 5/3/
+    // 11/13. The side-by-side alone-card + green-box row also becomes a
+    // plain vertical stack (no row wrapper) since both are full-width
+    // (or, at M, both capped at the same 560px) now, there's nothing
+    // left for "side by side" to mean.
+    //
+    // sm:w-[560px] sm:mx-auto (added to each card below, was S's own
+    // unconditional w-full): M reuses this exact stacked layout, just
+    // capped at a fixed 560px and centered instead of spanning the full
+    // available width -- a no-op below sm, where S's own w-full already
+    // wins (560px is wider than S's own content column anyway).
     return (
       <section
         id="section-14"
-        className="relative flex w-full flex-col items-center justify-start gap-s bg-[#FFBFC3] px-page-margin-x pt-page-margin-y pb-xl"
+        // py-page-margin-y (was pt-page-margin-y pb-xl -- two different
+        // tokens, 64/96px on top vs. only 32/48px on the bottom): the
+        // site-wide policy is padding-y symmetric at page-margin-y (see
+        // the M-tier padding-x work earlier -- "padding y remains at
+        // 3xl"), and this section had quietly drifted from that with a
+        // much smaller bottom value. py- makes both edges match.
+        className="relative flex w-full flex-col items-center justify-start gap-s bg-[#FFBFC3] px-page-margin-x py-page-margin-y"
       >
-        <div className="relative w-full">
+        <div className="relative w-full sm:w-[560px] sm:mx-auto">
           <ScrollSection
             transition={{ duration: 0.6, ease: 'easeOut', delay: ALONE_CARD_DELAY }}
             className="flex w-full origin-top-left rotate-[-4deg] flex-col items-center justify-center gap-s rounded-medium bg-bg-white p-l"
@@ -123,7 +141,7 @@ export default function Section14() {
 
         <ScrollSection
           transition={{ duration: 0.6, ease: 'easeOut', delay: GREEN_BOX_DELAY }}
-          className="relative flex w-full origin-top-left rotate-4 flex-col items-start justify-start gap-s rounded-medium bg-bg-bright-green p-l"
+          className="relative flex w-full origin-top-left rotate-4 flex-col items-start justify-start gap-s rounded-medium bg-bg-bright-green p-l sm:w-[560px] sm:mx-auto"
         >
           <h3 className="heading-3 self-stretch text-heading-inverted">
             <AccessibleHighlightText
@@ -152,7 +170,7 @@ export default function Section14() {
 
         <ScrollSection
           transition={{ duration: 0.6, ease: 'easeOut', delay: RED_CARD_DELAY }}
-          className="relative flex w-full flex-col items-center justify-start gap-m overflow-hidden rounded-medium bg-bg-red px-l pb-l pt-2xl"
+          className="relative flex w-full flex-col items-center justify-start gap-m overflow-hidden rounded-medium bg-bg-red px-l pb-l pt-2xl sm:w-[560px] sm:mx-auto"
         >
           <p className="body-paragraph relative z-10 self-stretch text-body-inverted">
             To create lasting impact, we need to work closely with families, social workers,
@@ -162,18 +180,30 @@ export default function Section14() {
           <HoleRow left="-115px" top="16px" />
         </ScrollSection>
 
-        {/* Full-bleed (100vw), matching Section 13's own illustration --
-            the S asset's native 369px width is a near-full device-width
-            frame, not a margined column graphic. */}
-        <ScrollSection
-          as="img"
-          src={sIllustration}
-          alt=""
-          aria-hidden="true"
-          transition={{ duration: 0.6, ease: 'easeOut', delay: ILLUSTRATION_DELAY }}
-          style={{ width: '100vw', marginLeft: 'calc(50% - 50vw)', marginRight: 'calc(50% - 50vw)' }}
-          className="pointer-events-none block h-auto"
-        />
+        {/* Full-bleed (100vw) at S only -- the S asset's native 369px
+            width is a near-full device-width frame, not a margined
+            column graphic. <picture> swaps to the dedicated M export
+            from 640px up (585x360 -- a genuinely different, wider
+            composition from S's own 369x489 portrait crop, not a
+            resized version of the same art), same breakpoint-swap
+            pattern as Section 1/2/3/5/10/13's own backgrounds. sm:w-
+            [585px] sm:max-w-full sm:mx-auto sm:ml-0 sm:mr-0 cancels the
+            100vw full-bleed treatment from 640px up -- at its own native
+            585px, capped and centered, not stretched edge-to-edge like
+            S. block on <picture> itself (not just the img) -- <picture>
+            has no default box behavior of its own, so without it neither
+            sizing rule below would have anything to apply to. */}
+        <picture className="pointer-events-none block w-screen ml-[calc(50%-50vw)] mr-[calc(50%-50vw)] sm:ml-0 sm:mr-0 sm:w-[585px] sm:max-w-full sm:mx-auto">
+          <source media="(min-width: 640px)" srcSet={mIllustration} />
+          <ScrollSection
+            as="img"
+            src={sIllustration}
+            alt=""
+            aria-hidden="true"
+            transition={{ duration: 0.6, ease: 'easeOut', delay: ILLUSTRATION_DELAY }}
+            className="block h-auto w-full"
+          />
+        </picture>
       </section>
     );
   }

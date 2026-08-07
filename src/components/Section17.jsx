@@ -34,6 +34,27 @@ export default function Section17() {
             alpha-transparent drop shadow around the book mockup; no
             image-optimization tooling (sharp/imagemagick/cwebp) was
             available locally to also re-encode it as WebP. */}
+        {/* sm:flex-1 xl:flex-none: at M and L, this makes the image an
+            equal flex partner with the text column below (both flex-1,
+            basis 0% -- the standard way to split a flex row 50/50 that
+            correctly accounts for the gap-2xl between them, unlike
+            literal w-1/2 on both, which would overflow by the gap's own
+            width). flex-basis:0% governs the main-axis size ahead of the
+            inline width:640px below, so that fixed width is effectively
+            ignored at M/L. sm:min-w-0 is required alongside it -- flex
+            items default to min-width:auto, which for a replaced element
+            like this img resolves against its OWN specified/intrinsic
+            size (640px here), silently overriding flex-shrink and
+            refusing to shrink past that regardless of flex-basis:0% (the
+            image measured ~640px at every M width without this, not an
+            actual 50/50 split -- same fix Section 6/8's own flex columns
+            needed for the identical reason). xl:flex-none reverts to the
+            original XL-only behavior, where the image's own 640px width
+            governs again (flex:none disables shrink entirely, so
+            min-width:0 staying in effect there is harmless -- it only
+            ever mattered while shrink was active) and the text column
+            (already unconditionally flex-1) absorbs whatever's left --
+            unchanged from before. */}
         <ScrollSection
           as="img"
           src={coverImage}
@@ -41,7 +62,7 @@ export default function Section17() {
           sizes="640px"
           alt="Cover of the &ldquo;Designing for Low-Income Families in Singapore&rdquo; guide"
           style={{ width: '640px', height: 'auto' }}
-          className="max-w-full"
+          className="max-w-full sm:min-w-0 sm:flex-1 xl:flex-none"
         />
 
         <ScrollSection

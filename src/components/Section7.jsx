@@ -40,10 +40,29 @@ const VOLUNTEERS_OVERLAP = '-10px';
 // reference file, not estimated.
 const TAPE_POSITION = {
   s: { width: '85px', height: '32px', right: '-59px', top: '-13px' },
+  // m: derived, not a separate reference -- there's no dedicated M
+  // Figma export for this section (same as the rest of the file). At
+  // xl, the tape overlaps 55px into the heading box from its own right
+  // edge and hangs 52px past it (521 = 576(heading width) - 55, and
+  // 521+107(tape width)-576 = 52) -- top stays the xl value unchanged
+  // since the heading box's own height doesn't change between M and XL
+  // (same py-l padding, same single-line heading). M's heading box is
+  // centered in a 560px wrapper at 540px wide (left-offset 10px, see
+  // the wrapper/heading className below), so its right edge sits at
+  // 10+540=550 -- applying that same 55-before/52-after overlap against
+  // THAT edge, relative to the wrapper (which is what this position is
+  // computed against, not the heading box directly): 550-55=495.
+  m: { width: '107px', height: '40px', left: '495px', top: '-16px' },
   xl: { width: '107px', height: '40px', left: '521px', top: '-16px' },
 };
 const PAPERCLIP_POSITION = {
   s: { width: '95px', height: '62px', left: '-46px', top: '299px' },
+  // m: the quote box narrows from xl's 720px to 560px here, so its text
+  // column wraps across more lines than xl (though fewer than S's much
+  // narrower column) -- re-measured directly against the actual M
+  // render (not scaled from xl's 242px) to keep anchoring the same
+  // paragraph boundary despite that reflow.
+  m: { width: '107px', height: '70px', left: '-53px', top: '283px' },
   xl: { width: '107px', height: '70px', left: '-53px', top: '242px' },
 };
 
@@ -117,8 +136,18 @@ const XL_ROW_1 = [
   {
     key: 'nonprofits',
     label: 'Non-profits',
-    className: 'relative origin-top-left rotate-2 p-l text-body-inverted',
+    // flex h-[110px] w-[206px] items-center justify-center (was p-l, no
+    // explicit size): the label previously just sat top-left inside its
+    // own hug-content box, ignoring the ellipse blob entirely -- the
+    // blob is an absolutely-positioned sibling image, not something the
+    // text's own layout ever accounted for. Sizing this box to the
+    // blob's own 206x110 and centering within it lines the text up with
+    // the ellipse it's actually sitting on top of. marginTop: '-8px'
+    // nudges the whole shape up slightly within row 1's items-end
+    // baseline.
+    className: 'relative flex h-[110px] w-[206px] origin-top-left rotate-2 items-center justify-center text-body-inverted',
     marginLeft: '-8px',
+    marginTop: '-8px',
     blob: { src: blueEllipse, width: 206, height: 110, left: -1, top: 0, rotate: -2 },
   },
 ];
@@ -152,7 +181,7 @@ function Shape({ shape, index }) {
   return (
     <ScrollSection
       className={`relative flex-shrink-0 whitespace-nowrap ${shape.className}`}
-      style={{ marginLeft: shape.marginLeft, marginRight: shape.marginRight, ...SHAPE_TEXT_STYLE }}
+      style={{ marginLeft: shape.marginLeft, marginRight: shape.marginRight, marginTop: shape.marginTop, ...SHAPE_TEXT_STYLE }}
       transition={{ duration: 0.6, ease: 'easeOut', delay: SHAPES_START + index * SHAPE_STAGGER_STEP }}
     >
       {shape.blob && (
@@ -188,6 +217,58 @@ function XlShapeCluster() {
         {XL_ROW_2.map((shape, i) => (
           <Shape key={shape.key} shape={shape} index={XL_ROW_1.length + i} />
         ))}
+      </div>
+    </div>
+  );
+}
+
+// M only: the cluster's natural hug-content size, measured directly off
+// the rendered XlShapeCluster (678.53 x 222 -- confirmed via Playwright,
+// not estimated). Every shape/margin/font-size feeding that size is a
+// fixed px value with single-line, non-wrapping labels (whitespace-
+// nowrap), so unlike most of this codebase's other measurements this one
+// genuinely never changes across viewports -- safe to hardcode rather
+// than re-measure at runtime, the same way TAPE_POSITION/
+// PAPERCLIP_POSITION above are hardcoded per-tier numbers rather than
+// live-computed. "Collective width of 560px maximum, keep the position
+// and relationship to each other the same" -- a uniform CSS
+// transform:scale() on the whole (otherwise-untouched) XlShapeCluster is
+// exactly that: every shape's size/overlap/gap shrinks by the same
+// factor together, so nothing shifts relative to anything else, unlike
+// scaling individual shapes' width props independently would.
+const M_CLUSTER_NATURAL = { width: 678.53, height: 222 };
+const M_CLUSTER_MAX_WIDTH = 560;
+const M_CLUSTER_SCALE = M_CLUSTER_MAX_WIDTH / M_CLUSTER_NATURAL.width;
+
+// M: same XlShapeCluster markup as L/XL, wrapped in a scale-to-fit frame.
+// The inner div is deliberately NOT given an explicit width -- it must
+// stay free to lay out at the cluster's own natural hug-content size
+// first (transform doesn't affect layout, only paint, so constraining
+// this div's width would just clip/reflow the cluster instead of
+// shrinking it). The OUTER div is what reserves the actual (scaled-down)
+// space for surrounding layout purposes, sized to exactly match what the
+// transform visually produces, so nothing overlaps or leaves a gap.
+//
+// width: 'max-content' on the inner (transform) div is required, not
+// optional: a plain block-level div with no explicit width doesn't
+// shrink-to-fit its content by default, it fills its containing block --
+// which here is the OUTER div, already fixed at the scaled-down 560px.
+// Without max-content, the cluster gets laid out (and its shape/label
+// rows reflow) at 560px FIRST, and the scale transform then shrinks that
+// already-wrong layout even further (a real bug caught via measurement:
+// the rendered result came out ~462px, not the intended 560, because the
+// 560px layout width was being scaled down a second time). max-content
+// forces this div back to shrink-to-fit sizing, so XlShapeCluster lays
+// out at its true natural width first, and the transform is the only
+// thing that changes its size after that.
+function MShapeCluster() {
+  return (
+    <div
+      className="relative mx-auto"
+      style={{ width: `${M_CLUSTER_NATURAL.width * M_CLUSTER_SCALE}px`, height: `${M_CLUSTER_NATURAL.height * M_CLUSTER_SCALE}px` }}
+    >
+      <div style={{ width: 'max-content', transform: `scale(${M_CLUSTER_SCALE})`, transformOrigin: 'top left' }}>
+        <XlShapeCluster />
       </div>
     </div>
   );
@@ -391,12 +472,17 @@ function SShapeCluster() {
 }
 
 export default function Section7() {
-  // No dedicated M/L reference for this section -- S below sm (640px),
-  // the existing XL-tuned layout from sm up, same "reuse the nearest
-  // larger tier" convention used everywhere else in this codebase.
+  // No dedicated L reference for this section -- the XL-tuned layout
+  // (720px wrapper, hug-content shape cluster) now covers L too, same
+  // "reuse the nearest larger tier" convention used everywhere else.
+  // isAtLeastLg is only needed to tell M apart from L/XL (M gets its own
+  // narrower 560px treatment below); S below sm (640px) is unaffected by
+  // either check.
   const isAtLeastSm = useMediaQuery('(min-width: 640px)');
-  const tape = isAtLeastSm ? TAPE_POSITION.xl : TAPE_POSITION.s;
-  const paperclip = isAtLeastSm ? PAPERCLIP_POSITION.xl : PAPERCLIP_POSITION.s;
+  const isAtLeastLg = useMediaQuery('(min-width: 992px)');
+  const tier = !isAtLeastSm ? 's' : isAtLeastLg ? 'xl' : 'm';
+  const tape = TAPE_POSITION[tier];
+  const paperclip = PAPERCLIP_POSITION[tier];
 
   return (
     <section
@@ -408,7 +494,23 @@ export default function Section7() {
       // without that side effect.
       className="relative flex w-full flex-col items-center justify-center overflow-x-clip bg-white-linen-100 px-page-margin-x py-page-margin-y"
     >
-      <div className="relative flex w-full flex-col items-start justify-start sm:w-[720px]">
+      {/* items-start (base/L/XL) left-aligns everything, since every
+          child there is either the full wrapper width (720px, via the
+          quote box's own self-stretch) or was never asked to center
+          (the hug-content shape cluster centers itself internally, see
+          its own comment). sm:items-center flips that for M only: once
+          the heading box (540px) and quote box (560px, via self-stretch
+          tracking THIS wrapper's own new 560px width) are two genuinely
+          different widths instead of heading being a fixed sub-width of
+          a much wider shared column, "center align the stacks" means
+          centering the narrower heading within the wrapper rather than
+          flushing it to the same left edge as the wider quote box.
+          lg:items-start reverts to the original L/XL alignment,
+          unchanged. sm:w-[560px] lg:w-[720px]: was a flat sm:w-[720px]
+          covering the whole non-S range -- 560px is now M-specific
+          (matches the quote box width the user asked for), 720px
+          explicitly restores the original L/XL value. */}
+      <div className="relative flex w-full flex-col items-start justify-start sm:w-[560px] sm:items-center lg:w-[720px] lg:items-start">
         <ScrollSection
           transition={{ duration: 0.6, ease: 'easeOut', delay: HEADING_DELAY }}
           // z-10: both this box and the pink box below are position:relative
@@ -420,7 +522,13 @@ export default function Section7() {
           // shapes above -- S wants 16px vertical padding (--spacing-m's
           // own base), not py-l's base 24px; px stays px-l unconditionally
           // since 24px already matches the S reference exactly there.
-          className="relative z-10 flex w-full flex-wrap items-center justify-center gap-xs bg-bg-red px-l py-m sm:w-[576px] sm:py-l"
+          // sm:w-[540px] lg:w-[576px]: was a flat sm:w-[576px] -- 540px is
+          // the M-specific width the user asked for ("max width of
+          // understanding ppl is 540px"), 576px explicitly restores the
+          // original L/XL value (now that the wrapper's own items-start/
+          // center split means this box's width can no longer just
+          // passively inherit from a single shared sm: override).
+          className="relative z-10 flex w-full flex-wrap items-center justify-center gap-xs bg-bg-red px-l py-m sm:w-[540px] sm:py-l lg:w-[576px]"
         >
           <h2 className="heading-2 text-center text-heading-inverted">
             <AccessibleHighlightText
@@ -518,20 +626,22 @@ export default function Section7() {
 
         {/* SShapeCluster (own comment above) is a self-contained,
             precisely-positioned canvas, own width/centering handled
-            internally via its own mx-auto -- unlike XlShapeCluster, which
-            stays hug-content/unwidthed, matching the already-approved
-            existing desktop look (the outer wrapper is a fixed 720px
-            there, and the cluster hugging its own narrower content,
-            centered within just that hugged block rather than the full
-            720px, is what's already shipped -- forcing it wider would
-            shift the shapes and wasn't asked for). aria-hidden (on both
-            cluster components): purely decorative -- the quote box above
-            already names every one of these groups ("families, non-
-            profits, donors, and frontline workers") in real prose, so
-            this colorful shape cluster is a visual flourish for sighted
-            users, not additional content a screen reader needs to
-            announce label-by-label. */}
-        {isAtLeastSm ? <XlShapeCluster /> : <SShapeCluster />}
+            internally via its own mx-auto -- unlike XlShapeCluster at
+            L/XL, which stays hug-content/unwidthed, matching the
+            already-approved existing desktop look (the outer wrapper is
+            a fixed 720px there, and the cluster hugging its own narrower
+            content, centered within just that hugged block rather than
+            the full 720px, is what's already shipped -- forcing it wider
+            would shift the shapes and wasn't asked for). M gets its own
+            MShapeCluster, the same XlShapeCluster markup scaled down to
+            fit the 560px cap (own comment above). aria-hidden (on all
+            three cluster variants): purely decorative -- the quote box
+            above already names every one of these groups ("families,
+            non-profits, donors, and frontline workers") in real prose,
+            so this colorful shape cluster is a visual flourish for
+            sighted users, not additional content a screen reader needs
+            to announce label-by-label. */}
+        {tier === 's' ? <SShapeCluster /> : tier === 'm' ? <MShapeCluster /> : <XlShapeCluster />}
       </div>
     </section>
   );

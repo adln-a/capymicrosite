@@ -108,14 +108,15 @@ const POSITIONS_M = {
 // specifically -- see SpeechBubble's own doc comment -- because this is
 // the one tier where the PINNED scroll-scrubbed crossfade (below) actually
 // swaps their text mid-animation; a hug box would visibly resize at that
-// swap. XS/M never do that swap in their own (static) rendering, so hug is
-// safe there -- but note the M tier IS also used while pinned (768-992px,
-// see isPinned below), where this same resize risk technically still
-// applies and isn't compensated for -- Figma's own M export shows hug with
-// no fixed width, and there's no measured-safe width to substitute the
-// way there was for desktop (its 344/352 were tuned for this tier's own
-// 22px heading-3 rendering, not the 18px used everywhere below xl -- see
-// index.css). Flagging rather than guessing a number.
+// swap. XS never pins (always static), so its own hug bubbles are safe --
+// but M-tier CAN now pin on a tall-enough viewport (see isPinned below,
+// gated by height >=1024px there), where this same resize risk technically
+// applies to every 'hug' entry in POSITIONS_M and isn't compensated for --
+// Figma's own M export shows hug with no fixed width, and there's no
+// measured-safe width to substitute the way there was for desktop (its
+// 344/352 were tuned for this tier's own 22px heading-3 rendering, not the
+// 18px used everywhere below xl -- see index.css). Flagging rather than
+// guessing a number.
 const POSITIONS_XL = {
   shoes: { left: 317.5, top: 0.5, size: { width: 200, height: 200 } },
   'dont-care': { left: 69, top: 117, size: { width: 240, height: 240 } },
@@ -241,27 +242,76 @@ function AnimatedBubble({ bubble, index, scrollYProgress, isSwapped, tier }) {
   );
 }
 
-export default function Section3() {
-  const prefersReducedMotion = useReducedMotion();
+// Static start-state: XS width always (never pins), M width with
+// viewport height below 1024px (not enough vertical scroll track for the
+// pin to feel good, see Section3's own isPinned comment), OR
+// prefers-reduced-motion at ANY size/tier (XL included). Shows every
+// bubble in its ORIGINAL color/text -- the actual "start" of the
+// scroll-driven version below, not the "Am I enough?"/black end state --
+// collapsing straight to the punchline would skip the real content (each
+// distinct worry) for anyone who can't or won't scroll through the
+// scrubbed reveal to see it unfold. No scroll-pin, no crossfade -- just
+// each bubble's own plain ScrollSection fade-up-into-view (itself a
+// no-op under prefers-reduced-motion). No h-dvh here (unlike Section3Pinned)
+// -- the XS/M containers (1003px/869px tall) can run taller than one
+// viewport, so this is left auto-height/normal document flow
+// (py-page-margin-y -- 64px at S, growing to 96px at xl -- gives it
+// breathing room instead) rather than force-fit into one screen's worth
+// of height, which would clip the bubble stack.
+function Section3Static({ tier }) {
+  const container = CONTAINERS[tier];
+  const bubbles = buildBubbles(tier);
+
+  return (
+    <section
+      id="section-3"
+      className="relative flex w-full flex-col items-center justify-center bg-bg-blue px-page-margin-x py-page-margin-y"
+    >
+      {/* Two nested divs, not one -- an element with container-type
+          can't use cqw for its OWN size (that's circular/self-
+          referential), so the height has to live on an INNER div
+          that queries this OUTER one instead. Collapsing them into a
+          single div was a real bug: per spec, cqw on the same element
+          that declares container-type falls back to the next
+          container context up -- with none available here, that's the
+          viewport, not this canvas's own 789px, so the canvas rendered
+          far too tall (a Section 3 XL regression from that mistake). */}
+      <div className="max-w-full" style={{ width: `${container.width}px`, containerType: 'inline-size' }}>
+        <div className="relative w-full" style={{ height: cqw(container.height, tier) }}>
+          {bubbles.map((bubble) => (
+            <ScrollSection key={bubble.key} className="absolute" style={{ left: cqw(bubble.left, tier), top: cqw(bubble.top, tier) }}>
+              <SpeechBubble text={bubble.text} size={scaledSize(bubble.size, tier)} bg={bubble.bg} textColor={bubble.textColor} tailSide={bubble.tailSide} />
+            </ScrollSection>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// Pinned scroll-scrubbed version -- XL always, M when tall enough (see
+// Section3's own isPinned comment). Split into its own component (mounted
+// only while isPinned is true) rather than a conditional branch inside
+// one shared component, same fix already applied to Section 16's own
+// XL/S split: useScroll's internal setup effect only correctly attaches
+// if wrapperRef is already populated WHEN THAT EFFECT FIRST RUNS. With
+// a single component branching on isPinned internally, wrapperRef is
+// created once via useRef and stays the same object across renders --
+// so if the page loads on (or live-resizes into) the static branch first,
+// then crosses into this one, wrapperRef only gets attached to a DOM
+// node well after useScroll's setup effect already ran against null,
+// and a plain ref mutation doesn't retrigger that effect. scrollYProgress
+// then stays permanently stuck at its initial value, so the whole pinned
+// section reads as frozen -- reported live ("when i resize the browser by
+// dragging it, section 3 won't scroll past a point"), not reproducible by
+// loading fresh at one fixed size (where the correct branch is already
+// live before useScroll ever runs). Making this a genuinely separate
+// component means crossing the isPinned boundary unmounts the old
+// instance and mounts a fresh one, so useScroll always initializes
+// against an already-attached ref, exactly like a cold load.
+function Section3Pinned({ tier }) {
   const wrapperRef = useRef(null);
   const [isSwapped, setIsSwapped] = useState(false);
-
-  // Three independent breakpoint checks rather than one combined tier
-  // state, because the two things they answer are genuinely different
-  // questions: `tier` picks WHICH position dataset to render (XS below
-  // 640px, M from 640-992px, XL from 992px up -- S has no dataset of
-  // its own, it just reuses M, same as the background images), while
-  // `isPinned` picks WHETHER the scroll-scrubbed pin interaction runs at
-  // all (768px up only, per explicit request -- "keep the stick up to M
-  // screen size"). The M tier's own position data straddles that 768px
-  // pin boundary: 640-768px renders it statically, 768-992px renders the
-  // exact same positions but pinned/animated.
-  const isAtLeast640 = useMediaQuery('(min-width: 640px)');
-  const isAtLeast768 = useMediaQuery('(min-width: 768px)');
-  const isAtLeast992 = useMediaQuery('(min-width: 992px)');
-  const tier = isAtLeast992 ? 'xl' : isAtLeast640 ? 'm' : 'xs';
-  const isPinned = isAtLeast768 && !prefersReducedMotion;
-
   const container = CONTAINERS[tier];
   const bubbles = buildBubbles(tier);
 
@@ -274,51 +324,14 @@ export default function Section3() {
   // state rather than left as a MotionValue-only style -- unlike the
   // aria-hidden-toggling mistake made earlier in this project, nothing is
   // removed from the DOM or hidden from accessibility here, just recolored
-  // and re-worded while staying mounted and visible throughout. Harmless
-  // to still run this when !isPinned -- scrollYProgress just never departs
-  // from 0 in that case (wrapperRef's own h-[200vh]/sticky scroll track
-  // isn't rendered), so isSwapped never flips and stays unused.
+  // and re-worded while staying mounted and visible throughout.
   useMotionValueEvent(scrollYProgress, 'change', (value) => {
     setIsSwapped(value >= SWAP_POINT);
   });
 
-  if (!isPinned) {
-    // Static start-state: below 768px (XS/S -- S reuses the M dataset, same
-    // as the backgrounds), OR prefers-reduced-motion at ANY size. Shows
-    // every bubble in its ORIGINAL color/text -- the actual "start" of the
-    // scroll-driven version below, not the "Am I enough?"/black end state
-    // -- collapsing straight to the punchline would skip the real content
-    // (each distinct worry) for anyone who can't or won't scroll through
-    // the scrubbed reveal to see it unfold. No scroll-pin, no crossfade --
-    // just each bubble's own plain ScrollSection fade-up-into-view (itself
-    // a no-op under prefers-reduced-motion). No h-dvh here (unlike the pin
-    // branch) -- the XS/M containers (1003px/869px tall) can run taller
-    // than one viewport, so this is left auto-height/normal document flow
-    // (py-page-margin-y -- 64px at S, growing to 96px at xl -- gives it
-    // breathing room instead) rather than force-fit into one screen's
-    // worth of height, which would clip the bubble stack.
-    return (
-      <section
-        id="section-3"
-        className="relative flex w-full flex-col items-center justify-center bg-bg-blue px-page-margin-x py-page-margin-y"
-      >
-        <div
-          className="relative max-w-full"
-          style={{ width: `${container.width}px`, height: cqw(container.height, tier), containerType: 'inline-size' }}
-        >
-          {bubbles.map((bubble) => (
-            <ScrollSection key={bubble.key} className="absolute" style={{ left: cqw(bubble.left, tier), top: cqw(bubble.top, tier) }}>
-              <SpeechBubble text={bubble.text} size={scaledSize(bubble.size, tier)} bg={bubble.bg} textColor={bubble.textColor} tailSide={bubble.tailSide} />
-            </ScrollSection>
-          ))}
-        </div>
-      </section>
-    );
-  }
-
   return (
     <section id="section-3" ref={wrapperRef} className="relative h-[200vh]">
-      {/* No py-page-margin-y here (unlike the static branch above) -- this
+      {/* No py-page-margin-y here (unlike Section3Static above) -- this
           is the "Dvh group" treatment (h-dvh, purely flex-centered, no
           vertical padding fighting that centering), matching every other
           Dvh-group section site-wide. */}
@@ -329,22 +342,51 @@ export default function Section3() {
           className="pointer-events-none absolute inset-0 bg-black-950"
         />
 
-        <div
-          className="relative max-w-full"
-          style={{ width: `${container.width}px`, height: cqw(container.height, tier), containerType: 'inline-size' }}
-        >
-          {bubbles.map((bubble) => (
-            <AnimatedBubble
-              key={bubble.key}
-              bubble={bubble}
-              index={bubble.staggerIndex}
-              scrollYProgress={scrollYProgress}
-              isSwapped={isSwapped}
-              tier={tier}
-            />
-          ))}
+        {/* Same two-nested-divs fix as Section3Static above -- see its
+            own comment for why the container-type element and the cqw
+            height can't be the same div. */}
+        <div className="max-w-full" style={{ width: `${container.width}px`, containerType: 'inline-size' }}>
+          <div className="relative w-full" style={{ height: cqw(container.height, tier) }}>
+            {bubbles.map((bubble) => (
+              <AnimatedBubble
+                key={bubble.key}
+                bubble={bubble}
+                index={bubble.staggerIndex}
+                scrollYProgress={scrollYProgress}
+                isSwapped={isSwapped}
+                tier={tier}
+              />
+            ))}
+          </div>
         </div>
       </div>
     </section>
   );
+}
+
+export default function Section3() {
+  const prefersReducedMotion = useReducedMotion();
+
+  // `tier` picks WHICH position dataset to render, purely by available
+  // WIDTH (XS below 640px, M from 640-992px, XL from 992px up -- S has
+  // no dataset of its own, it just reuses M, same as the background
+  // images). `isPinned` picks WHETHER the scroll-scrubbed pin interaction
+  // runs at all, and its rule is tier-dependent rather than one flat
+  // width check: XL keeps its original, unconditional pin (that's the
+  // established desktop experience, untouched here) -- but M-tier is
+  // gated by viewport HEIGHT (>=1024px) instead of always pinning. The
+  // pin's scroll track is h-[200vh] with a sticky h-dvh viewport inside,
+  // so the actual scrollable distance driving the whole reveal+crossfade
+  // is ~100vh -- on a short M-tier viewport (a small tablet in landscape,
+  // or a resized browser window) that's too little travel for the
+  // animation to read as anything but an instant, jarring snap, so those
+  // fall back to the static hugging/stagger layout instead. XS never
+  // pins either way, matching its original always-static behavior.
+  const isAtLeast640 = useMediaQuery('(min-width: 640px)');
+  const isAtLeast992 = useMediaQuery('(min-width: 992px)');
+  const isAtLeastHeight1024 = useMediaQuery('(min-height: 1024px)');
+  const tier = isAtLeast992 ? 'xl' : isAtLeast640 ? 'm' : 'xs';
+  const isPinned = !prefersReducedMotion && (tier === 'xl' || (tier === 'm' && isAtLeastHeight1024));
+
+  return isPinned ? <Section3Pinned tier={tier} /> : <Section3Static tier={tier} />;
 }

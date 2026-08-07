@@ -5,6 +5,9 @@ import useMediaQuery from '../hooks/useMediaQuery.js';
 import pinkScribble from '../assets/Pink-Scribble.svg';
 import frameLeft from '../assets/Desktop-IMG-Frame-16-Left.svg';
 import frameRight from '../assets/Desktop-IMG-Frame-16-Right.svg';
+import mBgBottom from '../assets/m/M--BG-Frame16 Bottom.svg';
+import lFrameLeft from '../assets/l/L--IMG-Frame16 Left.svg';
+import lFrameRight from '../assets/l/L--IMG-Frame16 Right.svg';
 
 // Content + exact colors/rotations transcribed from the reference export
 // (Section 16.html) -- each card's rotation and ruled-line tint is a
@@ -172,12 +175,55 @@ function Header() {
 // XL-only now -- S no longer overlays its illustration absolutely at the
 // bottom of a pinned h-dvh section; it renders its own single image
 // in-flow, stacked below the card stack (see the !isAtLeastSm branch
-// below), so it doesn't need this component at all.
+// below), so it doesn't need this component at all. M gets its own
+// IllustrationsM below instead of this two-image spread, and L gets its
+// own IllustrationsL (own comment below) instead of reusing these XL
+// assets.
 function Illustrations() {
   return (
     <div className="pointer-events-none absolute inset-x-0 bottom-xs z-30 flex items-end justify-between px-2xl">
       <img src={frameLeft} alt="" aria-hidden="true" className="h-auto w-[535px] max-w-none" />
       <img src={frameRight} alt="" aria-hidden="true" className="h-auto w-[452px] max-w-none" />
+    </div>
+  );
+}
+
+// L (992-1199px): its own dedicated pair of exports (L--IMG-Frame16
+// Left/Right.svg, native 418x227 / 339x206) rather than XL's larger
+// 535/452 frameLeft/frameRight -- same two-image spread shell/positioning
+// as Illustrations above, just swapped assets sized at their own native
+// dimensions.
+function IllustrationsL() {
+  return (
+    <div className="pointer-events-none absolute inset-x-0 bottom-xs z-30 flex items-end justify-between px-2xl">
+      <img src={lFrameLeft} alt="" aria-hidden="true" className="h-auto w-[418px] max-w-none" />
+      <img src={lFrameRight} alt="" aria-hidden="true" className="h-auto w-[339px] max-w-none" />
+    </div>
+  );
+}
+
+// M: a single dedicated 704x300 export replacing XL's two separate
+// frameLeft/frameRight images -- centered as one piece rather than
+// spread to the two page edges (there's no matching two-piece M export,
+// and XL's own wide left/right spread doesn't have room to work at M's
+// narrower widths anyway). w-full max-w-[700px]: fluid down to 700px,
+// capped there, same "100% width up to Npx" pattern used for every
+// other M illustration this pass. pb-l (not the previous bottom-xs, a
+// much tighter raw inset): flex items-end packs the image against this
+// box's own bottom PADDING edge rather than its bottom:0 border edge,
+// so the image sits pb-l of real breathing room above the true section
+// bottom instead of almost flush against it.
+//
+// Only rendered when the viewport is tall enough (>=1024px, checked by
+// the caller) -- same rationale as Section 3's own height gate: this
+// sits inside a scroll-jacked h-[300vh]/sticky h-dvh pin, and a short
+// viewport leaves little room for both the card stack settling AND this
+// illustration to read cleanly at the same time, so it's dropped
+// entirely rather than cramped in.
+function IllustrationsM() {
+  return (
+    <div className="pointer-events-none absolute inset-x-0 bottom-0 z-30 flex items-end justify-center px-2xl pb-l">
+      <img src={mBgBottom} alt="" aria-hidden="true" className="h-auto w-full max-w-[700px]" />
     </div>
   );
 }
@@ -202,6 +248,23 @@ function Illustrations() {
 
 function Section16Desktop() {
   const prefersReducedMotion = useReducedMotion();
+  // Only needed to tell M/L/XL apart -- the bottom/side illustration is
+  // the one thing that diverges there (own comments on Illustrations/
+  // IllustrationsL/IllustrationsM above); everything else about this
+  // "desktop" branch (card stack, scroll-jack, padding) is already
+  // shared correctly.
+  const isAtLeastLg = useMediaQuery('(min-width: 992px)');
+  const isAtLeastXl = useMediaQuery('(min-width: 1200px)');
+  const isL = isAtLeastLg && !isAtLeastXl;
+  // M-only gate on the illustration, same technique as Section 3's own
+  // height check: below 1024px tall, there isn't enough vertical room in
+  // this pinned h-dvh for the card stack AND the illustration to both
+  // read cleanly, so it's dropped entirely rather than shown cramped.
+  // L/XL's own illustrations are intentionally NOT gated by this -- they
+  // were already showing unconditionally before today and weren't asked
+  // to change.
+  const isAtLeastHeight1024 = useMediaQuery('(min-height: 1024px)');
+  const showMIllustration = !isAtLeastLg && isAtLeastHeight1024;
   const wrapperRef = useRef(null);
   const { scrollYProgress } = useScroll({ target: wrapperRef, offset: ['start start', 'end end'] });
 
@@ -232,7 +295,7 @@ function Section16Desktop() {
             ))}
           </div>
         </div>
-        <Illustrations />
+        {isAtLeastXl ? <Illustrations /> : isL ? <IllustrationsL /> : showMIllustration ? <IllustrationsM /> : null}
       </section>
     );
   }
@@ -250,7 +313,7 @@ function Section16Desktop() {
             ))}
           </div>
         </div>
-        <Illustrations />
+        {isAtLeastXl ? <Illustrations /> : isL ? <IllustrationsL /> : showMIllustration ? <IllustrationsM /> : null}
       </div>
     </section>
   );

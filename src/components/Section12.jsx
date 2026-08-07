@@ -423,11 +423,20 @@ function dealMotionProps(shouldReduceMotion, revealOnScroll, stackX, stackRotate
   return { initial, animate: target, transition };
 }
 
-function AssumptionCard({ set, shouldReduceMotion, revealOnScroll = false }) {
+// widthClassName: '' (S/XL, unchanged) lets the card size the way it
+// always has -- 100% via the S column's own items-stretch, or an even
+// flex-1 split in XL's row. M passes an explicit 'w-[480px] max-w-full
+// mx-auto' instead (own callsite comment) -- flex-1 only affects the
+// column's MAIN axis (height) there, an orthogonal property from width,
+// so it doesn't fight this override; mx-auto is what actually centers
+// the now-explicitly-sized card within the wider stretch-by-default
+// column, same auto-margins-beat-align-items technique content-cap's
+// own comment already relies on elsewhere in this file.
+function AssumptionCard({ set, shouldReduceMotion, revealOnScroll = false, widthClassName = '' }) {
   return (
     <motion.div
       {...dealMotionProps(shouldReduceMotion, revealOnScroll, STACK_X[0], STACK_ROTATE[0], FINAL_ROTATE[0], DEAL_DURATIONS[0], 0 * DEAL_STAGGER)}
-      className="relative z-[3] flex flex-1 flex-col items-start justify-start gap-s rounded-large bg-bg-white p-l"
+      className={`relative z-[3] flex flex-1 flex-col items-start justify-start gap-s rounded-large bg-bg-white p-l ${widthClassName}`}
     >
       <p className="body-paragraph self-stretch text-body-default">We assumed</p>
       <p className="heading-3 self-stretch text-heading-default">{set.assumption}</p>
@@ -435,11 +444,11 @@ function AssumptionCard({ set, shouldReduceMotion, revealOnScroll = false }) {
   );
 }
 
-function RealityCard({ set, shouldReduceMotion, revealOnScroll = false }) {
+function RealityCard({ set, shouldReduceMotion, revealOnScroll = false, widthClassName = '' }) {
   return (
     <motion.div
       {...dealMotionProps(shouldReduceMotion, revealOnScroll, STACK_X[1], STACK_ROTATE[1], FINAL_ROTATE[1], DEAL_DURATIONS[1], 1 * DEAL_STAGGER)}
-      className={`relative z-[2] flex flex-1 flex-col items-start justify-start gap-s rounded-large p-l ${set.card2Bg}`}
+      className={`relative z-[2] flex flex-1 flex-col items-start justify-start gap-s rounded-large p-l ${set.card2Bg} ${widthClassName}`}
     >
       <p className="body-paragraph self-stretch text-body-default">What really happened</p>
       <p className="heading-3 self-stretch text-heading-default">{set.reality}</p>
@@ -447,14 +456,14 @@ function RealityCard({ set, shouldReduceMotion, revealOnScroll = false }) {
   );
 }
 
-function QuoteCard({ set, shouldReduceMotion, revealOnScroll = false }) {
+function QuoteCard({ set, shouldReduceMotion, revealOnScroll = false, widthClassName = '' }) {
   const [isTranscriptOpen, setIsTranscriptOpen] = useState(false);
   const transcriptButtonRef = useRef(null);
 
   return (
     <motion.div
       {...dealMotionProps(shouldReduceMotion, revealOnScroll, STACK_X[2], STACK_ROTATE[2], FINAL_ROTATE[2], DEAL_DURATIONS[2], 2 * DEAL_STAGGER)}
-      className={`relative z-[1] flex flex-1 flex-col items-start justify-start gap-s rounded-large p-l ${set.card3Bg}`}
+      className={`relative z-[1] flex flex-1 flex-col items-start justify-start gap-s rounded-large p-l ${set.card3Bg} ${widthClassName}`}
     >
       <p className="body-paragraph self-stretch text-body-inverted">What was said</p>
       <p className="heading-3 self-stretch text-heading-inverted">&ldquo;{set.quote}&rdquo;</p>
@@ -512,6 +521,16 @@ export default function Section12() {
   const [isNavStuck, setIsNavStuck] = useState(false);
   const shouldReduceMotion = useReducedMotion();
   const isAtLeastSm = useMediaQuery('(min-width: 640px)');
+  // M reuses S's whole interaction wholesale -- sticky number nav,
+  // scroll-spy, all four sets stacked and pre-rendered at once -- rather
+  // than getting its own tabbed/paginated layout. isAtLeastLg is what
+  // now actually decides "S-style behavior vs XL's tablist", not
+  // isAtLeastSm; isAtLeastSm itself is unused for that purpose anymore
+  // (only isM below reads it, to know whether the S-style branch it's
+  // currently in is specifically M so it can apply M's own 480px card
+  // width instead of S's full-width one).
+  const isAtLeastLg = useMediaQuery('(min-width: 992px)');
+  const isM = isAtLeastSm && !isAtLeastLg;
   const set = getSet(activeSet);
   const tabRefs = useRef({});
   const setSectionRefs = useRef({});
@@ -528,11 +547,11 @@ export default function Section12() {
   // under the viewport's top edge, the nav (pinned at the same y) must
   // have taken over that spot -- i.e. gone stuck.
   useEffect(() => {
-    if (isAtLeastSm || !navSentinelRef.current) return undefined;
+    if (isAtLeastLg || !navSentinelRef.current) return undefined;
     const observer = new IntersectionObserver(([entry]) => setIsNavStuck(!entry.isIntersecting), { threshold: 0 });
     observer.observe(navSentinelRef.current);
     return () => observer.disconnect();
-  }, [isAtLeastSm]);
+  }, [isAtLeastLg]);
 
   const goToPrev = () => setActiveSet((s) => (s === 1 ? 4 : s - 1));
   const goToNext = () => setActiveSet((s) => (s === 4 ? 1 : s + 1));
@@ -545,7 +564,7 @@ export default function Section12() {
   // navigating away mid-section (or a hot-reload) never leaves the
   // global nav permanently hidden.
   useEffect(() => {
-    if (isAtLeastSm || !sectionRef.current) return undefined;
+    if (isAtLeastLg || !sectionRef.current) return undefined;
     const observer = new IntersectionObserver(
       ([entry]) => document.body.classList.toggle('section12-nav-active', entry.isIntersecting),
       { threshold: 0 },
@@ -555,21 +574,21 @@ export default function Section12() {
       observer.disconnect();
       document.body.classList.remove('section12-nav-active');
     };
-  }, [isAtLeastSm]);
+  }, [isAtLeastLg]);
 
-  // S-only scroll-spy: whichever set's own wrapper is crossing the band
-  // just below the sticky nav becomes "active" -- the standard rootMargin
-  // trick (a negative top/bottom margin collapses the observer's
-  // effective viewport to a thin horizontal band) rather than picking
-  // whichever entry has the largest intersection ratio, which gets
-  // noisy when a tall set and a short one are both partly visible at
-  // once. Skips entirely at sm+, where activeSet is click-driven instead
-  // (see goToPrev/goToNext and the tablist's onClick below); re-runs
-  // whenever isAtLeastSm itself changes so a mid-session resize across
-  // the breakpoint re-attaches to whichever set of DOM nodes is current
-  // (same fix as Section 8's own resize bug).
+  // S/M-only scroll-spy: whichever set's own wrapper is crossing the
+  // band just below the sticky nav becomes "active" -- the standard
+  // rootMargin trick (a negative top/bottom margin collapses the
+  // observer's effective viewport to a thin horizontal band) rather than
+  // picking whichever entry has the largest intersection ratio, which
+  // gets noisy when a tall set and a short one are both partly visible
+  // at once. Skips entirely at lg+, where activeSet is click-driven
+  // instead (see goToPrev/goToNext and the tablist's onClick below);
+  // re-runs whenever isAtLeastLg itself changes so a mid-session resize
+  // across the breakpoint re-attaches to whichever set of DOM nodes is
+  // current (same fix as Section 8's own resize bug).
   useEffect(() => {
-    if (isAtLeastSm) return;
+    if (isAtLeastLg) return;
     const els = SET_DESIGN.map((design) => setSectionRefs.current[design.number]).filter(Boolean);
     if (els.length === 0) return;
 
@@ -585,7 +604,7 @@ export default function Section12() {
     );
     els.forEach((el) => observer.observe(el));
     return () => observer.disconnect();
-  }, [isAtLeastSm]);
+  }, [isAtLeastLg]);
 
   const scrollToSet = (number) => {
     setSectionRefs.current[number]?.scrollIntoView({ behavior: shouldReduceMotion ? 'auto' : 'smooth', block: 'start' });
@@ -622,13 +641,15 @@ export default function Section12() {
     }
   }
 
-  if (!isAtLeastSm) {
-    // No tabs, no arrows: every set's 3-card group renders at once in a
-    // long scrollable page instead of one swapped-in-place panel. The
-    // number row becomes a sticky top-anchored nav -- click jumps to that
-    // set (scrollToSet), and the scroll-spy effect above keeps whichever
-    // number is highlighted in sync with actual scroll position, not the
-    // other way around.
+  if (!isAtLeastLg) {
+    // S and M share this branch (isM only controls the card width
+    // override passed to each card further down): no tabs, no arrows --
+    // every set's 3-card group renders at once in a long scrollable page
+    // instead of one swapped-in-place panel. The number row becomes a
+    // sticky top-anchored nav -- click jumps to that set (scrollToSet),
+    // and the scroll-spy effect above keeps whichever number is
+    // highlighted in sync with actual scroll position, not the other way
+    // around.
     return (
       <section ref={sectionRef} id="section-12" className="relative flex w-full flex-col items-center justify-start bg-white-linen-100">
         <div ref={navSentinelRef} aria-hidden="true" style={{ height: 0 }} />
@@ -661,9 +682,28 @@ export default function Section12() {
                 className="flex w-full content-cap flex-col items-stretch justify-start gap-m"
                 style={{ scrollMarginTop: `${S_STICKY_NAV_HEIGHT}px` }}
               >
-                <AssumptionCard set={setData} shouldReduceMotion={shouldReduceMotion} revealOnScroll />
-                <RealityCard set={setData} shouldReduceMotion={shouldReduceMotion} revealOnScroll />
-                <QuoteCard set={setData} shouldReduceMotion={shouldReduceMotion} revealOnScroll />
+                {/* isM: M reuses S's whole stacked/scroll-spy layout
+                    (own comment above) but caps each card at a fixed
+                    480px instead of S's full content-cap width -- see
+                    each card's own widthClassName comment. */}
+                <AssumptionCard
+                  set={setData}
+                  shouldReduceMotion={shouldReduceMotion}
+                  revealOnScroll
+                  widthClassName={isM ? 'w-[480px] max-w-full mx-auto' : ''}
+                />
+                <RealityCard
+                  set={setData}
+                  shouldReduceMotion={shouldReduceMotion}
+                  revealOnScroll
+                  widthClassName={isM ? 'w-[480px] max-w-full mx-auto' : ''}
+                />
+                <QuoteCard
+                  set={setData}
+                  shouldReduceMotion={shouldReduceMotion}
+                  revealOnScroll
+                  widthClassName={isM ? 'w-[480px] max-w-full mx-auto' : ''}
+                />
               </div>
             );
           })}

@@ -5,6 +5,9 @@ import blueScribble from '../assets/Blue-Scribble.svg';
 import bgRight from '../assets/Desktop-BG--Frame-13-Right.svg';
 import bgBottomLeft from '../assets/Desktop-BG--Frame-13-BottomLeft.svg';
 import sImgFrame13 from '../assets/s/S--IMG-Frame13.svg';
+import mBgBottom from '../assets/m/M--BG-Frame13 Bottom.svg';
+import mBgLeft from '../assets/m/M--BG-Frame13 Left.svg';
+import mBgRight from '../assets/m/M--BG-Frame13 Right.svg';
 
 // H2 fades up first, then the pink box, then both background
 // illustrations -- same staggered-delay convention as Section 1's
@@ -109,6 +112,10 @@ function HeadingAndPinkBox({ widthClassName }) {
 
 export default function Section13() {
   const isAtLeastSm = useMediaQuery('(min-width: 640px)');
+  // Only needed to tell M apart from L/XL -- M gets its own dedicated
+  // background composition (own comment below), not S's stacked single
+  // image or XL's two-image layout.
+  const isAtLeastLg = useMediaQuery('(min-width: 992px)');
 
   if (!isAtLeastSm) {
     // No h-dvh here (unlike sm+ below): the heading + pink box + full
@@ -149,6 +156,88 @@ export default function Section13() {
           transition={{ duration: 0.6, ease: 'easeOut', delay: BG_DELAY }}
           style={{ width: '100vw', marginLeft: 'calc(50% - 50vw)', marginRight: 'calc(50% - 50vw)', marginTop: '0' }}
           className="pointer-events-none relative z-10 block h-auto"
+        />
+      </section>
+    );
+  }
+
+  if (!isAtLeastLg) {
+    // M: its own dedicated three-piece background (dedicated M exports,
+    // not XL's bgRight/bgBottomLeft resized or S's single stacked
+    // image), each corner-anchored directly to the SECTION's own true
+    // edges rather than nested inside any padded/content-cap wrapper --
+    // matching how XL's own bgRight already escapes px-page-margin-x to
+    // reach the true viewport edge. Rendered at each asset's native
+    // pixel size (no scaling formula given for this composition, same
+    // "literal reference numbers" convention as XL's bgBottomLeft
+    // 367x250): mBgRight (294.1x230, the monkey) top-right, mBgLeft
+    // (213x240, the girl) bottom-left, mBgBottom (531.5x564, the
+    // bear-on-a-ladder + bird cluster) bottom-right.
+    //
+    // h-dvh (not S's hug-content): explicitly asked for here ("height
+    // should be dvh") -- the text column alone is short enough to fit
+    // one viewport at this width (unlike S, where the stacked
+    // full-width illustration pushes total height well past one phone
+    // screen), so pinning to h-dvh and letting the corner-anchored art
+    // fill the remaining space works the same way it already does for
+    // XL.
+    return (
+      <section
+        id="section-13"
+        // overflow-x-clip, not overflow-x-hidden -- see the S branch's
+        // own comment for why: `hidden` on one axis alone silently
+        // auto-pairs the other to `auto`, turning this into its own
+        // nested scroll container.
+        className="relative flex h-dvh w-full flex-col items-start justify-start overflow-x-clip bg-bg-blue px-page-margin-x pt-page-margin-y"
+      >
+        {/* w-[360px] max-w-full (not S's w-full): the reference SVG's
+            own pink box is a fixed 480px, well short of full-width
+            (confirmed by measuring its rect directly, not eyeballed) --
+            but even that was still too wide at M's own narrower low end
+            (640px, vs. the reference's 768px canvas): mBgRight is a
+            FIXED 294.1px anchored to the true right edge regardless of
+            viewport, so the same 480px column that clears it comfortably
+            at 768px runs straight into it -- and the actual heading
+            text, not just decorative bleed -- at 640px. 380px still
+            wasn't enough; 360px is the confirmed-clear width. Some
+            decorative overlap between the monkey and the pink box's own
+            corner remains at the narrow end, read the same way as
+            tape/paperclip overlaps elsewhere on the site rather than as
+            a bug. */}
+        <HeadingAndPinkBox widthClassName="w-[360px] max-w-full" />
+
+        {/* All three at 95% of native size (279.395x218.5 / 202.35x228 /
+            504.925x535.8, down from 294.1x230 / 213x240 / 531.5x564). */}
+        <ScrollSection
+          as="img"
+          src={mBgRight}
+          alt=""
+          aria-hidden="true"
+          transition={{ duration: 0.6, ease: 'easeOut', delay: BG_DELAY }}
+          style={{ width: '279.395px', height: '218.5px' }}
+          className="pointer-events-none absolute right-0 top-0"
+        />
+        {/* z-10: mBgLeft (the girl) overlaps mBgBottom (the ladder/bird
+            cluster) at their shared bottom-left/bottom-right corner --
+            DOM order alone would put mBgBottom on top (it comes later),
+            but the girl should read in front of it instead. */}
+        <ScrollSection
+          as="img"
+          src={mBgLeft}
+          alt=""
+          aria-hidden="true"
+          transition={{ duration: 0.6, ease: 'easeOut', delay: BG_DELAY }}
+          style={{ width: '202.35px', height: '228px' }}
+          className="pointer-events-none absolute bottom-0 left-0 z-10"
+        />
+        <ScrollSection
+          as="img"
+          src={mBgBottom}
+          alt=""
+          aria-hidden="true"
+          transition={{ duration: 0.6, ease: 'easeOut', delay: BG_DELAY }}
+          style={{ width: '504.925px', height: '535.8px' }}
+          className="pointer-events-none absolute bottom-0 right-0"
         />
       </section>
     );

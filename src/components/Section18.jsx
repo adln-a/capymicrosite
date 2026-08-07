@@ -338,9 +338,14 @@ export default function Section18({ sectionRef }) {
             If you're an organisation, NGO, or advocate working on similar issues - we'd love to hear from you.
           </p>
 
-          {/* Single stacked column below sm -- back to the original single
-              flex row of 4 from sm up. */}
-          <div className="flex w-full flex-col items-stretch justify-start gap-s self-stretch sm:flex-row sm:items-start">
+          {/* Single stacked column below sm (grid-cols-1, one card per
+              row). 2x2 grid at M (sm:grid-cols-2 -- 4 cards auto-wrap
+              into 2 rows of 2 with no extra markup needed). Back to the
+              original single flex row of 4 from lg up (lg:flex
+              overrides the grid display entirely, same items-stretch
+              default both layout modes share so cards keep matching
+              heights within a row/column either way). */}
+          <div className="grid w-full grid-cols-1 items-stretch justify-start gap-s self-stretch sm:grid-cols-2 lg:flex lg:flex-row lg:items-start">
             {CARDS.map((card) => (
               <InfoCard key={card.key} card={card} />
             ))}

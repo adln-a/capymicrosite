@@ -472,7 +472,13 @@ const TAPE_REFERENCE_POSITION = { left: 189, top: 212 };
 // ScrollSections turns both into plain always-visible elements (see
 // ScrollSection's own `??` override handling for why `false`, not just
 // omitting the prop, is what's needed to actually cancel it out).
-function CardColumn({ columnClassName, cardClassName, disableFadeIn = false }) {
+// circleClassName defaults to the original S/XL 320x320 circle -- only M
+// passes its own override (240x240), so this stays a no-op change for
+// every other caller.
+const DEFAULT_CIRCLE_CLASS_NAME =
+  'relative flex h-[320px] w-[320px] flex-shrink-0 origin-top-left rotate-2 flex-col items-center justify-center gap-2xs overflow-hidden rounded-full bg-bg-pink p-m';
+
+function CardColumn({ columnClassName, cardClassName, circleClassName = DEFAULT_CIRCLE_CLASS_NAME, disableFadeIn = false }) {
   const cardRef = useRef(null);
   const [cardSize, setCardSize] = useState(TAPE_REFERENCE_CARD);
 
@@ -563,7 +569,14 @@ function CardColumn({ columnClassName, cardClassName, disableFadeIn = false }) {
         transition={{ duration: 0.6, ease: 'easeOut', delay: PINK_CIRCLE_DELAY }}
         initial={disableFadeIn ? false : undefined}
         whileInView={disableFadeIn ? false : undefined}
-        className="relative flex h-[320px] w-[320px] origin-top-left rotate-2 flex-col items-center justify-center gap-2xs overflow-hidden rounded-full bg-bg-pink p-m"
+        // flex-shrink-0: harmless where CardColumn stacks in a column
+        // (S/XL, where this axis is height, not width, and there's no
+        // tight height constraint pushing it to shrink anyway) but
+        // required in M's own row arrangement -- without it, the
+        // circle's default shrink:1 lets it get squeezed narrower
+        // alongside the card under container pressure instead of
+        // staying its own fixed size.
+        className={circleClassName}
       >
         <RuledLines />
         <p className="body-paragraph-large relative self-stretch text-center text-heading-red">
@@ -576,7 +589,54 @@ function CardColumn({ columnClassName, cardClassName, disableFadeIn = false }) {
 
 export default function Section6() {
   const isAtLeastSm = useMediaQuery('(min-width: 640px)');
+  const isAtLeastLg = useMediaQuery('(min-width: 992px)');
+  // Only needed to tell L apart from XL -- card/circle size and the
+  // FallingScene's own width behavior diverge there (own comment below).
+  const isAtLeastXl = useMediaQuery('(min-width: 1200px)');
   const scene = isAtLeastSm ? SCENE_SIZES.xl : SCENE_SIZES.s;
+
+  if (isAtLeastSm && !isAtLeastLg) {
+    // M (640-991px): the exact same composited-overlay approach as S
+    // below (FallingScene absolute inset-0 behind, one shared container
+    // whose own explicit height is the falling-item canvas's height,
+    // CardColumn painting on top via DOM order rather than z-index --
+    // see S's own comment for why) -- the only thing that changes is
+    // CardColumn's own internal arrangement: row instead of column, so
+    // the white card and pink circle sit side by side as two columns
+    // rather than stacked. SCENE_SIZES.s (not .xl) here too, same reason
+    // as S: no fixed width, so FallingScene measures its own container's
+    // real rendered width and always spans the true 100% content width
+    // at this tier as well, not a guessed fixed number.
+    //
+    // items-start (not S's items-end): cross-axis is now vertical (this
+    // is a row, not a column), and the card needs to stay the FIRST
+    // child pinned to the wrapper's own top-left origin -- the tape's
+    // left/top (computed in CardColumn from the card's own measured
+    // size) assume the card's top-left corner IS the wrapper's origin,
+    // an invariant items-start preserves regardless of which of the two
+    // ends up taller, exactly like items-end did for S/XL's equal-width
+    // stacking. flex-1 + min-w-0 on the card (not w-full, which would
+    // claim the whole row): lets it fill whatever room is left beside
+    // the circle's own fixed 320px, at any M width.
+    return (
+      <section
+        id="section-6"
+        className="relative flex w-full items-start justify-center overflow-hidden bg-chateau-green-600 px-page-margin-x py-page-margin-y"
+      >
+        <div className="relative w-full content-cap" style={{ height: `${scene.height}px` }}>
+          <div className="pointer-events-none absolute inset-0 z-0">
+            <FallingScene sceneHeight={scene.height} />
+          </div>
+
+          <CardColumn
+            columnClassName="relative flex w-full flex-row items-start justify-start gap-l"
+            cardClassName="relative flex flex-1 min-w-0 items-center justify-center gap-s rounded-medium bg-bg-white p-l"
+            disableFadeIn
+          />
+        </div>
+      </section>
+    );
+  }
 
   if (!isAtLeastSm) {
     // S: card+circle sit in normal flow at the top; FallingScene overlays
@@ -618,6 +678,40 @@ export default function Section6() {
             cardClassName="relative flex w-full items-center justify-center gap-s rounded-medium bg-bg-white p-l"
             disableFadeIn
           />
+        </div>
+      </section>
+    );
+  }
+
+  if (isAtLeastLg && !isAtLeastXl) {
+    // L (992-1199px): same overall structure as XL below (h-dvh,
+    // CardColumn stacking card-above-circle, FallingScene as a row
+    // sibling) but with the card (400px) and circle (240px) both scaled
+    // down, and FallingScene now filling whatever width is left over
+    // (flex-1) instead of XL's own fixed 660px -- content-cap's 1140px
+    // cap has much less slack at the low end of L than at XL's own
+    // 1200px+, so keeping XL's fixed 480+660 pairing here left no room
+    // to breathe. Tape position is untouched -- CardColumn computes it
+    // from the card's own measured size via ResizeObserver regardless of
+    // what that size actually is, so it stays correctly anchored at 400px
+    // the same way it already does at every other card width on this page.
+    return (
+      <section
+        id="section-6"
+        className="relative flex h-dvh w-full items-center justify-start overflow-hidden bg-chateau-green-600 px-page-margin-x"
+      >
+        <div className="relative flex w-full items-center justify-start content-cap">
+          <CardColumn
+            columnClassName="relative flex flex-none flex-col items-end justify-start"
+            cardClassName="relative flex w-[400px] flex-none items-center justify-center gap-s rounded-medium bg-bg-white p-l"
+            circleClassName="relative flex h-[240px] w-[240px] flex-none origin-top-left rotate-2 flex-col items-center justify-center gap-2xs overflow-hidden rounded-full bg-bg-pink p-m"
+          />
+
+          {/* min-w-0 overrides the flex default of min-width:auto -- same
+              fix Section 8/17's own flex-1 columns needed. */}
+          <div className="relative min-w-0 flex-1">
+            <FallingScene sceneHeight={scene.height} />
+          </div>
         </div>
       </section>
     );

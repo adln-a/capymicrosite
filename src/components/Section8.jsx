@@ -99,9 +99,30 @@ function ChartPath({ graphic, fill }) {
  * the reference screenshots -- stay lit, the rest dim to
  * black-100/black-300/black-200.
  */
+// lg:w-[420px] lg:h-auto xl:w-[518px] xl:h-auto: at L (992-1199px), the
+// sticky chart's own fixed 518px width -- combined with the row's
+// flex-shrink-0 on this column -- left the text card squeezed as
+// narrow as 314px (of its intended 480px) at the low end of L, since
+// content-cap's own 1140px cap doesn't kick in until 1200px (xl), so
+// there's meaningfully less room at 992px than at 1200px for the same
+// fixed-width chart + gap-2xl + card to share. Narrowing the chart
+// itself at L frees up that room instead of squeezing the card
+// further -- xl: restores the original, untouched 518px size (the
+// chart already reads fine and had never been reported as a problem
+// there). CSS width overrides the width/height attributes below (which
+// stay as the SVG's own intrinsic/fallback size), same as it would for
+// an <img>; h-auto keeps the 518x612 aspect ratio undistorted once
+// width shrinks below that.
 function FlowChart({ activeKey }) {
   return (
-    <svg aria-hidden="true" width="518" height="612" viewBox="0 0 518 612" fill="none" className="block">
+    <svg
+      aria-hidden="true"
+      width="518"
+      height="612"
+      viewBox="0 0 518 612"
+      fill="none"
+      className="block lg:h-auto lg:w-[420px] xl:h-auto xl:w-[518px]"
+    >
       {NODES.map((node) => {
         const isActive = activeKey === null || activeKey === node.key;
         const graphics = NODE_GRAPHICS[node.key];
@@ -148,11 +169,19 @@ function FlowChart({ activeKey }) {
  * scaled-down version of the desktop artwork. w-full h-auto (not a fixed
  * width/height like FlowChart's own 518x612) since this chart is meant to
  * fill/scale with its container as a background layer, not sit at one
- * fixed pixel size in a column next to the cards.
+ * fixed pixel size in a column next to the cards. max-w-[560px] mx-auto:
+ * this same branch now also serves M (640-991px), where an uncapped
+ * w-full stretched the chart to the full viewport width -- proportions
+ * tuned for a narrow ~360px reference blown up 2-3x, reading as
+ * oversized/distorted against the (still card-sized) content scrolling
+ * over it. A no-op at S itself (its available width never reaches
+ * 560), so this only actually engages in the M range it was reported
+ * for. (Started at 720px -- still read as too large, brought down to
+ * 560px.)
  */
 function MobileFlowChart({ activeKey }) {
   return (
-    <svg aria-hidden="true" viewBox="0 0 360.98 423.63" fill="none" className="block h-auto w-full">
+    <svg aria-hidden="true" viewBox="0 0 360.98 423.63" fill="none" className="block h-auto w-full max-w-[560px] mx-auto">
       {NODES.map((node) => {
         const isActive = activeKey === null || activeKey === node.key;
         const graphics = MOBILE_NODE_GRAPHICS[node.key];
@@ -374,28 +403,35 @@ function ContentColumn({ introRef, cardRefs, scrollToIntro }) {
 }
 
 export default function Section8() {
-  // No dedicated M/L reference for this section -- S below sm (640px),
-  // the existing XL-tuned side-by-side layout from sm up, same "reuse
-  // the nearest larger tier" convention used everywhere else.
-  const isAtLeastSm = useMediaQuery('(min-width: 640px)');
+  // No dedicated L reference for this section -- the XL-tuned
+  // side-by-side layout now covers L too, same "reuse the nearest larger
+  // tier" convention used everywhere else. M reuses the S-tier
+  // interaction wholesale instead of getting its own branch -- same
+  // scroll-jack (chart as sticky background, cards scrolling centered on
+  // top), same 480px card width (already shared/unconditional via
+  // EnvelopeCard, not tier-specific to begin with), same MobileFlowChart
+  // art -- only the breakpoint that switches over to the side-by-side XL
+  // layout moves from 640px to 992px.
+  const isAtLeastLg = useMediaQuery('(min-width: 992px)');
   const [activeKey, setActiveKey] = useState(null);
   const introRef = useRef(null);
   const cardRefs = useRef(new Map());
 
-  // isAtLeastSm in the dependency array (not just [] on mount): the
-  // mobile and XL branches below render genuinely different JSX shapes
-  // (chart-as-background-behind-a-stacked-column vs. chart-as-a-sticky-
-  // side-column), so crossing the 640px breakpoint mid-session unmounts
-  // the old intro/card DOM nodes and mounts fresh ones -- introRef.current
-  // and cardRefs.current end up pointing at the NEW elements once React
-  // finishes committing, but an effect that only ran once on initial
-  // mount would still be observing the OLD (now-detached) nodes forever,
-  // never re-attaching to the new ones. That's exactly the reported bug:
-  // resizing across the breakpoint left the chart stuck un-dimmed until a
-  // full reload re-ran this effect from scratch. Re-running the effect on
-  // every branch change (disconnecting the stale observer, then
-  // re-reading the refs and re-observing) keeps it correct across resizes
-  // without needing a page reload.
+  // isAtLeastLg in the dependency array (not just [] on mount): the
+  // mobile/M and L/XL branches below render genuinely different JSX
+  // shapes (chart-as-background-behind-a-stacked-column vs.
+  // chart-as-a-sticky-side-column), so crossing the 992px breakpoint
+  // mid-session unmounts the old intro/card DOM nodes and mounts fresh
+  // ones -- introRef.current and cardRefs.current end up pointing at the
+  // NEW elements once React finishes committing, but an effect that only
+  // ran once on initial mount would still be observing the OLD
+  // (now-detached) nodes forever, never re-attaching to the new ones.
+  // That's exactly the reported bug: resizing across the breakpoint left
+  // the chart stuck un-dimmed until a full reload re-ran this effect
+  // from scratch. Re-running the effect on every branch change
+  // (disconnecting the stale observer, then re-reading the refs and
+  // re-observing) keeps it correct across resizes without needing a page
+  // reload.
   useEffect(() => {
     const keyByElement = new Map();
     if (introRef.current) keyByElement.set(introRef.current, null);
@@ -416,30 +452,35 @@ export default function Section8() {
 
     keyByElement.forEach((_, el) => observer.observe(el));
     return () => observer.disconnect();
-  }, [isAtLeastSm]);
+  }, [isAtLeastLg]);
 
   const scrollToIntro = () => {
     introRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
-  if (!isAtLeastSm) {
-    // Mobile: the chart itself becomes the sticky BACKGROUND (no
-    // side-by-side column -- there's no room for one), with the intro +
-    // cards stacked in a single column scrolling on top of it. Same
-    // shared-gridArea overlap technique as the XL branch below, and the
-    // exact same activeKey/IntersectionObserver logic drives the
-    // dim/highlight interaction identically, since that logic only
-    // depends on the intro/card refs' own viewport position, never on how
-    // the chart happens to be laid out around them.
+  if (!isAtLeastLg) {
+    // S and M share this branch: the chart itself becomes the sticky
+    // BACKGROUND (no side-by-side column -- S has no room for one, and M
+    // now deliberately reuses the same interaction rather than getting
+    // its own), with the intro + cards stacked in a single column
+    // scrolling on top of it. Same shared-gridArea overlap technique as
+    // the L/XL branch below, and the exact same activeKey/
+    // IntersectionObserver logic drives the dim/highlight interaction
+    // identically, since that logic only depends on the intro/card refs'
+    // own viewport position, never on how the chart happens to be laid
+    // out around them.
     //
     // Three stacked gridArea:1/1 layers, back to front: S--BG-Frame8.svg
     // (this tier's own decorative backdrop blob, analogous to bgWhite at
-    // XL but a distinct asset/shape, not a reused/rescaled one), then the
-    // chart, then the scrolling content column -- all three sit BEHIND
-    // each other via plain DOM order (no z-index needed to separate them
-    // from one another; z-10 on the content column below is only there to
-    // outrank the two pointer-events-none sticky layers, matching the XL
-    // branch's own z-0/z-10 split).
+    // XL but a distinct asset/shape, not a reused/rescaled one -- kept at
+    // its native fixed 361x480 size for M too, same as S, rather than
+    // scaled up to fill the wider M viewport, since nothing about this
+    // task asked for that), then the chart, then the scrolling content
+    // column -- all three sit BEHIND each other via plain DOM order (no
+    // z-index needed to separate them from one another; z-10 on the
+    // content column below is only there to outrank the two
+    // pointer-events-none sticky layers, matching the L/XL branch's own
+    // z-0/z-10 split).
     return (
       <section id="section-8" className="relative w-full bg-bg-lightest-blue px-page-margin-x py-page-margin-y">
         <div className="relative grid w-full">
