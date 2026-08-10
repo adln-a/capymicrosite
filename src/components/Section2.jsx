@@ -1,7 +1,8 @@
-import { useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { motion, useReducedMotion, useScroll, useTransform } from 'framer-motion';
 import ScrollSection from './ScrollSection.jsx';
 import AccessibleHighlightText from './AccessibleHighlightText.jsx';
+import useMediaQuery from '../hooks/useMediaQuery.js';
 import bgScene1Xl from '../assets/Desktop-BG--Frame-2.svg';
 import bgScene1L from '../assets/l/L--BG-Frame2.svg';
 import bgScene1M from '../assets/m/M--BG-Frame2.svg';
@@ -283,7 +284,183 @@ function rotatePointAround(x, y, cx, cy, angleDeg) {
   };
 }
 
-export default function Section2() {
+// S only: replaces the h-[300vh] scroll-jack + continuous scrollYProgress
+// scrubbing below with the same plain-position:sticky-background +
+// IntersectionObserver pattern Section 8's own S/M layout uses --
+// useScroll/useTransform recompute continuously on every scroll frame
+// regardless of visibility, real main-thread work competing with the
+// scroll compositor the whole time the section is pinned; an
+// IntersectionObserver callback only fires on actual enter/exit, not per
+// scroll pixel.
+//
+// Each scene is its own min-h-dvh block (own comment below) -- Card 1
+// centered in the viewport on arrival, background snapped (a hard cut,
+// not a crossfade) to match; scrolling moves Card 1 up and Card 2 in
+// underneath it exactly like normal document flow, snapping the
+// background again once Card 2 reaches center. This intentionally still
+// takes roughly a full viewport of scroll per card (same rough total
+// distance as the old pinned version) -- the actual complaint wasn't the
+// distance itself, it was that up to 60% of the OLD 300vh (the gaps
+// between its 0.4-0.6 / 0.7-0.9 crossfade windows) produced literally no
+// visible change at all. Here every bit of scroll input moves something
+// on screen immediately -- Card 1 sliding up, Card 2 sliding in -- there
+// are no dead zones to begin with.
+//
+// Every scene's real text is already, always in the DOM in natural
+// reading order here -- if anything this is MORE straightforwardly
+// accessible than the pinned version below, which kept all three scenes
+// permanently mounted at the same stacked position regardless of visual
+// crossfade state (same "never toggle display/visibility/aria-hidden for
+// motion" principle, just backed by simpler, non-overlapping structure).
+function Section2Mobile() {
+  const shouldReduceMotion = useReducedMotion();
+  const [activeScene, setActiveScene] = useState(1);
+  const scene1Ref = useRef(null);
+  const scene2Ref = useRef(null);
+  const scene3Ref = useRef(null);
+
+  // Same rootMargin trick as Section 8's own scroll-spy: shrinks the
+  // observed viewport down to a single horizontal line at 50% height, so
+  // "isIntersecting" fires exactly when a card crosses the vertical
+  // center of the screen. Correct here (unlike an earlier draft of this
+  // component, which used natural-height cards and had to bias the
+  // trigger toward the top instead) because every card below is forced
+  // to min-h-dvh, so exactly one is ever near center at a time -- same
+  // precondition Section 8's own center-line trigger relies on.
+  useEffect(() => {
+    const keyByElement = new Map();
+    if (scene1Ref.current) keyByElement.set(scene1Ref.current, 1);
+    if (scene2Ref.current) keyByElement.set(scene2Ref.current, 2);
+    if (scene3Ref.current) keyByElement.set(scene3Ref.current, 3);
+    if (keyByElement.size === 0) return undefined;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const entered = entries.find((entry) => entry.isIntersecting);
+        if (entered) setActiveScene(keyByElement.get(entered.target));
+      },
+      { rootMargin: '-50% 0px -50% 0px', threshold: 0 },
+    );
+    keyByElement.forEach((_, el) => observer.observe(el));
+    return () => observer.disconnect();
+  }, []);
+
+  // A plain CSS opacity transition (not the pinned version's continuous
+  // scroll-scrubbed one) triggered by activeScene changing -- per direct
+  // request, a fade rather than a hard cut. Empty string under reduced
+  // motion so the swap is instant instead of transitioning.
+  const crossfadeClassName = shouldReduceMotion ? '' : 'transition-opacity duration-500';
+
+  return (
+    <section id="section-2" className="relative w-full bg-bg-blue">
+      <div className="relative grid w-full">
+        {/* Sticky background: three stacked layers (the same
+            SceneBackgroundPicture the pinned version below uses), only
+            the active scene's layer opaque, fading between them as
+            activeScene changes. No px-page-margin-x on this wrapper
+            (unlike the content column below) -- absolute inset-0
+            children of a positioned ancestor resolve against its BORDER
+            edge, not its padding edge (confirmed empirically, own
+            findings elsewhere in this codebase), so keeping this
+            wrapper padding-free is what makes the background actually
+            span 100% of the true viewport width edge to edge, matching
+            the pinned version's own full-bleed background (its own
+            padding sits on this same sticky element, but its bg
+            children are ALSO absolutely positioned, so they ignore it
+            the exact same way). bg-bg-blue on this wrapper is the
+            shared base color both Scene 1's and Scene 3's art are
+            dominant in (own comment on scene2BgOpacity below) -- the
+            linen-dark overlay only shows while Scene 2 itself is
+            active. */}
+        <div
+          className="pointer-events-none sticky top-0 z-0 flex h-dvh w-full items-center justify-center overflow-hidden bg-bg-blue"
+          style={{ gridArea: '1 / 1' }}
+        >
+          <div
+            aria-hidden="true"
+            className={`pointer-events-none absolute inset-0 bg-white-linen-200 ${crossfadeClassName}`}
+            style={{ opacity: activeScene === 2 ? 1 : 0 }}
+          />
+          <SceneBackgroundPicture
+            xl={bgScene1Xl}
+            l={bgScene1L}
+            m={bgScene1M}
+            xs={bgScene1Xs}
+            style={{ opacity: activeScene === 1 ? 1 : 0 }}
+            className={`pointer-events-none absolute inset-0 h-full w-full object-cover ${crossfadeClassName}`}
+          />
+          <SceneBackgroundPicture
+            xl={bgScene2Xl}
+            l={bgScene2L}
+            m={bgScene2M}
+            xs={bgScene2Xs}
+            style={{ opacity: activeScene === 2 ? 1 : 0 }}
+            className={`pointer-events-none absolute inset-0 h-full w-full object-cover ${crossfadeClassName}`}
+          />
+          <SceneBackgroundPicture
+            xl={bgScene3Xl}
+            l={bgScene3L}
+            m={bgScene3M}
+            xs={bgScene3Xs}
+            style={{ opacity: activeScene === 3 ? 1 : 0 }}
+            className={`pointer-events-none absolute inset-0 h-full w-full object-cover ${crossfadeClassName}`}
+          />
+        </div>
+
+        <div className="relative z-10 flex w-full flex-col items-center px-page-margin-x" style={{ gridArea: '1 / 1' }}>
+          {/* min-h-dvh + items-center/justify-center on each wrapper
+              (not the card itself) -- same shape as Section 8's own
+              introRef/card wrappers -- is what actually produces "Card 1
+              centered in the viewport on arrival": each card gets a full
+              viewport's worth of scroll room, centered within it, before
+              the next one starts sliding up underneath. */}
+          <div ref={scene1Ref} className="flex min-h-dvh w-full items-center justify-center py-page-margin-y">
+            <ScrollSection className="relative flex w-full rotate-1 flex-row items-center justify-center gap-s rounded-small bg-bg-white pb-s pl-s pr-l pt-s">
+              <Scene1Content holeColumnColor={activeScene === 1 ? '#1E79AE' : '#F3EEE8'} />
+            </ScrollSection>
+          </div>
+
+          <div ref={scene2Ref} className="flex min-h-dvh w-full items-center justify-center py-page-margin-y">
+            <ScrollSection className="relative w-full">
+              <TopBorderImage />
+              <div className="max-w-full bg-bg-white p-l">
+                <Scene2Content />
+              </div>
+            </ScrollSection>
+          </div>
+
+          <div ref={scene3Ref} className="flex min-h-dvh w-full items-center justify-center py-page-margin-y">
+            <div className="relative w-full">
+              <ScrollSection className="relative flex w-full rotate-[-1.5deg] flex-col items-center justify-start gap-s rounded-small bg-bg-white p-l">
+                <Scene3Content />
+              </ScrollSection>
+              {/* Sibling of the card, not nested inside it -- a
+                  mix-blend-mode element whose ancestor has a transform
+                  (even just a static one, per Section 8's ContentColumn's
+                  own identical tape) renders with the wrong, un-blended
+                  flat color. Fixed position/rotation (not the pinned
+                  version's own rotatePointAround compensation below) --
+                  that math exists there to land the tape in the EXACT
+                  spot a nested tape would have, which only matters when
+                  matching a precisely-choreographed continuous
+                  animation; here it's just a decorative corner sticker,
+                  eyeballed like Section 8's own tape. */}
+              <img
+                src={greenScotchTape}
+                alt=""
+                aria-hidden="true"
+                className="pointer-events-none absolute origin-top-left rotate-[4deg] mix-blend-multiply"
+                style={{ width: '133px', height: '36px', right: '-3px', top: '-21.5px' }}
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function Section2Desktop() {
   const prefersReducedMotion = useReducedMotion();
 
   const wrapperRef = useRef(null);
@@ -553,4 +730,14 @@ export default function Section2() {
       </div>
     </section>
   );
+}
+
+// S gets its own genuinely different interaction (Section2Mobile's own
+// comment); M/L/XL keep the pinned scroll-jack above completely
+// unchanged. Same split-component convention as Section 3/16's own
+// tier-specific branches elsewhere in this codebase, rather than one
+// component whose JSX branches conditionally while sharing hooks.
+export default function Section2() {
+  const isAtLeastSm = useMediaQuery('(min-width: 640px)');
+  return isAtLeastSm ? <Section2Desktop /> : <Section2Mobile />;
 }
