@@ -188,7 +188,7 @@ export default function Section13() {
         // own comment for why: `hidden` on one axis alone silently
         // auto-pairs the other to `auto`, turning this into its own
         // nested scroll container.
-        className="relative flex h-dvh w-full flex-col items-start justify-start overflow-x-clip bg-bg-blue px-page-margin-x pt-page-margin-y"
+        className="relative flex min-h-dvh w-full flex-col items-start justify-start overflow-x-clip bg-bg-blue px-page-margin-x pt-page-margin-y"
       >
         {/* w-[360px] max-w-full (not S's w-full): the reference SVG's
             own pink box is a fixed 480px, well short of full-width
@@ -246,7 +246,7 @@ export default function Section13() {
   return (
     <section
       id="section-13"
-      className="relative flex h-dvh w-full items-start justify-between bg-bg-blue px-page-margin-x"
+      className="relative flex min-h-dvh w-full items-start justify-between bg-bg-blue px-page-margin-x"
     >
       {/* Shared positioning context for the left column and the
           bottom-left illustration -- the illustration needs to anchor to

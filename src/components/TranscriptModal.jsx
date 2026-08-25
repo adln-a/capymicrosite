@@ -141,7 +141,7 @@ export default function TranscriptModal({ isOpen, onClose, subtitle, transcript 
                   {subtitle}
                 </h3>
               )}
-              <p ref={transcriptRef} tabIndex={0} className="body-paragraph self-stretch text-body-default">
+              <p ref={transcriptRef} tabIndex={0} className="body-paragraph whitespace-pre-line self-stretch text-body-default">
                 {transcript}
               </p>
             </div>

@@ -58,7 +58,7 @@ const SET_DESIGN = [
 function getSet(number) {
   const design = SET_DESIGN.find((s) => s.number === number);
   const text = content[String(number)] ?? {};
-  return { ...design, assumption: text.assumption ?? '', reality: text.reality ?? '', quote: text.quote ?? '', audioSrc: text.audioSrc ?? '' };
+  return { ...design, assumption: text.assumption ?? '', reality: text.reality ?? '', quote: text.quote ?? '', transcript: text.transcript, audioSrc: text.audioSrc ?? '' };
 }
 
 // Card shells share the same shape/animation, just their content and
@@ -530,7 +530,8 @@ function QuoteCard({ set, shouldReduceMotion, revealOnScroll = false, widthClass
       <TranscriptModal
         isOpen={isTranscriptOpen}
         onClose={() => setIsTranscriptOpen(false)}
-        subtitle={`Set ${set.number}: what was said`}
+        subtitle={`“${set.quote}”`}
+        transcript={set.transcript}
         triggerRef={transcriptButtonRef}
       />
     </motion.div>

@@ -736,7 +736,7 @@ export default function Section6() {
     return (
       <section
         id="section-6"
-        className="relative flex h-dvh w-full items-center justify-start overflow-hidden bg-chateau-green-600 px-page-margin-x"
+        className="relative flex min-h-dvh w-full items-center justify-start overflow-hidden bg-chateau-green-600 px-page-margin-x py-page-margin-y"
       >
         <div className="relative flex w-full items-center justify-start content-cap">
           <CardColumn
@@ -765,7 +765,7 @@ export default function Section6() {
       // in the white/pink cards on top of it), so there's no contrast
       // reason for it to have shifted, and the original -600 still looks
       // right here.
-      className="relative flex h-dvh w-full items-center justify-start overflow-hidden bg-chateau-green-600 px-page-margin-x"
+      className="relative flex min-h-dvh w-full items-center justify-start overflow-hidden bg-chateau-green-600 px-page-margin-x py-page-margin-y"
     >
       {/* Card column (480px) + FallingScene (660px) sit side by side with
           no gap, totaling exactly 1140px -- the section itself is

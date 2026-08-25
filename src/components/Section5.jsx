@@ -85,7 +85,7 @@ export default function Section5() {
   return (
     <section
       id="section-5"
-      className="relative flex w-full items-center justify-center bg-bg-pink px-page-margin-x py-page-margin-y sm:h-dvh"
+      className="relative flex w-full items-center justify-center bg-bg-pink px-page-margin-x py-page-margin-y sm:min-h-dvh"
     >
       {/* Outer content width: full width below sm -- both the card and the
           illustration fill 100% of the available viewport width on mobile
@@ -103,17 +103,21 @@ export default function Section5() {
           640px card and a 720px illustration within it, same as M, just
           with that extra shared frame added around both).
 
-          sm:h-dvh (not unconditional h-dvh): below sm, this section's
-          content can run taller than one viewport at narrow widths (the
-          heading wraps more, and the illustration + card both stack at
-          full width) -- h-dvh at every size would clip that instead of
-          letting the section hug its own content, same fix as Section 3.
-          py-page-margin-y (64px at S, growing at wider tiers) gives it
-          breathing room in that hugged state.
+          sm:min-h-dvh (not unconditional min-h-dvh, and not h-dvh): below
+          sm, this section's content can run taller than one viewport at
+          narrow widths (the heading wraps more, and the illustration +
+          card both stack at full width) -- a fixed height at every size
+          would clip that instead of letting the section hug its own
+          content, same fix as Section 3. min- (not a hard h-dvh cap) so
+          that above sm, content that needs more than one viewport's worth
+          of height at high zoom/reflow still grows the section instead of
+          clipping, rather than assuming the M/L/XL layouts always fit
+          exactly one screen. py-page-margin-y (64px at S, growing at
+          wider tiers) gives it breathing room in that hugged state.
 
           justify-start (base) + self-stretch is a real bug at M: self-
-          stretch makes this wrapper fill the section's ENTIRE h-dvh
-          cross-space (not just its own content height), so the section's
+          stretch makes this wrapper fill the section's ENTIRE cross-space
+          (not just its own content height), so the section's
           own items-center has nothing left to center -- it's already
           looking at a full-height child. justify-start then packs this
           wrapper's own children (the card group + illustration) against

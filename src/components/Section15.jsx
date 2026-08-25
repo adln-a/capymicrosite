@@ -58,7 +58,7 @@ export default function Section15() {
   return (
     <section
       id="section-15"
-      className="relative flex h-dvh w-full flex-col items-center justify-center gap-2xl bg-bg-bright-green px-page-margin-x"
+      className="relative flex min-h-dvh w-full flex-col items-center justify-center gap-2xl bg-bg-bright-green px-page-margin-x py-page-margin-y"
     >
       {/* Single heading, not the export's split "Products alone.../PEOPLE
           row/do." divs -- natural wrapping instead of a forced line break,

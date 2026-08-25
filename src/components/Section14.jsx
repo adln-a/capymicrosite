@@ -211,7 +211,7 @@ export default function Section14() {
   return (
     <section
       id="section-14"
-      className="relative flex h-dvh w-full flex-col items-end justify-center bg-[#FFBFC3] px-page-margin-x"
+      className="relative flex min-h-dvh w-full flex-col items-end justify-center bg-[#FFBFC3] px-page-margin-x py-page-margin-y"
     >
       {/* items-start: only the illustration below hugs the right edge
           (via its own self-end) -- the top row and red card stay

@@ -44,7 +44,7 @@ export default function Section10() {
   return (
     <section
       id="section-10"
-      className="relative flex h-dvh w-full flex-col items-center justify-center bg-bg-yellow px-page-margin-x"
+      className="relative flex min-h-dvh w-full flex-col items-center justify-center bg-bg-yellow px-page-margin-x py-page-margin-y"
     >
       <ScrollSection className="flex w-full origin-top-left -rotate-1 flex-col items-start justify-start sm:w-auto">
         {/* sm:w-[560px] lg:w-[640px]: was a flat sm:w-[640px] covering

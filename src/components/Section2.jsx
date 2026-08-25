@@ -1,8 +1,7 @@
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { motion, useReducedMotion, useScroll, useTransform } from 'framer-motion';
+import { useEffect, useRef, useState } from 'react';
+import { motion, useReducedMotion } from 'framer-motion';
 import ScrollSection from './ScrollSection.jsx';
 import AccessibleHighlightText from './AccessibleHighlightText.jsx';
-import useMediaQuery from '../hooks/useMediaQuery.js';
 import bgScene1Xl from '../assets/Desktop-BG--Frame-2.svg';
 import bgScene1L from '../assets/l/L--BG-Frame2.svg';
 import bgScene1M from '../assets/m/M--BG-Frame2.svg';
@@ -21,15 +20,6 @@ import paperClip from '../assets/Paper-Clip.png';
 import paperClipBlack from '../assets/Paper-Clip-Black.png';
 import paperBorderTop from '../assets/Paper-Border-Top.png';
 import greenScotchTape from '../assets/Green-Scotch-Tape.svg';
-
-// Two crossfade windows: Scene 1 -> Scene 2 (background + card), then
-// Scene 2 -> Scene 3, further down the same scroll wrapper. Everything
-// within a window reads as one coordinated transition rather than several
-// independently-timed effects.
-const TRANSITION_1_START = 0.4;
-const TRANSITION_1_END = 0.6;
-const TRANSITION_2_START = 0.7;
-const TRANSITION_2_END = 0.9;
 
 // Same breakpoint-swap technique as Section 1's background (640/992/1200,
 // matching sm/lg/xl) -- <picture> picks ONE matching source rather than
@@ -237,61 +227,16 @@ function Scene3Content() {
   );
 }
 
-// Extracted out of Scene3Content so it isn't nested inside the card's own
-// opacity-animating wrapper -- mix-blend-multiply can't correctly composite
-// against an ancestor whose opacity/transform is actively tweening or even
-// just statically present (same isolated-compositing-layer issue as
-// Section 1/6's tapes), and Scene 3's own crossfade-in is exactly that kind
-// of tween. Rendered as a sibling instead, driven by the same opacity value
-// so it still fades in in lockstep with the rest of the card.
-//
-// The card itself keeps its own default-center-origin rotate(-1.5deg)
-// completely unchanged (it's the tape's SIBLING here, not its ancestor, so
-// the card's own transform can't isolate the tape) -- but since the tape is
-// no longer riding along with that rotation as a nested child, it needs its
-// own compensated position + rotation to land in exactly the same on-screen
-// spot: `rotate` is the composed angle (originally 4deg nested inside a
-// -1.5deg card == 2.5deg standalone), and `left`/`top` are the original
-// (510, -21.5) offset rotated by -1.5deg around the CARD'S OWN CENTER
-// (its default transform-origin -- unlike Section 1/8/13/14's boxes, this
-// card was never given origin-top-left) -- see scene3TapePosition below,
-// computed from the card's actual rendered size (via scene3Width/
-// scene3Height) rather than assumed, since it's not a fixed height.
-function Scene3Tape({ opacity, left, top, rotate }) {
-  return (
-    <motion.img
-      src={greenScotchTape}
-      alt=""
-      aria-hidden="true"
-      className="pointer-events-none absolute origin-top-left mix-blend-multiply"
-      style={{ width: '133px', height: '36px', left: `${left}px`, top: `${top}px`, rotate: `${rotate}deg`, opacity }}
-    />
-  );
-}
-
-// Rotates point (x, y) by angleDeg (CSS's clockwise-positive convention)
-// around (cx, cy), returning the new top-left position for an element that
-// keeps the same own-rotation origin-top-left afterward.
-function rotatePointAround(x, y, cx, cy, angleDeg) {
-  const rad = (angleDeg * Math.PI) / 180;
-  const cos = Math.cos(rad);
-  const sin = Math.sin(rad);
-  const dx = x - cx;
-  const dy = y - cy;
-  return {
-    x: cx + dx * cos - dy * sin,
-    y: cy + dx * sin + dy * cos,
-  };
-}
-
-// S only: replaces the h-[300vh] scroll-jack + continuous scrollYProgress
-// scrubbing below with the same plain-position:sticky-background +
-// IntersectionObserver pattern Section 8's own S/M layout uses --
-// useScroll/useTransform recompute continuously on every scroll frame
-// regardless of visibility, real main-thread work competing with the
-// scroll compositor the whole time the section is pinned; an
-// IntersectionObserver callback only fires on actual enter/exit, not per
-// scroll pixel.
+// Replaces the old h-[300vh] scroll-jack + continuous scrollYProgress
+// scrubbing (pinned crossfade) with a plain position:sticky background +
+// IntersectionObserver pattern, same as Section 8's own -- useScroll/
+// useTransform recompute continuously on every scroll frame regardless of
+// visibility, real main-thread work competing with the scroll compositor
+// the whole time the section is pinned; an IntersectionObserver callback
+// only fires on actual enter/exit, not per scroll pixel. Used at every
+// breakpoint (S/M/L/XL alike) -- this used to be S-only, with M/L/XL kept
+// on the old pinned crossfade, but that was jankier everywhere, not just
+// mobile Safari, so there's no longer a reason to keep two interactions.
 //
 // Each scene is its own min-h-dvh block (own comment below) -- Card 1
 // centered in the viewport on arrival, background snapped (a hard cut,
@@ -307,12 +252,9 @@ function rotatePointAround(x, y, cx, cy, angleDeg) {
 // are no dead zones to begin with.
 //
 // Every scene's real text is already, always in the DOM in natural
-// reading order here -- if anything this is MORE straightforwardly
-// accessible than the pinned version below, which kept all three scenes
-// permanently mounted at the same stacked position regardless of visual
-// crossfade state (same "never toggle display/visibility/aria-hidden for
-// motion" principle, just backed by simpler, non-overlapping structure).
-function Section2Mobile() {
+// reading order here -- straightforwardly accessible without ever
+// toggling display/visibility/aria-hidden for motion.
+export default function Section2() {
   const shouldReduceMotion = useReducedMotion();
   const [activeScene, setActiveScene] = useState(1);
   const scene1Ref = useRef(null);
@@ -354,24 +296,18 @@ function Section2Mobile() {
   return (
     <section id="section-2" className="relative w-full bg-bg-blue">
       <div className="relative grid w-full">
-        {/* Sticky background: three stacked layers (the same
-            SceneBackgroundPicture the pinned version below uses), only
-            the active scene's layer opaque, fading between them as
+        {/* Sticky background: three stacked SceneBackgroundPicture layers,
+            only the active scene's layer opaque, fading between them as
             activeScene changes. No px-page-margin-x on this wrapper
             (unlike the content column below) -- absolute inset-0
             children of a positioned ancestor resolve against its BORDER
             edge, not its padding edge (confirmed empirically, own
             findings elsewhere in this codebase), so keeping this
             wrapper padding-free is what makes the background actually
-            span 100% of the true viewport width edge to edge, matching
-            the pinned version's own full-bleed background (its own
-            padding sits on this same sticky element, but its bg
-            children are ALSO absolutely positioned, so they ignore it
-            the exact same way). bg-bg-blue on this wrapper is the
-            shared base color both Scene 1's and Scene 3's art are
-            dominant in (own comment on scene2BgOpacity below) -- the
-            linen-dark overlay only shows while Scene 2 itself is
-            active. */}
+            span 100% of the true viewport width edge to edge. bg-bg-blue
+            on this wrapper is the shared base color both Scene 1's and
+            Scene 3's art are dominant in -- the linen-dark overlay only
+            shows while Scene 2 itself is active. */}
         <div
           className="pointer-events-none sticky top-0 z-0 flex h-dvh w-full items-center justify-center overflow-hidden bg-bg-blue"
           style={{ gridArea: '1 / 1' }}
@@ -415,13 +351,13 @@ function Section2Mobile() {
               viewport's worth of scroll room, centered within it, before
               the next one starts sliding up underneath. */}
           <div ref={scene1Ref} className="flex min-h-dvh w-full items-center justify-center py-page-margin-y">
-            <ScrollSection className="relative flex w-full rotate-1 flex-row items-center justify-center gap-s rounded-small bg-bg-white pb-s pl-s pr-l pt-s">
+            <ScrollSection className="relative flex w-full rotate-1 flex-row items-center justify-center gap-s rounded-small bg-bg-white pb-s pl-s pr-l pt-s sm:w-[560px]">
               <Scene1Content holeColumnColor={activeScene === 1 ? '#1E79AE' : '#F3EEE8'} />
             </ScrollSection>
           </div>
 
           <div ref={scene2Ref} className="flex min-h-dvh w-full items-center justify-center py-page-margin-y">
-            <ScrollSection className="relative w-full">
+            <ScrollSection className="relative w-full sm:w-[560px]">
               <TopBorderImage />
               <div className="max-w-full bg-bg-white p-l">
                 <Scene2Content />
@@ -430,7 +366,7 @@ function Section2Mobile() {
           </div>
 
           <div ref={scene3Ref} className="flex min-h-dvh w-full items-center justify-center py-page-margin-y">
-            <div className="relative w-full">
+            <div className="relative w-full sm:w-[560px]">
               <ScrollSection className="relative flex w-full rotate-[-1.5deg] flex-col items-center justify-start gap-s rounded-small bg-bg-white p-l">
                 <Scene3Content />
               </ScrollSection>
@@ -438,13 +374,11 @@ function Section2Mobile() {
                   mix-blend-mode element whose ancestor has a transform
                   (even just a static one, per Section 8's ContentColumn's
                   own identical tape) renders with the wrong, un-blended
-                  flat color. Fixed position/rotation (not the pinned
-                  version's own rotatePointAround compensation below) --
-                  that math exists there to land the tape in the EXACT
-                  spot a nested tape would have, which only matters when
-                  matching a precisely-choreographed continuous
-                  animation; here it's just a decorative corner sticker,
-                  eyeballed like Section 8's own tape. */}
+                  flat color. Fixed position/rotation, eyeballed like
+                  Section 8's own tape -- `right` (not `left`) keeps the
+                  same intentional 3px overhang past the card's right edge
+                  at any width, same as the card itself being responsive
+                  (w-full below sm, capped at 560px from sm up). */}
               <img
                 src={greenScotchTape}
                 alt=""
@@ -460,284 +394,3 @@ function Section2Mobile() {
   );
 }
 
-function Section2Desktop() {
-  const prefersReducedMotion = useReducedMotion();
-
-  const wrapperRef = useRef(null);
-  const stackRef = useRef(null);
-  const scene2Ref = useRef(null);
-  const scene3Ref = useRef(null);
-  const [scene2Height, setScene2Height] = useState(0);
-  const [scene3Height, setScene3Height] = useState(0);
-  const [scene3Width, setScene3Width] = useState(0);
-  const [cardGap, setCardGap] = useState(0);
-
-  const { scrollYProgress } = useScroll({
-    target: wrapperRef,
-    offset: ['start start', 'end end'],
-  });
-
-  // Scene 2 and Scene 3's rendered heights are measured, not guessed, so the
-  // amount each earlier card needs to shift up by stays correct regardless
-  // of how tall their actual content turns out to be. cardGap is read from
-  // the actual computed gap-l value (not hardcoded) so it stays correct
-  // even if that token's px value changes at a different breakpoint.
-  useLayoutEffect(() => {
-    function measure() {
-      setScene2Height(scene2Ref.current?.offsetHeight ?? 0);
-      setScene3Height(scene3Ref.current?.offsetHeight ?? 0);
-      setScene3Width(scene3Ref.current?.offsetWidth ?? 0);
-      setCardGap(stackRef.current ? parseFloat(getComputedStyle(stackRef.current).rowGap) || 0 : 0);
-    }
-    measure();
-
-    // Re-measure only on an actual WIDTH change -- everything measured
-    // above (card heights/widths, gap) depends on the cards' own content
-    // wrapping, which is driven by width, never by viewport height alone.
-    // A bare `resize` listener fires on ANY viewport dimension change,
-    // including height-only ones -- and mobile Safari's address bar
-    // collapsing/expanding AS YOU SCROLL (the exact browser behavior
-    // `dvh`, already used for this section's own pinned height, exists
-    // to track) fires exactly that: a height-only resize, mid-gesture.
-    // That was previously re-running measure()'s 4 setState calls (each
-    // preceded by a layout-forcing offsetHeight/offsetWidth read) on
-    // every toolbar transition while the user's finger was still moving
-    // -- a React re-render, forced synchronously ahead of it by those
-    // reads, right in the middle of this section's own scroll-driven
-    // animation. This is the one thing that's genuinely different about
-    // Section2 versus Section3/11/16's own pinned sections, none of which
-    // carry a window resize listener at all.
-    let lastWidth = window.innerWidth;
-    function handleResize() {
-      if (window.innerWidth === lastWidth) return;
-      lastWidth = window.innerWidth;
-      measure();
-    }
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
-
-  // The stack (Scene 1 + Scene 2 + Scene 3, in one normal flex column,
-  // gap-l between each pair) starts shifted down by half of everything
-  // below Scene 1 (Scene 2 + its gap + Scene 3 + its gap) -- exactly
-  // canceling that invisible-but-space-occupying content, so Scene 1 alone
-  // reads as centered at progress 0. During transition 1 it eases to a
-  // smaller shift that cancels only Scene 3 + its gap (centering the
-  // Scene 1 + Scene 2 pair once Scene 2 is visible), holds there through
-  // the plateau between the two transitions, then eases to 0 during
-  // transition 2 -- which is what actually reads as "Scene 1 and Scene 2
-  // continue rising" as Scene 3 fades in below them.
-  const stackY = useTransform(
-    scrollYProgress,
-    [TRANSITION_1_START, TRANSITION_1_END, TRANSITION_2_START, TRANSITION_2_END],
-    [(scene2Height + scene3Height + 2 * cardGap) / 2, (scene3Height + cardGap) / 2, (scene3Height + cardGap) / 2, 0],
-  );
-  const scene2Opacity = useTransform(scrollYProgress, [TRANSITION_1_START, TRANSITION_1_END], [0, 1]);
-  const scene3Opacity = useTransform(scrollYProgress, [TRANSITION_2_START, TRANSITION_2_END], [0, 1]);
-  // Background-image/color opacities. Scene 2's rises during transition 1
-  // and falls again during transition 2 (a plateau at 1 in between) --
-  // both the Frame-2B image and the linen color-overlay div reuse this
-  // same value, so once Scene 3 is fully in, the linen overlay has receded
-  // back to 0, revealing the sticky container's own bg-bg-blue base
-  // underneath -- which conveniently matches Frame-2C's own blue-dominant
-  // tone, so no third color layer is needed. Scene 1's and Scene 3's
-  // background images only ever do one fade each, in their own window.
-  const scene2BgOpacity = useTransform(
-    scrollYProgress,
-    [TRANSITION_1_START, TRANSITION_1_END, TRANSITION_2_START, TRANSITION_2_END],
-    [0, 1, 1, 0],
-  );
-  const scene1BgOpacity = useTransform(scrollYProgress, [TRANSITION_1_START, TRANSITION_1_END], [1, 0]);
-  const scene3BgOpacity = useTransform(scrollYProgress, [TRANSITION_2_START, TRANSITION_2_END], [0, 1]);
-  // Scene 1's own hole column: starts matching Scene 1's background
-  // (--color-bg-blue, #1E79AE) and crossfades to Scene 2's background
-  // (--color-bg-linen-dark, #F3EEE8) -- hardcoded hex since framer-motion
-  // needs literal color strings to interpolate, not CSS var references;
-  // keep in sync if those tokens change. Scene 1's card stays visible
-  // (shifted up, not faded out) throughout the transition, so its holes
-  // need to track the current background too, same as the seam holes do.
-  // It does not revert for Scene 3 -- by then Scene 1's card is far above
-  // the current action, and ping-ponging its color back and forth wasn't
-  // asked for and would look odd.
-  const holeColumnColor = useTransform(scrollYProgress, [TRANSITION_1_START, TRANSITION_1_END], ['#1E79AE', '#F3EEE8']);
-
-  // Scene 3's card rotates -1.5deg around its own CENTER (its default
-  // transform-origin -- it was never given origin-top-left), so the tape's
-  // compensated position depends on the card's actual rendered size, not a
-  // guessed constant -- see Scene3Tape's own comment for why this
-  // compensation is needed at all.
-  //
-  // The un-rotated x anchor is `scene3Width - 130`, not a flat 510 --
-  // 510 was only ever correct at the old constant 640px card width, where
-  // it put the 133px-wide tape 3px past the right edge (510+133-640=3),
-  // matching the intentional overhang built into the original design
-  // (see the reduced-motion fallback's own tape, which keeps that same
-  // 3px overhang via `right: -3px`). Since the card's width is now
-  // responsive, deriving x from the CURRENT scene3Width the same way
-  // (x = width - tapeWidth + 3 = width - 130) keeps that same edge
-  // overhang at any width instead of the tape drifting off past a
-  // narrower card's actual right edge.
-  const scene3TapePosition = useMemo(
-    () => rotatePointAround(scene3Width - 130, -21.5, scene3Width / 2, scene3Height / 2, -1.5),
-    [scene3Width, scene3Height],
-  );
-
-  if (prefersReducedMotion) {
-    // No pin, no scroll-scrub: all three cards stacked in normal flow,
-    // existing whileInView fade-up per card, static background. Frame-2C
-    // (Scene 3's, blue-dominant per the reference) is used as the static
-    // backdrop since all three cards are permanently visible together here
-    // -- an inference, not explicitly specified either way. Scene 1's
-    // holeColumnColor is set to blue to match this backdrop, rather than
-    // the linen-dark used in the two-scene version of this fallback.
-    return (
-      <section id="section-2" className="relative flex h-dvh w-full flex-col items-center justify-center gap-m overflow-hidden bg-bg-blue px-page-margin-x">
-        <SceneBackgroundPicture
-          xl={bgScene3Xl}
-          l={bgScene3L}
-          m={bgScene3M}
-          xs={bgScene3Xs}
-          className="pointer-events-none absolute inset-0 h-full w-full object-cover"
-        />
-        {/* content-cap: site-wide desktop content cap -- its own mx-auto
-            is redundant here (this wrapper's parent is already flex-col
-            items-center, which centers it regardless of width) but
-            harmless, so the shared class is used as-is rather than a
-            one-off variant without margin-inline. */}
-        <div className="relative flex flex-col items-center gap-xs content-cap">
-          <ScrollSection className="relative flex w-full rotate-1 flex-row items-center justify-center gap-s rounded-small bg-bg-white pb-s pl-s pr-l pt-s sm:w-[560px]">
-            <Scene1Content holeColumnColor="#1E79AE" />
-          </ScrollSection>
-          <ScrollSection className="relative w-full sm:w-[560px]">
-            <TopBorderImage />
-            <div className="max-w-full bg-bg-white p-l">
-              <Scene2Content />
-            </div>
-          </ScrollSection>
-          {/* Reduced motion: ScrollSection is inert here (no animation is
-              ever applied under prefers-reduced-motion), so there's no
-              actively-tweening ancestor to isolate the tape from anything
-              -- it can stay nested exactly like the original design,
-              rotating together with the card as one rigid unit, no
-              compensation needed. `right` (not `left`): the card's own
-              width is now responsive (w-full below sm, 560px from sm up),
-              and the original left:510px was only ever correct at the old
-              constant 640px width -- it already intentionally overhung the
-              card's right edge by 3px there (510+133-640=3), so anchoring
-              from the right edge at that same -3px keeps the same
-              intentional overhang at ANY width instead of overshooting
-              further as the card narrows. */}
-          <ScrollSection className="relative flex w-full rotate-[-1.5deg] flex-col items-center justify-start gap-s rounded-small bg-bg-white p-l sm:w-[560px]">
-            <img
-              src={greenScotchTape}
-              alt=""
-              aria-hidden="true"
-              className="pointer-events-none absolute origin-top-left rotate-[4deg] mix-blend-multiply"
-              style={{ width: '133px', height: '36px', right: '-3px', top: '-21.5px' }}
-            />
-            <Scene3Content />
-          </ScrollSection>
-        </div>
-      </section>
-    );
-  }
-
-  return (
-    <section id="section-2" ref={wrapperRef} className="relative h-[300vh]">
-      <div className="sticky top-0 flex h-dvh w-full flex-col items-center justify-center gap-m overflow-hidden bg-bg-blue px-page-margin-x">
-        {/* Background color crossfade: bg-bg-blue (the container's own
-            class, always present underneath) -> bg-white-linen-200 (this
-            overlay, rising then receding again as Scene 3 activates --
-            see scene2BgOpacity's own comment). */}
-        <motion.div
-          aria-hidden="true"
-          style={{ opacity: scene2BgOpacity }}
-          className="pointer-events-none absolute inset-0 bg-white-linen-200"
-        />
-
-        {/* Background image crossfade, three layers. Scene 1's and Scene 2's
-            images each also fade OUT (not left permanently opaque) --
-            Frame-2B.svg and Frame-2C.svg each have their own transparent
-            regions in places, so leaving an earlier layer opaque
-            underneath would let it visibly bleed through those gaps even
-            after its own crossfade "completes". */}
-        <SceneBackgroundPicture
-          xl={bgScene1Xl}
-          l={bgScene1L}
-          m={bgScene1M}
-          xs={bgScene1Xs}
-          style={{ opacity: scene1BgOpacity }}
-          className="pointer-events-none absolute inset-0 h-full w-full object-cover"
-        />
-        <SceneBackgroundPicture
-          xl={bgScene2Xl}
-          l={bgScene2L}
-          m={bgScene2M}
-          xs={bgScene2Xs}
-          style={{ opacity: scene2BgOpacity }}
-          className="pointer-events-none absolute inset-0 h-full w-full object-cover"
-        />
-        <SceneBackgroundPicture
-          xl={bgScene3Xl}
-          l={bgScene3L}
-          m={bgScene3M}
-          xs={bgScene3Xs}
-          style={{ opacity: scene3BgOpacity }}
-          className="pointer-events-none absolute inset-0 h-full w-full object-cover"
-        />
-
-        {/* content-cap: site-wide desktop content cap -- its own mx-auto
-            is redundant here (this wrapper's parent, the sticky
-            container above, is already flex-col items-center) but
-            harmless, same as Scene 1's own wrapper above. */}
-        <div className="relative flex justify-center content-cap">
-          <motion.div ref={stackRef} style={{ y: stackY }} className="flex flex-col items-center gap-xs">
-            <motion.div className="relative flex w-full rotate-1 flex-row items-center justify-center gap-s rounded-small bg-bg-white pb-s pl-s pr-l pt-s sm:w-[560px]">
-              <Scene1Content holeColumnColor={holeColumnColor} />
-            </motion.div>
-
-            <motion.div ref={scene2Ref} style={{ opacity: scene2Opacity }} className="relative w-full sm:w-[560px]">
-              <TopBorderImage />
-              <div className="max-w-full bg-bg-white p-l">
-                <Scene2Content />
-              </div>
-            </motion.div>
-
-            {/* No authored gap between Card 2 and this card -- the visible
-                seam is an emergent side effect of Card 2 being unrotated
-                and this card's own rotate(-1.5deg) (default center
-                transform-origin). This wrapper deliberately carries NO
-                transform of its own (see Scene3Tape's comment on why) --
-                the card keeps its rotate directly on itself, exactly as
-                before. */}
-            <div className="relative w-full sm:w-[560px]">
-              <motion.div
-                ref={scene3Ref}
-                style={{ opacity: scene3Opacity, rotate: -1.5 }}
-                className="w-full origin-center flex flex-col items-center justify-start gap-s rounded-small bg-bg-white p-l"
-              >
-                <Scene3Content />
-              </motion.div>
-              <Scene3Tape
-                opacity={scene3Opacity}
-                left={scene3TapePosition.x}
-                top={scene3TapePosition.y}
-                rotate={2.5}
-              />
-            </div>
-          </motion.div>
-        </div>
-      </div>
-    </section>
-  );
-}
-
-// S gets its own genuinely different interaction (Section2Mobile's own
-// comment); M/L/XL keep the pinned scroll-jack above completely
-// unchanged. Same split-component convention as Section 3/16's own
-// tier-specific branches elsewhere in this codebase, rather than one
-// component whose JSX branches conditionally while sharing hooks.
-export default function Section2() {
-  const isAtLeastSm = useMediaQuery('(min-width: 640px)');
-  return isAtLeastSm ? <Section2Desktop /> : <Section2Mobile />;
-}

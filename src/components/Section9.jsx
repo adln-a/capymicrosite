@@ -12,26 +12,31 @@ import slide5 from '../assets/section-9/Capy-Slide-Item-5.jpg';
 
 // alt text transcribed directly from each screenshot's own on-screen
 // content (verified by reading the actual images, not placeholder text).
+// Deliberately doesn't lead with "Laptop screen showing" -- the section's
+// own "Capy Activity Hub" heading already establishes these are app
+// screenshots, and repeating that same lead-in 5 times in a row through a
+// screen reader (one slide after another in this carousel) reads like a
+// stutter/stuck-loop error rather than 5 distinct images.
 const SLIDES = [
   {
     src: slide1,
-    alt: "Laptop screen showing Capy's credit system explainer page, alongside activity listings including ZooKeeper for a Day and Paper Marbling on a Rooftop Garden.",
+    alt: "Capy's credit system explainer page, alongside activity listings including ZooKeeper for a Day and Paper Marbling on a Rooftop Garden.",
   },
   {
     src: slide2,
-    alt: "Laptop screen showing Capy's Browse Activities page with category filters and activity cards for Super Kids Sports Mash-up, Paper Marbling on a Rooftop Garden, and ZooKeeper for a Day.",
+    alt: "Capy's Browse Activities page with category filters and activity cards for Super Kids Sports Mash-up, Paper Marbling on a Rooftop Garden, and ZooKeeper for a Day.",
   },
   {
     src: slide3,
-    alt: "Laptop screen showing Capy's Pick a Plan page with a 'Get 1 month FREE!' offer, next to a photo of a family playing together in an indoor ball-pit playground.",
+    alt: "Capy's Pick a Plan page with a 'Get 1 month FREE!' offer, next to a photo of a family playing together in an indoor ball-pit playground.",
   },
   {
     src: slide4,
-    alt: "Laptop screen showing Capy's Available Plans page listing four membership tiers, from a free plan to a 50-credit SGD 20 per month plan.",
+    alt: "Capy's Available Plans page listing four membership tiers, from a free plan to a 50-credit SGD 20 per month plan.",
   },
   {
     src: slide5,
-    alt: "Laptop screen showing Capy's homepage with the headline 'Find your perfect adventure!' alongside photos of children ziplining, crafting, and playing with toy blasters.",
+    alt: "Capy's homepage with the headline 'Find your perfect adventure!' alongside photos of children ziplining, crafting, and playing with toy blasters.",
   },
 ];
 

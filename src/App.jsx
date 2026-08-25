@@ -43,19 +43,24 @@ export default function App() {
           scroll jump + focus move already are). */}
       <a
         href="#main-content"
-        className="sr-only focus:not-sr-only focus:fixed focus:left-s focus:top-s focus:z-50 focus:rounded-medium focus:bg-button-primary-orange focus:px-m focus:py-s focus:text-button-inverted focus:shadow-[0_8px_16px_rgba(0,0,0,0.08)]"
+        className="sr-only focus:not-sr-only button-default focus:fixed focus:left-s focus:top-s focus:z-50 focus:inline-flex focus:cursor-pointer focus:items-center focus:gap-2xs focus:rounded-large focus:bg-button-primary-orange focus:px-m focus:py-s focus:text-button-inverted focus:shadow-[0_8px_16px_rgba(0,0,0,0.08)]"
       >
         Skip to content
       </a>
       <Navigation sentinelRef={sentinelRef} mainRef={mainRef} activeSection={activeSection} />
       <main ref={mainRef} id="main-content" tabIndex={-1} className="focus:outline-none">
         {/* Nav-collapse sentinel: zero visual presence, exists purely for
-            Navigation's IntersectionObserver to watch. Rendered as the true
-            first element on the page (before Section 1's own padding takes
-            effect) so it sits right at the top of the page/nav area -- the
-            instant it scrolls out of the viewport, Navigation swaps to the
-            hamburger toggle. */}
-        <div ref={sentinelRef} aria-hidden="true" style={{ height: 1 }} />
+            Navigation's IntersectionObserver to watch. position:absolute
+            (not a normal-flow block) -- IntersectionObserver only cares
+            about this element's own geometry, not its effect on layout,
+            so taking it out of flow avoids it reserving a real 1px of
+            page height (visible as a seam above Section 1 at high zoom,
+            where 1px renders several px tall). No positioned ancestor
+            between this and the page root, so top:0/left:0 still pins it
+            to the true top of the page/nav area, same spot as before --
+            the instant it scrolls out of the viewport, Navigation swaps
+            to the hamburger toggle. */}
+        <div ref={sentinelRef} aria-hidden="true" style={{ position: 'absolute', top: 0, left: 0, height: 1 }} />
         <Section1 sectionRef={heroRef} />
         <Section2 />
         <Section3 />

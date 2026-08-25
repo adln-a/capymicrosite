@@ -151,7 +151,7 @@ export default function Section1({ sectionRef }) {
     <section
       ref={sectionRef}
       id="section-1"
-      className="relative flex h-dvh items-center bg-white-linen-200"
+      className="relative flex min-h-dvh items-center bg-white-linen-200"
     >
       {/* Background image layer, sitting on top of the section's own
           bg-white-linen-200 color and behind everything else. As the
@@ -195,15 +195,15 @@ export default function Section1({ sectionRef }) {
         />
       </picture>
 
-      {/* px-page-margin-x lives here (not on the section itself) so the
-          background image above -- absolute inset-0 relative to this
-          section's padding box -- stays full-bleed edge-to-edge instead of
-          getting inset by the same horizontal padding. content-cap: the
-          site-wide desktop content cap -- caps this wrapper (and
-          everything inside it) at 1140px from 1200px up, centered,
-          regardless of what fixed widths the cards inside already use on
-          their own. */}
-      <div className="relative flex w-full flex-col items-center content-cap px-page-margin-x">
+      {/* px-page-margin-x/py-page-margin-y live here (not on the section
+          itself) so the background image above -- absolute inset-0
+          relative to this section's padding box -- stays full-bleed
+          edge-to-edge instead of getting inset by the same padding.
+          content-cap: the site-wide desktop content cap -- caps this
+          wrapper (and everything inside it) at 1140px from 1200px up,
+          centered, regardless of what fixed widths the cards inside
+          already use on their own. */}
+      <div className="relative flex w-full flex-col items-center content-cap px-page-margin-x py-page-margin-y">
         {/* Pink box (heading). Animates in first -- this ScrollSection uses
             the wrapper's own default transition (no delay). */}
         <ScrollSection className="flex w-[800px] max-w-full min-h-[200px] flex-wrap items-center justify-center gap-s rounded-medium bg-bg-pink p-s origin-top-left rotate-1 sm:w-[560px] lg:w-[var(--width-card-content-lg)]">
