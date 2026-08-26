@@ -121,7 +121,16 @@ function FlowChart({ activeKey }) {
       height="612"
       viewBox="0 0 518 612"
       fill="none"
-      className="block lg:h-auto lg:w-[420px] xl:h-auto xl:w-[518px]"
+      // max-h-full/max-w-full (unconditional, alongside the lg:/xl: width
+      // targets below): the chart's intended size is still 420px/518px
+      // wide at those breakpoints -- these maxes don't shrink it at any
+      // normal viewport, they're a fallback that only kicks in if the
+      // sticky column's own h-dvh ever renders shorter than the chart's
+      // own height (e.g. extreme browser zoom, where the effective
+      // viewport shrinks well below typical). max-width/max-height always
+      // win over an explicit width/height per the CSS spec, so this caps
+      // the chart without touching its normal lg:/xl: sizing.
+      className="block h-auto max-h-full w-auto max-w-full lg:w-[420px] xl:w-[518px]"
     >
       {NODES.map((node) => {
         const isActive = activeKey === null || activeKey === node.key;
@@ -178,10 +187,29 @@ function FlowChart({ activeKey }) {
  * 560), so this only actually engages in the M range it was reported
  * for. (Started at 720px -- still read as too large, brought down to
  * 560px.)
+ *
+ * h-full (not h-auto): h-auto only ever matches the chart's WIDTH to
+ * its container, then derives whatever height the aspect ratio implies
+ * -- never checking whether that height actually fits the sticky
+ * column's own h-dvh box. At a shrunk effective viewport (high browser
+ * zoom), that derived height ran taller than the box and got clipped
+ * by its overflow-hidden wrapper -- arrows pointing off-frame,
+ * "Non-profits" cut off mid-word. This <svg> has no intrinsic width/
+ * height attributes of its own (unlike FlowChart's img siblings), so
+ * the max-width/max-height-based fix used elsewhere on this page can't
+ * apply here the same way. Sizing the box to the FULL container on
+ * both axes and relying on preserveAspectRatio's default
+ * ("xMidYMid meet") is the SVG-native equivalent of object-fit:
+ * contain -- the artwork scales down to whichever axis (width or
+ * height) is actually the tighter constraint, never overflowing
+ * either one. At normal viewport heights (far taller than 560px-wide
+ * art needs), width stays the binding constraint and this renders
+ * identically to the old h-auto behavior -- height only ever takes
+ * over once the box is shorter than the art needs.
  */
 function MobileFlowChart({ activeKey }) {
   return (
-    <svg aria-hidden="true" viewBox="0 0 360.98 423.63" fill="none" className="block h-auto w-full max-w-[560px] mx-auto">
+    <svg aria-hidden="true" viewBox="0 0 360.98 423.63" fill="none" className="block h-full w-full max-w-[560px] mx-auto">
       {NODES.map((node) => {
         const isActive = activeKey === null || activeKey === node.key;
         const graphics = MOBILE_NODE_GRAPHICS[node.key];
@@ -488,7 +516,25 @@ export default function Section8() {
             className="pointer-events-none sticky top-0 z-0 flex h-dvh w-full items-center justify-center overflow-hidden"
             style={{ gridArea: '1 / 1' }}
           >
-            <img src={bgWhiteS} alt="" aria-hidden="true" width={361} height={480} className="block" />
+            {/* h-auto/max-h-full/w-auto/max-w-full (not just the bare
+                width/height attributes): those attributes alone render at
+                a literal fixed 361x480 CSS px regardless of viewport --
+                fine normally (smaller than any real viewport), but at
+                high browser zoom the effective dvh viewport shrinks well
+                below that, so the fixed-size image overflowed it and got
+                clipped by this wrapper's overflow-hidden, reading as an
+                edgeless white fill rather than a bounded blob. This caps
+                it to shrink (preserving aspect ratio) whenever the
+                container is smaller than its native size, at any zoom
+                level -- not just one specific percentage. */}
+            <img
+              src={bgWhiteS}
+              alt=""
+              aria-hidden="true"
+              width={361}
+              height={480}
+              className="block h-auto max-h-full w-auto max-w-full"
+            />
           </div>
 
           <div
@@ -529,7 +575,14 @@ export default function Section8() {
           className="pointer-events-none sticky top-0 z-0 flex h-dvh items-center justify-center"
           style={{ gridArea: '1 / 1' }}
         >
-          <img src={bgWhite} alt="" aria-hidden="true" width={1144} height={670} className="block" />
+          <img
+            src={bgWhite}
+            alt=""
+            aria-hidden="true"
+            width={1144}
+            height={670}
+            className="block h-auto max-h-full w-auto max-w-full"
+          />
         </div>
 
         {/* min-w-0 here too -- this row is a GRID item (shares gridArea:

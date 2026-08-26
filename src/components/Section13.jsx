@@ -206,16 +206,35 @@ export default function Section13() {
             a bug. */}
         <HeadingAndPinkBox widthClassName="w-[360px] max-w-full" />
 
-        {/* All three at 95% of native size (279.395x218.5 / 202.35x228 /
-            504.925x535.8, down from 294.1x230 / 213x240 / 531.5x564). */}
+        {/* All three at 95% of native size (279x218.5 / 202x228 /
+            505x535.8, down from 294.1x230 / 213x240 / 531.5x564 -- the
+            0.x-px precision of the original 95% math is imperceptible,
+            so rounded to whole pixels here rather than kept as inline
+            style: Tailwind's arbitrary-value bracket syntax silently
+            fails to generate a class for width values containing a
+            literal decimal point (confirmed against the compiled CSS --
+            w-[279.395px] never appeared), so a class-based width needs a
+            whole number regardless.
+
+            width as a class (not inline style, unlike before) + h-auto +
+            max-w-full/max-h-full: these are all direct children of the
+            SECTION (not nested in a percentage-height wrapper the way
+            bgBottomLeft used to be, see that fix's own history below), so
+            there's no positioning risk here -- this is purely a shrink-
+            safety net for the case where the section's available space
+            ends up tighter than these fixed sizes assume (e.g. high
+            zoom). Both inline width+height (as before) would have
+            clamped each axis independently under a max- constraint,
+            risking non-uniform distortion; a class-based width + h-auto
+            lets the browser recompute both together from the intrinsic
+            ratio when a max- constraint actually binds. */}
         <ScrollSection
           as="img"
           src={mBgRight}
           alt=""
           aria-hidden="true"
           transition={{ duration: 0.6, ease: 'easeOut', delay: BG_DELAY }}
-          style={{ width: '279.395px', height: '218.5px' }}
-          className="pointer-events-none absolute right-0 top-0"
+          className="pointer-events-none absolute right-0 top-0 h-auto max-h-full w-[279px] max-w-full"
         />
         {/* z-10: mBgLeft (the girl) overlaps mBgBottom (the ladder/bird
             cluster) at their shared bottom-left/bottom-right corner --
@@ -227,8 +246,7 @@ export default function Section13() {
           alt=""
           aria-hidden="true"
           transition={{ duration: 0.6, ease: 'easeOut', delay: BG_DELAY }}
-          style={{ width: '202.35px', height: '228px' }}
-          className="pointer-events-none absolute bottom-0 left-0 z-10"
+          className="pointer-events-none absolute bottom-0 left-0 z-10 h-auto max-h-full w-[202px] max-w-full"
         />
         <ScrollSection
           as="img"
@@ -236,8 +254,7 @@ export default function Section13() {
           alt=""
           aria-hidden="true"
           transition={{ duration: 0.6, ease: 'easeOut', delay: BG_DELAY }}
-          style={{ width: '504.925px', height: '535.8px' }}
-          className="pointer-events-none absolute bottom-0 right-0"
+          className="pointer-events-none absolute bottom-0 right-0 h-auto max-h-full w-[505px] max-w-full"
         />
       </section>
     );
@@ -248,12 +265,7 @@ export default function Section13() {
       id="section-13"
       className="relative flex min-h-dvh w-full items-start justify-between bg-bg-blue px-page-margin-x"
     >
-      {/* Shared positioning context for the left column and the
-          bottom-left illustration -- the illustration needs to anchor to
-          the bottom of the full section height, not just the left
-          column's own (much shorter) content height.
-
-          content-cap: the Figma source frame for this section's left
+      {/* content-cap: the Figma source frame for this section's left
           content is 1140x608, centered within the reference canvas
           (confirmed against the frame's own margins, roughly equal
           left/right against the section background) -- same site-wide
@@ -265,10 +277,39 @@ export default function Section13() {
           flush against it -- this section was previously left with no
           top offset at all (items-start, no padding), which was flagged
           as never actually producing a deliberate vertical position; this
-          is that position. */}
-      <div className="relative h-full w-full content-cap pt-page-margin-y">
-        <HeadingAndPinkBox widthClassName="w-[560px] max-w-full" />
+          is that position.
 
+          h-full dropped: this div isn't the bottom-left illustration's
+          positioning context anymore (see that illustration's own
+          wrapper comment below) -- h-full never actually worked for that
+          purpose. A percentage height only resolves against a parent
+          with a DEFINITE height (a real fixed value); this section's own
+          min-h-dvh is a floor, not a fixed height, which CSS explicitly
+          treats as indefinite for percentage-height children -- so
+          h-full silently fell back to this div's own content height
+          (346px, just enough for the heading + pink box) instead of the
+          section's real height, landing the illustration up near the
+          heading instead of the section's true bottom. */}
+      <div className="relative w-full content-cap pt-page-margin-y">
+        <HeadingAndPinkBox widthClassName="w-[560px] max-w-full" />
+      </div>
+
+      {/* Bottom-left illustration's own positioning context -- a SEPARATE
+          content-cap wrapper (not sharing the text column's div above),
+          so it gets the exact same horizontal alignment as the heading/
+          pink box (including content-cap's own xl+ centering, which a
+          hand-picked left-[page-margin-x] value would miss) without
+          reusing that div's own h-full (which is what was broken).
+          inset-0 (not h-full) is what actually fixes the height: unlike
+          a percentage height, top/right/bottom/left offsets on an
+          absolutely positioned element resolve against the containing
+          block's ACTUAL final size regardless of whether that size came
+          from a definite height or content -- so this correctly stretches
+          to the section's real height even though the section itself is
+          only min-h-dvh. Confirmed via direct DOM measurement: left edge
+          matches the heading's own left edge exactly, and the bottom
+          edge lands exactly on the section's true bottom, at 0 gap. */}
+      <div className="pointer-events-none absolute inset-0 w-full content-cap">
         <ScrollSection
           as="img"
           src={bgBottomLeft}
@@ -278,7 +319,7 @@ export default function Section13() {
           // 367x250 natively, matching the reference's own proportions --
           // used at natural size, no override needed.
           style={{ width: '367px', height: '250px' }}
-          className="pointer-events-none absolute bottom-0 left-0"
+          className="absolute bottom-0 left-0"
         />
       </div>
 
