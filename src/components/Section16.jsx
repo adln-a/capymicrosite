@@ -272,7 +272,7 @@ function Section16Desktop() {
     return (
       <section
         id="section-16"
-        className="relative flex h-dvh w-full flex-col items-center justify-start gap-l overflow-hidden bg-bg-linen-dark px-page-margin-x py-page-margin-y"
+        className="relative flex min-h-dvh w-full flex-col items-center justify-start gap-l overflow-hidden bg-bg-linen-dark px-page-margin-x py-page-margin-y"
       >
         {/* content-cap: the site-wide desktop content cap, wrapping the
             heading + card stack only -- Illustrations below stays OUTSIDE
@@ -302,7 +302,14 @@ function Section16Desktop() {
 
   return (
     <section id="section-16" ref={wrapperRef} className="relative h-[300vh]">
-      <div className="sticky top-0 flex h-dvh w-full flex-col items-center justify-start gap-l overflow-hidden bg-bg-linen-dark px-page-margin-x py-page-margin-y">
+      {/* min-h-dvh (not h-dvh): under high zoom, if the header/card stack
+          ever needs more than one viewport's worth of height, this grows
+          to fit instead of clipping content. The pin's "stuck" window is
+          just h-[300vh]'s own height minus this element's height -- a
+          taller sticky child shortens that window somewhat, but doesn't
+          break it, since scrollYProgress itself is computed from the
+          wrapper's own 300vh height, not this element's. */}
+      <div className="sticky top-0 flex min-h-dvh w-full flex-col items-center justify-start gap-l overflow-hidden bg-bg-linen-dark px-page-margin-x py-page-margin-y">
         {/* Same content-cap treatment as the reduced-motion branch above --
             see its own comment. */}
         <div className="relative flex w-full flex-col items-center gap-l content-cap">
@@ -355,7 +362,9 @@ function Section16Mobile() {
   return (
     <section id="section-16" className="relative flex w-full flex-col items-center bg-bg-linen-dark">
       <div ref={sWrapperRef} className="relative w-full" style={{ height: '300vh' }}>
-        <div className="sticky top-0 flex h-dvh w-full flex-col items-center justify-center gap-l overflow-hidden bg-bg-linen-dark px-page-margin-x py-page-margin-y">
+        {/* min-h-dvh -- same fix and same reasoning as the desktop
+            branch's own sticky child above. */}
+        <div className="sticky top-0 flex min-h-dvh w-full flex-col items-center justify-center gap-l overflow-hidden bg-bg-linen-dark px-page-margin-x py-page-margin-y">
           <Header />
           <div className="relative w-full max-w-full" style={{ height: `${CARD_HEIGHT + 3 * STACK_PEEK}px` }}>
             {CARDS.map((card, index) => (
