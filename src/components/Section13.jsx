@@ -5,9 +5,7 @@ import blueScribble from '../assets/Blue-Scribble.svg';
 import bgRight from '../assets/Desktop-BG--Frame-13-Right.svg';
 import bgBottomLeft from '../assets/Desktop-BG--Frame-13-BottomLeft.svg';
 import sImgFrame13 from '../assets/s/S--IMG-Frame13.svg';
-import mBgBottom from '../assets/m/M--BG-Frame13 Bottom.svg';
-import mBgLeft from '../assets/m/M--BG-Frame13 Left.svg';
-import mBgRight from '../assets/m/M--BG-Frame13 Right.svg';
+import mCompiled from '../assets/m/M--BG--Frame13 Compiled.svg';
 
 // H2 fades up first, then the pink box, then both background
 // illustrations -- same staggered-delay convention as Section 1's
@@ -162,25 +160,22 @@ export default function Section13() {
   }
 
   if (!isAtLeastLg) {
-    // M: its own dedicated three-piece background (dedicated M exports,
-    // not XL's bgRight/bgBottomLeft resized or S's single stacked
-    // image), each corner-anchored directly to the SECTION's own true
-    // edges rather than nested inside any padded/content-cap wrapper --
-    // matching how XL's own bgRight already escapes px-page-margin-x to
-    // reach the true viewport edge. Rendered at each asset's native
-    // pixel size (no scaling formula given for this composition, same
-    // "literal reference numbers" convention as XL's bgBottomLeft
-    // 367x250): mBgRight (294.1x230, the monkey) top-right, mBgLeft
-    // (213x240, the girl) bottom-left, mBgBottom (531.5x564, the
-    // bear-on-a-ladder + bird cluster) bottom-right.
+    // M: text column now centered at a max-width of 560px (was left-
+    // aligned at a fixed 360px), and the three separately corner-
+    // anchored illustrations (mBgRight/mBgLeft/mBgBottom, each an
+    // absolutely-positioned overlay that had to be individually kept
+    // clear of the text) are replaced by ONE compiled composition
+    // (mCompiled) stacked BELOW the text in normal document flow --
+    // same technique as S's own sImgFrame13 below, and for the same
+    // reason: a normal-flow sibling can't overlap the text above it,
+    // no matter how narrow the viewport or how much the heading wraps,
+    // where the old absolutely-positioned pieces repeatedly did at high
+    // zoom (same fix already applied site-wide to XL's own two-piece
+    // overlay, see bgBottomLeft's history).
     //
-    // h-dvh (not S's hug-content): explicitly asked for here ("height
-    // should be dvh") -- the text column alone is short enough to fit
-    // one viewport at this width (unlike S, where the stacked
-    // full-width illustration pushes total height well past one phone
-    // screen), so pinning to h-dvh and letting the corner-anchored art
-    // fill the remaining space works the same way it already does for
-    // XL.
+    // No h-dvh here anymore either, for the same reason it isn't used
+    // at S: stacked content can run taller than one viewport, so this
+    // hugs its own content height instead of clipping to the viewport.
     return (
       <section
         id="section-13"
@@ -188,73 +183,35 @@ export default function Section13() {
         // own comment for why: `hidden` on one axis alone silently
         // auto-pairs the other to `auto`, turning this into its own
         // nested scroll container.
-        className="relative flex min-h-dvh w-full flex-col items-start justify-start overflow-x-clip bg-bg-blue px-page-margin-x pt-page-margin-y"
+        //
+        // px-page-margin-x dropped from here (was on this section like
+        // every other branch) and moved onto the text-only wrapper
+        // below instead -- same fix Section 1 already uses for its own
+        // full-bleed background image. The illustration needs to be a
+        // padding-free sibling of that wrapper: as a DIRECT child of a
+        // padded section, calc(50% - 50vw) margins compute against the
+        // section's narrowed content-box width, not the true viewport,
+        // and didn't reliably cancel the padding in practice. With no
+        // padding on the section itself, the image can just be w-full,
+        // no vw/calc breakout math needed at all.
+        className="relative flex w-full flex-col items-center justify-start overflow-x-clip bg-bg-blue pt-page-margin-y"
       >
-        {/* w-[360px] max-w-full (not S's w-full): the reference SVG's
-            own pink box is a fixed 480px, well short of full-width
-            (confirmed by measuring its rect directly, not eyeballed) --
-            but even that was still too wide at M's own narrower low end
-            (640px, vs. the reference's 768px canvas): mBgRight is a
-            FIXED 294.1px anchored to the true right edge regardless of
-            viewport, so the same 480px column that clears it comfortably
-            at 768px runs straight into it -- and the actual heading
-            text, not just decorative bleed -- at 640px. 380px still
-            wasn't enough; 360px is the confirmed-clear width. Some
-            decorative overlap between the monkey and the pink box's own
-            corner remains at the narrow end, read the same way as
-            tape/paperclip overlaps elsewhere on the site rather than as
-            a bug. */}
-        <HeadingAndPinkBox widthClassName="w-[360px] max-w-full" />
+        <div className="w-full px-page-margin-x">
+          <HeadingAndPinkBox widthClassName="w-full max-w-[560px] mx-auto" />
+        </div>
 
-        {/* All three at 95% of native size (279x218.5 / 202x228 /
-            505x535.8, down from 294.1x230 / 213x240 / 531.5x564 -- the
-            0.x-px precision of the original 95% math is imperceptible,
-            so rounded to whole pixels here rather than kept as inline
-            style: Tailwind's arbitrary-value bracket syntax silently
-            fails to generate a class for width values containing a
-            literal decimal point (confirmed against the compiled CSS --
-            w-[279.395px] never appeared), so a class-based width needs a
-            whole number regardless.
-
-            width as a class (not inline style, unlike before) + h-auto +
-            max-w-full/max-h-full: these are all direct children of the
-            SECTION (not nested in a percentage-height wrapper the way
-            bgBottomLeft used to be, see that fix's own history below), so
-            there's no positioning risk here -- this is purely a shrink-
-            safety net for the case where the section's available space
-            ends up tighter than these fixed sizes assume (e.g. high
-            zoom). Both inline width+height (as before) would have
-            clamped each axis independently under a max- constraint,
-            risking non-uniform distortion; a class-based width + h-auto
-            lets the browser recompute both together from the intrinsic
-            ratio when a max- constraint actually binds. */}
+        {/* w-full (not S's own 100vw/calc breakout below) -- this
+            section carries no horizontal padding anymore (see the
+            section's own comment above), so the image already spans
+            the true viewport edge to edge without needing to cancel
+            anything. */}
         <ScrollSection
           as="img"
-          src={mBgRight}
+          src={mCompiled}
           alt=""
           aria-hidden="true"
           transition={{ duration: 0.6, ease: 'easeOut', delay: BG_DELAY }}
-          className="pointer-events-none absolute right-0 top-0 h-auto max-h-full w-[279px] max-w-full"
-        />
-        {/* z-10: mBgLeft (the girl) overlaps mBgBottom (the ladder/bird
-            cluster) at their shared bottom-left/bottom-right corner --
-            DOM order alone would put mBgBottom on top (it comes later),
-            but the girl should read in front of it instead. */}
-        <ScrollSection
-          as="img"
-          src={mBgLeft}
-          alt=""
-          aria-hidden="true"
-          transition={{ duration: 0.6, ease: 'easeOut', delay: BG_DELAY }}
-          className="pointer-events-none absolute bottom-0 left-0 z-10 h-auto max-h-full w-[202px] max-w-full"
-        />
-        <ScrollSection
-          as="img"
-          src={mBgBottom}
-          alt=""
-          aria-hidden="true"
-          transition={{ duration: 0.6, ease: 'easeOut', delay: BG_DELAY }}
-          className="pointer-events-none absolute bottom-0 right-0 h-auto max-h-full w-[505px] max-w-full"
+          className="pointer-events-none relative z-10 mt-xs block h-auto w-full"
         />
       </section>
     );
