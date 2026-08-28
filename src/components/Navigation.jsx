@@ -300,7 +300,7 @@ function NavSpacer() {
 // at all, see isLargeScreen's use in showFullBar below.
 const LARGE_SCREEN_QUERY = '(min-width: 992px)';
 
-export default function Navigation({ sentinelRef, mainRef, activeSection }) {
+export default function Navigation({ sentinelRef, contentRef, activeSection }) {
   const [isOpen, setIsOpen] = useState(false);
   const [sentinelVisible, setSentinelVisible] = useState(true);
   // S (<640px) gets its own full-screen panel layout below -- everything
@@ -373,8 +373,16 @@ export default function Navigation({ sentinelRef, mainRef, activeSection }) {
   // and the tab order in one go, so background content can't be reached
   // while the panel is open (covers spec item 8; aria-hidden alone would
   // only handle the accessibility-tree half).
+  //
+  // contentRef (not mainRef, which this used to take): <main> and
+  // <Footer> are separate siblings in App.jsx, so inerting <main> alone
+  // left Footer fully reachable to VoiceOver/keyboard while the panel
+  // was open -- confirmed live, Footer's own links and content were
+  // still swipeable even though the panel was supposed to isolate
+  // everything behind it. contentRef is a single wrapper App.jsx puts
+  // around both, so one inert toggle here now actually covers both.
   useEffect(() => {
-    const node = mainRef?.current;
+    const node = contentRef?.current;
     if (!node) return undefined;
     if (isOpen) {
       node.setAttribute('inert', '');
@@ -382,7 +390,7 @@ export default function Navigation({ sentinelRef, mainRef, activeSection }) {
       node.removeAttribute('inert');
     }
     return () => node.removeAttribute('inert');
-  }, [isOpen, mainRef]);
+  }, [isOpen, contentRef]);
 
   // Manual focus trap. Tab order is: toggle (close) -> Home -> Contact us ->
   // Download. `inert` already keeps focus from leaving into page content,
@@ -418,6 +426,24 @@ export default function Navigation({ sentinelRef, mainRef, activeSection }) {
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, close]);
+
+  // Swipe-navigation loop-back guard. The keydown trap above only catches
+  // a physical `Tab` keypress -- VoiceOver's swipe-forward gesture moves
+  // focus without ever dispatching a `Tab` keydown, so that trap alone
+  // does nothing for swipe users (the originally reported bug). A first
+  // attempt at fixing this listened for `focusout` on Download and
+  // inspected `event.relatedTarget` to detect focus leaving the panel --
+  // that turned out to be unreliable with real VoiceOver: Safari doesn't
+  // consistently populate relatedTarget for AT-driven (as opposed to
+  // pointer/keyboard-driven) focus changes, so the check silently never
+  // fired. handleTrapEnd instead backs a real, focusable "guard" element
+  // rendered immediately after Download in the DOM (below) -- whatever
+  // moves focus there (Tab, swipe, anything), onFocus fires unconditionally
+  // and redirects to the close button. No relatedTarget inspection, so
+  // nothing to be unreliable about.
+  const handleTrapEnd = useCallback(() => {
+    toggleRef.current?.focus();
+  }, []);
 
   // Clicking anywhere outside the panel (and outside the toggle, which has
   // its own click handler) closes the panel the same way Escape does.
@@ -569,9 +595,26 @@ export default function Navigation({ sentinelRef, mainRef, activeSection }) {
                 <img src={desktopNav} alt="" aria-hidden="true" className="pointer-events-none h-auto w-[198px] flex-shrink-0" />
 
                 <div className="flex flex-col items-center justify-start gap-xl">
-                  <NavLink href="#section-1" label="Home" isActive={activeSection === 'home'} innerRef={homeRef} />
-                  <NavLink href="#contact" label="Contact us" isActive={activeSection === 'contact'} innerRef={contactRef} />
+                  {/* Matches the desktop full bar's own <nav aria-label="Primary">
+                      (above) -- the mobile panel had the same two links but no
+                      landmark of its own, so a screen reader's landmark list
+                      simply had nothing to jump to while this panel was open.
+                      className="contents" keeps it invisible to the flex/gap
+                      layout (DownloadButton stays a sibling at the same gap-xl
+                      spacing as before) while still being a real semantic
+                      wrapper in the accessibility tree. */}
+                  <nav aria-label="Primary" className="contents">
+                    <NavLink href="#section-1" label="Home" isActive={activeSection === 'home'} innerRef={homeRef} />
+                    <NavLink href="#contact" label="Contact us" isActive={activeSection === 'contact'} innerRef={contactRef} />
+                  </nav>
                   <DownloadButton innerRef={downloadRef} />
+                  {/* Trap-end focus guard -- own comment on handleTrapEnd above.
+                      sr-only (not aria-hidden): must stay in the accessibility
+                      tree and real tab order to actually be reachable by
+                      swipe/Tab, just visually invisible. No text content, so
+                      there's nothing for AT to announce before onFocus fires
+                      and moves focus straight to the close button. */}
+                  <button type="button" tabIndex={0} onFocus={handleTrapEnd} className="sr-only" />
                 </div>
 
                 {/* Invisible twin of the image, same trick as NavSpacer above --
@@ -593,21 +636,26 @@ export default function Navigation({ sentinelRef, mainRef, activeSection }) {
               className="fixed inset-0 z-40 flex flex-col bg-bg-linen-light px-page-margin-x pt-xl shadow-[0_8px_16px_rgba(0,0,0,0.08)]"
             >
               <div className="flex w-full flex-1 flex-col items-center justify-center gap-xl">
-                <NavLink
-                  href="#section-1"
-                  label="Home"
-                  isActive={activeSection === 'home'}
-                  innerRef={homeRef}
-                  className="w-full justify-center"
-                />
-                <NavLink
-                  href="#contact"
-                  label="Contact us"
-                  isActive={activeSection === 'contact'}
-                  innerRef={contactRef}
-                  className="w-full justify-center"
-                />
+                {/* Same landmark gap as the M+ panel above -- own comment there. */}
+                <nav aria-label="Primary" className="contents">
+                  <NavLink
+                    href="#section-1"
+                    label="Home"
+                    isActive={activeSection === 'home'}
+                    innerRef={homeRef}
+                    className="w-full justify-center"
+                  />
+                  <NavLink
+                    href="#contact"
+                    label="Contact us"
+                    isActive={activeSection === 'contact'}
+                    innerRef={contactRef}
+                    className="w-full justify-center"
+                  />
+                </nav>
                 <DownloadButton innerRef={downloadRef} />
+                {/* Trap-end focus guard -- own comment on handleTrapEnd above. */}
+                <button type="button" tabIndex={0} onFocus={handleTrapEnd} className="sr-only" />
               </div>
 
               {/* Pinned to the panel's own bottom-left corner, out of the
