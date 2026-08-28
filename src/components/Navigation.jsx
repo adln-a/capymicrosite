@@ -300,7 +300,7 @@ function NavSpacer() {
 // at all, see isLargeScreen's use in showFullBar below.
 const LARGE_SCREEN_QUERY = '(min-width: 992px)';
 
-export default function Navigation({ sentinelRef, contentRef, activeSection }) {
+export default function Navigation({ sentinelRef, contentRef, skipLinkRef, activeSection }) {
   const [isOpen, setIsOpen] = useState(false);
   const [sentinelVisible, setSentinelVisible] = useState(true);
   // S (<640px) gets its own full-screen panel layout below -- everything
@@ -381,16 +381,31 @@ export default function Navigation({ sentinelRef, contentRef, activeSection }) {
   // still swipeable even though the panel was supposed to isolate
   // everything behind it. contentRef is a single wrapper App.jsx puts
   // around both, so one inert toggle here now actually covers both.
+  //
+  // skipLinkRef is inert'd the same way, for the same reason: it's a
+  // separate sibling too (has to render before Navigation in the DOM, so
+  // it's the page's very first tab stop when the panel is closed), and
+  // was the last piece of "content behind the panel" still reachable.
+  // That mattered more than it looks: swiping past the panel's last item
+  // and running out of reachable content sends VoiceOver back to the
+  // first reachable item on the page -- with the skip link still live,
+  // that was this link, not the panel's own close button, no matter how
+  // the panel's own internal trap was wired.
   useEffect(() => {
     const node = contentRef?.current;
-    if (!node) return undefined;
+    const skipLink = skipLinkRef?.current;
     if (isOpen) {
-      node.setAttribute('inert', '');
+      node?.setAttribute('inert', '');
+      skipLink?.setAttribute('inert', '');
     } else {
-      node.removeAttribute('inert');
+      node?.removeAttribute('inert');
+      skipLink?.removeAttribute('inert');
     }
-    return () => node.removeAttribute('inert');
-  }, [isOpen, contentRef]);
+    return () => {
+      node?.removeAttribute('inert');
+      skipLink?.removeAttribute('inert');
+    };
+  }, [isOpen, contentRef, skipLinkRef]);
 
   // Manual focus trap. Tab order is: toggle (close) -> Home -> Contact us ->
   // Download. `inert` already keeps focus from leaving into page content,
@@ -611,10 +626,14 @@ export default function Navigation({ sentinelRef, contentRef, activeSection }) {
                   {/* Trap-end focus guard -- own comment on handleTrapEnd above.
                       sr-only (not aria-hidden): must stay in the accessibility
                       tree and real tab order to actually be reachable by
-                      swipe/Tab, just visually invisible. No text content, so
-                      there's nothing for AT to announce before onFocus fires
-                      and moves focus straight to the close button. */}
-                  <button type="button" tabIndex={0} onFocus={handleTrapEnd} className="sr-only" />
+                      swipe/Tab, just visually invisible. Real text content,
+                      not empty -- an empty, unlabeled focusable element is a
+                      known Safari/VoiceOver gap where swipe can skip straight
+                      past it without ever landing focus there, which would
+                      silently defeat the whole guard. */}
+                  <button type="button" tabIndex={0} onFocus={handleTrapEnd} className="sr-only">
+                    Return to close button
+                  </button>
                 </div>
 
                 {/* Invisible twin of the image, same trick as NavSpacer above --
@@ -655,7 +674,9 @@ export default function Navigation({ sentinelRef, contentRef, activeSection }) {
                 </nav>
                 <DownloadButton innerRef={downloadRef} />
                 {/* Trap-end focus guard -- own comment on handleTrapEnd above. */}
-                <button type="button" tabIndex={0} onFocus={handleTrapEnd} className="sr-only" />
+                <button type="button" tabIndex={0} onFocus={handleTrapEnd} className="sr-only">
+                  Return to close button
+                </button>
               </div>
 
               {/* Pinned to the panel's own bottom-left corner, out of the

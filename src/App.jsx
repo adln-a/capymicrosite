@@ -35,6 +35,18 @@ export default function App() {
   // (below) means a single inert toggle actually covers everything
   // behind the panel, not just part of it.
   const contentRef = useRef(null);
+  // The skip link sits BEFORE Navigation in the DOM (has to, so it's the
+  // very first tab stop on the page) -- that means it was never covered by
+  // contentRef's inert toggle above, so it stayed reachable via keyboard
+  // and VoiceOver swipe even while the mobile nav panel was open. That
+  // left an escape hatch: swiping past the panel's last item and hitting
+  // the end of reachable content sends VoiceOver back to the first
+  // reachable item on the page -- which was this link, not the panel's
+  // own close button. Navigation toggles inert on this ref the same way
+  // it does contentRef, closing that hatch without moving the link (which
+  // would defeat its purpose of being reachable before Navigation when
+  // the panel is closed).
+  const skipLinkRef = useRef(null);
   const activeSection = useActiveSection({ heroRef, contactSectionRef });
   useKeyboardScrollBoost();
 
@@ -50,12 +62,13 @@ export default function App() {
           entire page-content box on landing isn't useful feedback (the
           scroll jump + focus move already are). */}
       <a
+        ref={skipLinkRef}
         href="#main-content"
         className="sr-only focus:not-sr-only button-default focus:fixed focus:left-s focus:top-s focus:z-50 focus:inline-flex focus:cursor-pointer focus:items-center focus:gap-2xs focus:rounded-large focus:bg-button-primary-orange focus:px-m focus:py-s focus:text-button-inverted focus:shadow-[0_8px_16px_rgba(0,0,0,0.08)]"
       >
         Skip to content
       </a>
-      <Navigation sentinelRef={sentinelRef} contentRef={contentRef} activeSection={activeSection} />
+      <Navigation sentinelRef={sentinelRef} contentRef={contentRef} skipLinkRef={skipLinkRef} activeSection={activeSection} />
       {/* Wraps <main> and <Footer> together purely so Navigation's mobile
           panel has ONE ref that covers everything behind it when
           inerting -- own comment on contentRef above. No layout effect
