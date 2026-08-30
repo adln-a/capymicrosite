@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import { motion, useMotionValueEvent, useReducedMotion, useScroll, useTransform } from 'framer-motion';
 import ScrollSection from './ScrollSection.jsx';
 import SpeechBubble from './SpeechBubble.jsx';
@@ -226,68 +226,18 @@ function AnimatedBubble({ bubble, index, scrollYProgress, isSwapped, tier }) {
     [TEXT_HEX[bubble.textColor], WHITE],
   );
 
-  // opacity/y are scrubbed directly off real scroll position -- a screen
-  // reader user swiping through this section doesn't generate scroll
-  // events, so their reading position and this bubble's actual on-screen
-  // visibility have no guaranteed relationship; a bubble can be announced
-  // while still sitting at opacity:0. tabIndex={-1} on SpeechBubble's
-  // sr-only text node (own comment on its onFocus prop) is what makes it
-  // reachable by a screen reader's own swipe navigation, which is what
-  // calls handleFocus below; sighted scrolling users never trigger it.
-  //
-  // isForced swaps the wrapping element from motion.div to a plain div
-  // with a hardcoded opacity:1 -- three earlier versions tried to keep
-  // the SAME motion.div and just override its opacity/y (a plain
-  // React-level number on the same style key, then .set() on the
-  // MotionValue itself, then folding a second "forced" MotionValue
-  // directly into the same useTransform as a combined input): all three
-  // confirmed live (on Section 11's identical pattern) to silently fail.
-  // Scroll-linked MotionValues (the output of useTransform fed by
-  // useScroll) only actually repaint the DOM in response to a genuine
-  // scroll-driven tick -- .get() correctly reported the new value
-  // immediately after every override attempt, but the rendered style
-  // never moved, even after a synthetic scroll event and 1.5s of
-  // waiting. A real element-type swap sidesteps Framer's scroll-linked
-  // rendering entirely for the forced case, at the cost of unmounting/
-  // remounting SpeechBubble's sr-only text node -- which drops real DOM
-  // focus (a confirmed side effect, not a hypothetical one), so
-  // wrapperRef + the effect below explicitly refocuses it (found via its
-  // own tabIndex={-1}, the only such node inside a single bubble) the
-  // instant the swap lands, keeping VoiceOver's position anchored rather
-  // than losing it back to <body>.
-  const [isForced, setIsForced] = useState(false);
-  const wrapperRef = useRef(null);
-  const handleFocus = () => setIsForced(true);
-
-  useEffect(() => {
-    if (isForced) wrapperRef.current?.querySelector('[tabindex="-1"]')?.focus();
-  }, [isForced]);
-
-  const content = (
-    <SpeechBubble
-      text={isSwapped ? 'Am I enough?' : bubble.text}
-      srText={bubble.text}
-      size={scaledSize(bubble.size, tier)}
-      bg={bubble.bg}
-      textColor={bubble.textColor}
-      tailSide={bubble.tailSide}
-      bgColor={bgColor}
-      textColorValue={textColorValue}
-      onFocus={handleFocus}
-    />
-  );
-
-  if (isForced) {
-    return (
-      <div ref={wrapperRef} className="absolute" style={{ left: cqw(bubble.left, tier), top: cqw(bubble.top, tier), opacity: 1 }}>
-        {content}
-      </div>
-    );
-  }
-
   return (
-    <motion.div ref={wrapperRef} className="absolute" style={{ left: cqw(bubble.left, tier), top: cqw(bubble.top, tier), opacity, y }}>
-      {content}
+    <motion.div className="absolute" style={{ left: cqw(bubble.left, tier), top: cqw(bubble.top, tier), opacity, y }}>
+      <SpeechBubble
+        text={isSwapped ? 'Am I enough?' : bubble.text}
+        srText={bubble.text}
+        size={scaledSize(bubble.size, tier)}
+        bg={bubble.bg}
+        textColor={bubble.textColor}
+        tailSide={bubble.tailSide}
+        bgColor={bgColor}
+        textColorValue={textColorValue}
+      />
     </motion.div>
   );
 }
