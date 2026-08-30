@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
 import ScrollSection from './ScrollSection.jsx';
 import ArrowButton from './ArrowButton.jsx';
@@ -52,7 +52,37 @@ const SLIDE_SIZES = {
   xl: { width: 720, height: 480 },
 };
 const SLIDE_GAP = 16;
-const CENTER_INDEX = 2;
+
+// Seamless infinite loop, the standard "clone slides onto each end"
+// carousel trick: EXTENDED_SLIDES duplicates the last LEADING_CLONES
+// slides onto the front and the first TRAILING_CLONES onto the back, so
+// there's always real (if duplicate) slide art to animate onto when
+// stepping past either end -- a plain modulo wrap has nothing to show
+// mid-animation for "one step past the last slide" and either has to
+// jump backward across the whole row or skip the animation outright.
+// 2 on each side (not 1) covers wide viewports where more than one
+// neighbor can peek past the pink column at once (own comment on that
+// column further down) -- harmless extra DOM nodes if only one would've
+// been visible. Real accessibility content (role/label/aria-hidden) is
+// keyed off each slide's own realIndex, never off its position in this
+// extended array -- own comment further down on why clones stay
+// permanently aria-hidden regardless of which one is "showing."
+const LEADING_CLONES = 2;
+const TRAILING_CLONES = 2;
+const EXTENDED_SLIDES = [
+  ...SLIDES.slice(-LEADING_CLONES).map((slide, i) => ({
+    ...slide,
+    isClone: true,
+    realIndex: SLIDES.length - LEADING_CLONES + i,
+  })),
+  ...SLIDES.map((slide, i) => ({ ...slide, isClone: false, realIndex: i })),
+  ...SLIDES.slice(0, TRAILING_CLONES).map((slide, i) => ({ ...slide, isClone: true, realIndex: i })),
+];
+// The array's own true middle position -- where a slide sits with zero
+// translateX needed, purely by the row's own flex-centering (own
+// comment on offsetX further down). Always an integer: LEADING_CLONES
+// and TRAILING_CLONES are equal, so the total length is always odd.
+const NATURAL_CENTER = (EXTENDED_SLIDES.length - 1) / 2;
 
 // Same story for the paper clip -- a deliberate per-tier resize and
 // reposition, not a fluid scale (both sizes share the same ~0.875 aspect
@@ -83,8 +113,10 @@ function HolePunchDot() {
 
 
 export default function Section9() {
-  // Centered on slide 3 (index 2) when the section is first reached.
-  const [activeIndex, setActiveIndex] = useState(CENTER_INDEX);
+  // Centered on slide 1 (index 0) when the section is first reached --
+  // LEADING_CLONES + 0 is that slide's own position within
+  // EXTENDED_SLIDES (own comment on it above).
+  const [trackIndex, setTrackIndex] = useState(LEADING_CLONES);
   const shouldReduceMotion = useReducedMotion();
   const isAtLeastSm = useMediaQuery('(min-width: 640px)');
   // Only needed to tell M apart from L/XL (the pink text box width, the
@@ -97,21 +129,90 @@ export default function Section9() {
   const { width: SLIDE_WIDTH, height: SLIDE_HEIGHT } = tier === 'xl' ? SLIDE_SIZES.xl : SLIDE_SIZES.m;
   const paperclip = PAPERCLIP[tier];
 
-  const goToPrev = () => setActiveIndex((i) => (i - 1 + SLIDES.length) % SLIDES.length);
-  const goToNext = () => setActiveIndex((i) => (i + 1) % SLIDES.length);
+  // Real slide currently exposed to the accessibility tree/live region --
+  // derived from trackIndex, not tracked separately, so it's always in
+  // sync even mid-transition onto a clone (a clone's realIndex is the
+  // same slide it's a duplicate of, own comment on EXTENDED_SLIDES).
+  // True modulo (the extra `+ SLIDES.length) %` ) since trackIndex can
+  // briefly sit one step outside [LEADING_CLONES, LEADING_CLONES +
+  // SLIDES.length) while animating onto a clone, and JS's `%` alone
+  // returns negative results for negative input.
+  const realIndex = ((trackIndex - LEADING_CLONES) % SLIDES.length + SLIDES.length) % SLIDES.length;
 
-  // Shifts the row so activeIndex's own slide sits where the row's
+  // isAnimatingRef (a ref, not state -- it doesn't need to trigger a
+  // render, just gate the next click) ignores Prev/Next while a step is
+  // in flight, so trackIndex can never advance more than one position
+  // past the real zone before settleStep resets it -- without this, a
+  // fast double-click could push trackIndex past the clone buffer
+  // entirely and index past the end of EXTENDED_SLIDES.
+  const isAnimatingRef = useRef(false);
+  // Set right before the RESET step only (real clone position -> its
+  // real-slide equivalent) -- own comment on the transition prop further
+  // down explains why that specific step must be instant.
+  const [skipAnimation, setSkipAnimation] = useState(false);
+  // Matches the real transition's own duration below, plus a small
+  // buffer so the reset (own comment on settleStep) never fires a beat
+  // before the CSS transition has actually finished settling.
+  const STEP_DURATION_MS = 400;
+
+  // Settling logic runs off a plain setTimeout keyed to the CSS
+  // transition's own duration, NOT Framer's onAnimationComplete --
+  // that was the first approach here, and it turned out to be
+  // genuinely unreliable for this specific animation: confirmed via
+  // production build (`npm run build && npm run preview`, not just dev
+  // mode -- this wasn't a StrictMode artifact) that it fired
+  // consistently for every step in one direction (Next) but silently
+  // never fired at all after stepping toward a clone in the other
+  // direction (Prev), permanently stuck on the isAnimatingRef gate with
+  // nothing to release it. A plain timer has no such dependency on
+  // Framer's internal completion bookkeeping. `next` is captured at
+  // call time (not read back from state later), so there's no stale-
+  // closure risk the way reading trackIndex inside a delayed callback
+  // would have.
+  function settleStep(next) {
+    window.setTimeout(
+      () => {
+        isAnimatingRef.current = false;
+        const inRealZone = next >= LEADING_CLONES && next < LEADING_CLONES + SLIDES.length;
+        if (!inRealZone) {
+          const nextRealIndex = ((next - LEADING_CLONES) % SLIDES.length + SLIDES.length) % SLIDES.length;
+          setSkipAnimation(true);
+          setTrackIndex(LEADING_CLONES + nextRealIndex);
+        }
+      },
+      shouldReduceMotion ? 0 : STEP_DURATION_MS,
+    );
+  }
+
+  const goToPrev = () => {
+    if (isAnimatingRef.current) return;
+    isAnimatingRef.current = true;
+    const next = trackIndex - 1;
+    setSkipAnimation(false);
+    setTrackIndex(next);
+    settleStep(next);
+  };
+  const goToNext = () => {
+    if (isAnimatingRef.current) return;
+    isAnimatingRef.current = true;
+    const next = trackIndex + 1;
+    setSkipAnimation(false);
+    setTrackIndex(next);
+    settleStep(next);
+  };
+
+  // Shifts the row so trackIndex's own slide sits where the row's
   // natural (unshifted) center already is -- the row is flex-centered
-  // via the parent's `justify-center`, so at CENTER_INDEX (the row's own
-  // middle item) no shift is needed at all; every step away from it
-  // shifts by one slide-and-gap. At S each slide is a full 100vw with no
-  // gap between them (one slide fills the screen at a time), so the step
-  // is expressed in vw rather than a measured pixel width -- this stays
-  // correct at any device width, not just the 375px the reference was
-  // drawn at.
+  // via the parent's `justify-center`, so at NATURAL_CENTER (the
+  // extended row's own middle item) no shift is needed at all; every
+  // step away from it shifts by one slide-and-gap. At S each slide is a
+  // full 100vw with no gap between them (one slide fills the screen at a
+  // time), so the step is expressed in vw rather than a measured pixel
+  // width -- this stays correct at any device width, not just the 375px
+  // the reference was drawn at.
   const offsetX = isAtLeastSm
-    ? (CENTER_INDEX - activeIndex) * (SLIDE_WIDTH + SLIDE_GAP)
-    : `${(CENTER_INDEX - activeIndex) * 100}vw`;
+    ? (NATURAL_CENTER - trackIndex) * (SLIDE_WIDTH + SLIDE_GAP)
+    : `${(NATURAL_CENTER - trackIndex) * 100}vw`;
 
   return (
     <section
@@ -211,16 +312,103 @@ export default function Section9() {
             text block above it; only the photos are meant to bleed past
             that column into the plain page background on both sides.
 
-            All 5 images stay permanently in the DOM in fixed order --
-            only the row's translateX offset changes with activeIndex, so
-            a screen reader user reading through this section encounters
-            all 5 images' alt text regardless of carousel state; the
-            visual centering/animation is a sighted-user affordance
-            layered on top, not the access mechanism. */}
+            role/aria-roledescription/aria-label follow the W3C ARIA APG
+            carousel pattern (w3.org/WAI/ARIA/apg/patterns/carousel/):
+            the region is the carousel's own accessible container --
+            label deliberately doesn't include the word "carousel", since
+            aria-roledescription already announces that. This used to
+            keep all 5 images permanently in the DOM/reading order
+            regardless of which was visually centered (so linear reading
+            reached all 5 without touching a control) -- reworked below
+            to the APG's actual single-active-slide model instead: only
+            ONE slide is exposed to the accessibility tree at a time
+            (own comment on aria-hidden further down), matching how
+            carousels conventionally work and how AT users expect one to
+            behave, at the cost of needing Previous/Next to reach the
+            other 4 rather than getting them for free while reading. */}
         <ScrollSection
+          role="region"
+          aria-roledescription="carousel"
+          aria-label="Capy Activity Hub screenshots"
           className="relative overflow-hidden"
           style={{ width: '100vw', marginLeft: 'calc(50% - 50vw)', marginRight: 'calc(50% - 50vw)' }}
         >
+          {/* Buttons come BEFORE the slide content in DOM/reading order --
+              the APG example carousel does the same ("buttons precede
+              slide content in tab order"), and it matters more here than
+              it might elsewhere: with only one slide exposed at a time
+              (below), Previous/Next are the ONLY way to reach the other
+              4, so a screen reader user should hit them immediately, not
+              after already reading the one slide they'd use the buttons
+              to get past. Visual position is unaffected by this reorder
+              -- both are `absolute` against this same band regardless of
+              where they sit in the DOM. Real, focusable, announced
+              controls, never aria-hidden (see ArrowButton's own comment
+              for the Chrome bug that causes when tried) -- also the only
+              way for a sighted keyboard-only user to change slides at
+              all, since the slides themselves carry no tabindex.
+
+              z-10: needed now that these render BEFORE the slide track
+              in the DOM (above) -- the track is a motion.ul with an
+              animated `x` offset, and Framer applies that as an inline
+              `transform`, which creates its own stacking context. Among
+              same-level (no z-index) stacking contexts, later DOM order
+              wins paint order, so once the buttons moved earlier than
+              the track, the track started painting over them despite
+              still being `position: absolute` underneath. An explicit
+              z-index decouples paint order from DOM/reading order, so
+              the reorder above can serve accessibility without breaking
+              visibility for sighted users.
+
+              Inset: from sm up, the pink column below is a centered
+              960px box inside this full-bleed 100vw band (own comment
+              on it further down) -- calc(50% - 480px) lands exactly on
+              that box's own left/right edge (half its 960px width from
+              center), same breakout-math family as the full-bleed
+              technique itself, just for landing ON an edge instead of
+              escaping past one. Below sm there's no pink box at all (the
+              image runs edge-to-edge there, own comment on the pink
+              column), so this falls back to the page's own margin
+              rhythm instead, matching every other section's S-tier
+              inset. */}
+          <ArrowButton
+            direction="left"
+            onClick={goToPrev}
+            label="Previous slide"
+            size={48}
+            iconSize={32}
+            bg="bg-bg-linen-light"
+            className="absolute top-1/2 z-10 -translate-y-1/2 shadow-[0_8px_16px_rgba(0,0,0,0.08)]"
+            style={{ left: isAtLeastSm ? 'calc(50% - 480px)' : 'var(--spacing-page-margin-x)' }}
+          />
+          <ArrowButton
+            direction="right"
+            onClick={goToNext}
+            label="Next slide"
+            size={48}
+            iconSize={32}
+            bg="bg-bg-linen-light"
+            className="absolute top-1/2 z-10 -translate-y-1/2 shadow-[0_8px_16px_rgba(0,0,0,0.08)]"
+            style={{ right: isAtLeastSm ? 'calc(50% - 480px)' : 'var(--spacing-page-margin-x)' }}
+          />
+
+          {/* Live region, per the APG pattern (aria-live="polite" for a
+              non-auto-rotating carousel; aria-atomic="false" is the
+              pattern's own value, not "true" -- there's nothing partial
+              to diff against here since the whole sentence is always
+              replaced wholesale, so this mostly just matches the spec's
+              literal usage). Reads realIndex, which updates immediately
+              on click regardless of whether the row is stepping onto a
+              real slide or a clone (own comment on it above) -- a screen
+              reader user gets the announcement right away rather than
+              waiting on the animation/reset to settle, and there's no
+              risk of double-announcing over an image's own alt text
+              since inactive real slides stay aria-hidden below and
+              clones are unconditionally aria-hidden regardless of
+              realIndex, so nothing else is ever reachable to swipe onto. */}
+          <div aria-live="polite" aria-atomic="false" className="sr-only">
+            {`Slide ${realIndex + 1} of ${SLIDES.length}: ${SLIDES[realIndex].alt}`}
+          </div>
           {/* Pink column: pinned to the same 960px width as the content
               above (not full-bleed), height hugging whatever the rotated
               row needs -- the row itself is wider than this box and
@@ -233,24 +421,50 @@ export default function Section9() {
               unwanted strip of color past the rotated row's bounding box. */}
           <div className="mx-auto flex w-full max-w-full flex-col items-center justify-center bg-transparent sm:w-[960px] sm:bg-bg-pink">
             <div className="origin-top-left -rotate-1">
-              {/* A plain <ul>/<li> list -- not just a row of <img>s -- so a
-                  screen reader announces "list, 5 items" and "item N of 5"
-                  as it moves through them, giving a sense of position
-                  within the set that a flat sequence of images doesn't.
-                  role="list" is a defensive backstop: Tailwind's preflight
-                  resets list-style to none on every <ul>, and some older
-                  Safari/VoiceOver versions drop the implicit list/listitem
-                  semantics once list-style is none. */}
+              {/* Plain <ul>/<li> for the track's own flex/gap layout and
+                  Framer's translateX animation -- no list/listitem role
+                  here, since these are "slides" per the APG pattern
+                  (role="group" + aria-roledescription="slide" on each
+                  <li> below), not literal list items. role="presentation"
+                  is load-bearing, not decorative: a bare <ul> carries an
+                  IMPLICIT list role from the tag itself regardless of
+                  whether "list" is written explicitly, and with only one
+                  <li> ever exposed at a time (the other 8 aria-hidden,
+                  own comment further down), that implicit list was
+                  announcing "list, 1 item" right alongside the "1 of 5"
+                  slide label -- confusing, and actively wrong (it reads
+                  as "only 1 slide total," the opposite of "1 of 5"). */}
               <motion.ul
-                role="list"
+                role="presentation"
                 className="flex items-start justify-start gap-0 sm:gap-s"
                 animate={{ x: offsetX }}
-                transition={shouldReduceMotion ? { duration: 0 } : { duration: 0.35, ease: 'easeOut' }}
+                // skipAnimation (own comment on it above) goes instant
+                // rather than animated, same as reduced-motion -- this is
+                // specifically the reset step from a clone position back
+                // to its real-slide equivalent, which must be an
+                // invisible snap rather than a visible second slide.
+                // Duration in seconds here (Framer's own unit for this
+                // prop) vs. STEP_DURATION_MS above (milliseconds, for a
+                // plain setTimeout) -- 0.35s vs 400ms is deliberate, not
+                // drift: settleStep's timer needs to run a little AFTER
+                // the visual transition actually finishes, never before.
+                transition={shouldReduceMotion || skipAnimation ? { duration: 0 } : { duration: 0.35, ease: 'easeOut' }}
               >
-                {SLIDES.map((slide, i) => (
+                {EXTENDED_SLIDES.map((slide, i) => (
                   <li
-                    key={slide.src}
-                    role="listitem"
+                    key={i}
+                    role={slide.isClone ? undefined : 'group'}
+                    aria-roledescription={slide.isClone ? undefined : 'slide'}
+                    aria-label={slide.isClone ? undefined : `${slide.realIndex + 1} of ${SLIDES.length}`}
+                    // Clones are unconditionally aria-hidden, full stop --
+                    // never exposed regardless of realIndex, since they're
+                    // purely a visual stand-in for the seamless loop (own
+                    // comment on EXTENDED_SLIDES above). Only a REAL entry
+                    // (isClone false) ever becomes reachable, and only the
+                    // one matching realIndex -- the APG single-active-slide
+                    // model, same as before this rework, just now checked
+                    // against realIndex instead of activeIndex directly.
+                    aria-hidden={slide.isClone || slide.realIndex !== realIndex ? true : undefined}
                     className="flex-shrink-0"
                     style={
                       isAtLeastSm
@@ -264,43 +478,6 @@ export default function Section9() {
               </motion.ul>
             </div>
           </div>
-
-          {/* Arrows sit on this outer, unrotated band (not the tilted
-              image row -- matches the reference, where the buttons stay
-              upright against the tilted photos) and are inset from the
-              true viewport edge rather than the row's own edges: now
-              that each slide (720px) is wider than half the viewport,
-              insetting from the row's edges put them far off-screen (the
-              row is much wider than the viewport and centered, so a
-              720px inset from ITS edge no longer lands anywhere near the
-              visible area). page-margin-x keeps the same rhythm as the
-              rest of the page's own side margins.
-
-              Not aria-hidden (see ArrowButton's own comment for why that
-              was tried and reverted) -- these are real, announced
-              controls, and also the ONLY way for a sighted keyboard-only
-              user (no scroll-drag gesture, no tablist arrow-key
-              equivalent here) to change which slide is centered. */}
-          <ArrowButton
-            direction="left"
-            onClick={goToPrev}
-            label="Previous slide"
-            size={48}
-            iconSize={32}
-            bg="bg-bg-linen-light"
-            className="absolute top-1/2 -translate-y-1/2 shadow-[0_8px_16px_rgba(0,0,0,0.08)]"
-            style={{ left: 'var(--spacing-page-margin-x)' }}
-          />
-          <ArrowButton
-            direction="right"
-            onClick={goToNext}
-            label="Next slide"
-            size={48}
-            iconSize={32}
-            bg="bg-bg-linen-light"
-            className="absolute top-1/2 -translate-y-1/2 shadow-[0_8px_16px_rgba(0,0,0,0.08)]"
-            style={{ right: 'var(--spacing-page-margin-x)' }}
-          />
         </ScrollSection>
       </div>
     </section>
