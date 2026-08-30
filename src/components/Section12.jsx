@@ -601,8 +601,26 @@ export default function Section12() {
     return () => observer.disconnect();
   }, [isAtLeastLg]);
 
-  const goToPrev = () => setActiveSet((s) => (s === 1 ? 4 : s - 1));
-  const goToNext = () => setActiveSet((s) => (s === 4 ? 1 : s + 1));
+  // Deliberately separate from activeSet itself, and only ever set by
+  // these two handlers -- own comment on the live region further down
+  // explains why the tablist's own clicks/arrow-keys don't also need to
+  // touch this.
+  const [announcement, setAnnouncement] = useState('');
+
+  const goToPrev = () => {
+    setActiveSet((s) => {
+      const next = s === 1 ? 4 : s - 1;
+      setAnnouncement(`Insight ${next} of ${SET_DESIGN.length}`);
+      return next;
+    });
+  };
+  const goToNext = () => {
+    setActiveSet((s) => {
+      const next = s === 4 ? 1 : s + 1;
+      setAnnouncement(`Insight ${next} of ${SET_DESIGN.length}`);
+      return next;
+    });
+  };
 
   // Toggles the body class that hides the global nav toggle (see the
   // S_STICKY_NAV_HEIGHT comment above) for as long as any part of this
@@ -846,6 +864,25 @@ export default function Section12() {
           className="absolute top-1/2 z-10 -translate-y-1/2 shadow-[0_8px_16px_rgba(0,0,0,0.08)]"
           style={{ right: 'calc(-1 * min(56px, var(--spacing-page-margin-x)))' }}
         />
+
+        {/* Live region -- same reasoning as Section 9's own carousel arrows.
+            The tablist above doesn't need this: clicking or arrow-keying a
+            tab moves/keeps focus on that tab, and its own aria-selected/
+            name change is what a screen reader announces there. These two
+            arrows deliberately DON'T move focus off themselves (own comment
+            above -- repeated presses shouldn't force re-navigating back to
+            the tablist each time), so without this, activating them changed
+            which set was showing with no spoken feedback at all. Only
+            "Insight N of 4" (not the panel's full assumption/reality/quote
+            text) -- unlike Section 9's one-image-per-slide carousel, a set
+            here is three separate substantial pieces of content, and
+            reading all of them aloud on every arrow press would be
+            overwhelming; this gives positional confirmation and leaves the
+            user free to Tab into the panel and read at their own pace,
+            same as a sighted user glancing at the highlighted number first. */}
+        <div aria-live="polite" aria-atomic="false" className="sr-only">
+          {announcement}
+        </div>
       </div>
     </section>
   );
