@@ -27,6 +27,20 @@ import { motion } from 'framer-motion';
  * reading of the real message regardless of which visual state is
  * currently showing.
  *
+ * onFocus is another optional escape hatch, for callers whose own visual
+ * reveal is driven by something other than normal document flow (Section
+ * 3 Scene 2 again: each bubble's opacity/position is scrubbed directly
+ * off scroll position, not an IntersectionObserver, so a screen reader
+ * user swiping through -- which doesn't generate real scroll events --
+ * could have this bubble's text announced while it's still sitting at
+ * opacity:0 on screen). When provided, it's wired to the sr-only text
+ * node specifically (the ONLY thing actually in the accessibility tree
+ * once srText is active, since the visible text is aria-hidden right
+ * above it) via a real tabIndex={-1} + onFocus, not just the visible
+ * text -- tabIndex={-1} keeps it out of the normal Tab sequence, but
+ * still reachable by a screen reader's own swipe navigation, which is
+ * what actually fires this.
+ *
  * size accepts 'hug' (both dimensions auto), {width, height} (both
  * fixed), or {width} alone (fixed width, height still hugs content) --
  * the last form is for bubbles whose text swaps between strings of very
@@ -57,6 +71,7 @@ export default function SpeechBubble({
   bgColor,
   textColorValue,
   srText,
+  onFocus,
 }) {
   const hasFixedWidth = size !== 'hug';
   const hasFixedHeight = hasFixedWidth && size.height !== undefined;
@@ -87,7 +102,11 @@ export default function SpeechBubble({
         >
           {text}
         </motion.p>
-        {srText && <span className="sr-only">{srText}</span>}
+        {srText && (
+          <span className="sr-only" tabIndex={onFocus ? -1 : undefined} onFocus={onFocus}>
+            {srText}
+          </span>
+        )}
       </motion.div>
       <div
         className={`flex w-full items-center px-l ${
