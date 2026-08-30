@@ -16,7 +16,7 @@ const CARDS = [
   {
     key: 'support',
     bg: 'bg-bg-blue',
-    rotate: -1,
+    rotate: 2,
     heading: 'Support for implementation',
     body: "Create tools and resources that are easy to adopt, so they fit naturally into existing workflows and don’t create extra burden.",
     headingColor: 'text-heading-inverted',
@@ -63,8 +63,9 @@ const CARDS = [
 
 const CARD_HEIGHT = 355;
 // How much of each earlier card peeks out from behind the next one once
-// it's settled -- matches the reference screenshots' stacked-deck look.
-const STACK_PEEK = 24;
+// it's settled -- tightened from the original 24px reference value per
+// direct request.
+const STACK_PEEK = 12;
 // How far below its own resting spot each card starts before sliding up
 // into place -- deliberately more than CARD_HEIGHT so an entering card
 // starts fully clear of the previous card's text (otherwise its
@@ -122,7 +123,7 @@ function StackCard({ card, index, scrollYProgress }) {
 
   return (
     <motion.div
-      style={{ opacity, y, rotate: card.rotate, transformOrigin: 'top left', zIndex: index + 1 }}
+      style={{ opacity, y, rotate: card.rotate, transformOrigin: 'center', zIndex: index + 1 }}
       className={`absolute inset-x-0 top-0 flex h-[355px] flex-col items-center justify-center gap-m overflow-hidden rounded-large px-l ${card.bg}`}
     >
       <CardContent card={card} />
@@ -287,7 +288,7 @@ function Section16Desktop() {
             {CARDS.map((card, index) => (
               <div
                 key={card.key}
-                style={{ transform: `translateY(${index * STACK_PEEK}px) rotate(${card.rotate}deg)`, transformOrigin: 'top left', zIndex: index + 1 }}
+                style={{ transform: `translateY(${index * STACK_PEEK}px) rotate(${card.rotate}deg)`, transformOrigin: 'center', zIndex: index + 1 }}
                 className={`absolute inset-x-0 top-0 flex h-[355px] flex-col items-center justify-center gap-m overflow-hidden rounded-large px-l ${card.bg}`}
               >
                 <CardContent card={card} />
@@ -347,7 +348,7 @@ function Section16Mobile() {
             {CARDS.map((card, index) => (
               <div
                 key={card.key}
-                style={{ transform: `translateY(${index * STACK_PEEK}px) rotate(${card.rotate}deg)`, transformOrigin: 'top left', zIndex: index + 1 }}
+                style={{ transform: `translateY(${index * STACK_PEEK}px) rotate(${card.rotate}deg)`, transformOrigin: 'center', zIndex: index + 1 }}
                 className={`absolute inset-x-0 top-0 flex h-[355px] flex-col items-center justify-center gap-m overflow-hidden rounded-large px-l ${card.bg}`}
               >
                 <CardContent card={card} />
