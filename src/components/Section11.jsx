@@ -248,10 +248,10 @@ function postItCqw(px) {
 }
 
 const BUBBLE_START = 0;
-const BUBBLE_END = 0.25;
-const POSTITS_START = 0.3;
-const POSTITS_END = 0.9;
-const POSTIT_FADE_DURATION = 0.15;
+const BUBBLE_END = 0.15;
+const POSTITS_START = 0.2;
+const POSTITS_END = 0.75;
+const POSTIT_FADE_DURATION = 0.1;
 const POSTIT_STAGGER_STEP = (POSTITS_END - POSTITS_START - POSTIT_FADE_DURATION) / (TOTAL_ITEMS - 1);
 
 function shuffle(array) {
@@ -822,7 +822,6 @@ export default function Section11() {
   const { scrollYProgress } = useScroll({ target: wrapperRef, offset: ['start start', 'end end'] });
 
   const bubbleOpacity = useTransform(scrollYProgress, [BUBBLE_START, BUBBLE_END], [0, 1]);
-  const bubbleScale = useTransform(scrollYProgress, [BUBBLE_START, BUBBLE_END], [0.8, 1]);
 
   if (!isAtLeastSm) {
     // No scroll-pin here (unlike sm+ below): stacking all 11 post-its
@@ -945,7 +944,7 @@ export default function Section11() {
         {/* Speech bubble: same content-cap treatment as the reduced-motion
             branch above -- see its own comment. */}
         <div className="relative flex items-center justify-center content-cap" style={{ gridArea: '1 / 1' }}>
-          <motion.div style={{ opacity: bubbleOpacity, scale: bubbleScale }}>
+          <motion.div style={{ opacity: bubbleOpacity }}>
             {isM ? <SpeechBubbleContentM /> : <SpeechBubbleContent />}
           </motion.div>
         </div>
