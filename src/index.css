@@ -1,26 +1,26 @@
-@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;800&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible+Mono:wght@400;500;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible+Next:wght@500;700&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Just+Me+Again+Down+Here&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=block');
 @import "tailwindcss";
 
 /* Design tokens.
    --font-* and --font-weight-* sit in Tailwind's reserved theme namespaces
-   (so font-space-grotesk / font-weight-space-grotesk-bold utilities exist
+   (so font-atkinson / font-weight-atkinson-bold utilities exist
    as a side effect).
    --type-* is a non-reserved namespace: it holds size/line-height pairs and is
    consumed only via var() below, so it never leaks into Tailwind's generated
    utility set. */
 @theme {
-  --font-space-grotesk: 'Space Grotesk', sans-serif;
-  --font-ibm-plex-mono: 'IBM Plex Mono', monospace;
+  --font-atkinson: 'Atkinson Hyperlegible Next', sans-serif;
+  --font-atkinson-mono: 'Atkinson Hyperlegible Mono', monospace;
   --font-handwriting: 'Just Me Again Down Here', cursive;
 
-  --font-weight-space-grotesk-medium: 500;
-  --font-weight-space-grotesk-bold: 700;
+  --font-weight-atkinson-medium: 500;
+  --font-weight-atkinson-bold: 700;
   --font-weight-mono-regular: 400;
   --font-weight-mono-medium: 500;
-  --font-weight-mono-bold: 800;
+  --font-weight-mono-bold: 700;
 
   --tracking-none: 0em;
   --tracking-wide: 0.1em;
@@ -520,8 +520,8 @@
   }
 
   .heading-1 {
-    font-family: var(--font-space-grotesk);
-    font-weight: var(--font-weight-space-grotesk-bold);
+    font-family: var(--font-atkinson);
+    font-weight: var(--font-weight-atkinson-bold);
     font-size: var(--type-h1-font-size);
     line-height: var(--type-h1-line-height);
     letter-spacing: var(--tracking-none);
@@ -533,8 +533,8 @@
   }
 
   .heading-2 {
-    font-family: var(--font-space-grotesk);
-    font-weight: var(--font-weight-space-grotesk-bold);
+    font-family: var(--font-atkinson);
+    font-weight: var(--font-weight-atkinson-bold);
     font-size: var(--type-h2-font-size);
     line-height: var(--type-h2-line-height);
     letter-spacing: var(--tracking-none);
@@ -546,8 +546,8 @@
   }
 
   .heading-3 {
-    font-family: var(--font-space-grotesk);
-    font-weight: var(--font-weight-space-grotesk-bold);
+    font-family: var(--font-atkinson);
+    font-weight: var(--font-weight-atkinson-bold);
     font-size: var(--type-h3-font-size);
     line-height: var(--type-h3-line-height);
     letter-spacing: var(--tracking-none);
@@ -559,8 +559,8 @@
   }
 
   .heading-4 {
-    font-family: var(--font-space-grotesk);
-    font-weight: var(--font-weight-space-grotesk-bold);
+    font-family: var(--font-atkinson);
+    font-weight: var(--font-weight-atkinson-bold);
     font-size: var(--type-h4-font-size);
     line-height: var(--type-h4-line-height);
     letter-spacing: var(--tracking-none);
@@ -573,12 +573,12 @@
 
   /* Same size/line-height as their heading-N counterpart at every
      breakpoint (reuses the exact same --type-hN-* custom properties) --
-     only the typeface, weight, case, and tracking change: IBM Plex Mono
-     Regular instead of Space Grotesk Bold, uppercased, letter-spacing
-     widened to 10% of the font size (0.1em, so it scales with size
+     only the typeface, weight, case, and tracking change: Atkinson
+     Hyperlegible Mono Regular instead of Atkinson Hyperlegible Next Bold,
+     uppercased, letter-spacing widened to 10% of the font size (0.1em, so it scales with size
      rather than staying a fixed px value across heading levels). */
   .heading-1-accent {
-    font-family: var(--font-ibm-plex-mono);
+    font-family: var(--font-atkinson-mono);
     font-weight: var(--font-weight-mono-regular);
     font-size: var(--type-h1-font-size);
     line-height: var(--type-h1-line-height);
@@ -592,7 +592,7 @@
   }
 
   .heading-2-accent {
-    font-family: var(--font-ibm-plex-mono);
+    font-family: var(--font-atkinson-mono);
     font-weight: var(--font-weight-mono-regular);
     font-size: var(--type-h2-font-size);
     line-height: var(--type-h2-line-height);
@@ -606,7 +606,7 @@
   }
 
   .heading-3-accent {
-    font-family: var(--font-ibm-plex-mono);
+    font-family: var(--font-atkinson-mono);
     font-weight: var(--font-weight-mono-regular);
     font-size: var(--type-h3-font-size);
     line-height: var(--type-h3-line-height);
@@ -620,7 +620,7 @@
   }
 
   .heading-4-accent {
-    font-family: var(--font-ibm-plex-mono);
+    font-family: var(--font-atkinson-mono);
     font-weight: var(--font-weight-mono-regular);
     font-size: var(--type-h4-font-size);
     line-height: var(--type-h4-line-height);
@@ -634,7 +634,7 @@
   }
 
   .body-paragraph {
-    font-family: var(--font-ibm-plex-mono);
+    font-family: var(--font-atkinson-mono);
     font-weight: var(--font-weight-mono-medium);
     font-size: var(--type-body-font-size);
     line-height: var(--type-body-line-height);
@@ -642,7 +642,7 @@
   }
 
   .body-paragraph-strong {
-    font-family: var(--font-ibm-plex-mono);
+    font-family: var(--font-atkinson-mono);
     font-weight: var(--font-weight-mono-bold);
     font-size: var(--type-body-strong-font-size);
     line-height: var(--type-body-strong-line-height);
@@ -650,7 +650,7 @@
   }
 
   .body-paragraph-large {
-    font-family: var(--font-ibm-plex-mono);
+    font-family: var(--font-atkinson-mono);
     font-weight: var(--font-weight-mono-medium);
     font-size: var(--type-body-lg-font-size);
     line-height: var(--type-body-lg-line-height);
@@ -658,7 +658,7 @@
   }
 
   .body-paragraph-large-strong {
-    font-family: var(--font-ibm-plex-mono);
+    font-family: var(--font-atkinson-mono);
     font-weight: var(--font-weight-mono-bold);
     font-size: var(--type-body-lg-strong-font-size);
     line-height: var(--type-body-lg-strong-line-height);
@@ -666,55 +666,55 @@
   }
 
   .body-speech-bubble {
-    font-family: var(--font-space-grotesk);
-    font-weight: var(--font-weight-space-grotesk-bold);
+    font-family: var(--font-atkinson);
+    font-weight: var(--font-weight-atkinson-bold);
     font-size: var(--type-speech-bubble-font-size);
     line-height: var(--type-speech-bubble-line-height);
     letter-spacing: var(--tracking-none);
   }
 
   .button-default {
-    font-family: var(--font-space-grotesk);
-    font-weight: var(--font-weight-space-grotesk-bold);
+    font-family: var(--font-atkinson);
+    font-weight: var(--font-weight-atkinson-bold);
     font-size: var(--type-button-font-size);
     line-height: var(--type-button-line-height);
     letter-spacing: var(--tracking-none);
   }
 
   .button-small {
-    font-family: var(--font-space-grotesk);
-    font-weight: var(--font-weight-space-grotesk-bold);
+    font-family: var(--font-atkinson);
+    font-weight: var(--font-weight-atkinson-bold);
     font-size: var(--type-button-sm-font-size);
     line-height: var(--type-button-sm-line-height);
     letter-spacing: var(--tracking-none);
   }
 
   .button-large {
-    font-family: var(--font-space-grotesk);
-    font-weight: var(--font-weight-space-grotesk-bold);
+    font-family: var(--font-atkinson);
+    font-weight: var(--font-weight-atkinson-bold);
     font-size: var(--type-button-lg-font-size);
     line-height: var(--type-button-lg-line-height);
     letter-spacing: var(--tracking-none);
   }
 
   .nav-default {
-    font-family: var(--font-space-grotesk);
-    font-weight: var(--font-weight-space-grotesk-medium);
+    font-family: var(--font-atkinson);
+    font-weight: var(--font-weight-atkinson-medium);
     font-size: var(--type-nav-font-size);
     line-height: var(--type-nav-line-height);
     letter-spacing: var(--tracking-none);
   }
 
   .nav-active {
-    font-family: var(--font-space-grotesk);
-    font-weight: var(--font-weight-space-grotesk-bold);
+    font-family: var(--font-atkinson);
+    font-weight: var(--font-weight-atkinson-bold);
     font-size: var(--type-nav-active-font-size);
     line-height: var(--type-nav-active-line-height);
     letter-spacing: var(--tracking-none);
   }
 
   .caption {
-    font-family: var(--font-ibm-plex-mono);
+    font-family: var(--font-atkinson-mono);
     font-weight: var(--font-weight-mono-medium);
     font-size: var(--type-caption-font-size);
     line-height: var(--type-caption-line-height);

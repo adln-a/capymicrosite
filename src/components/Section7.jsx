@@ -20,8 +20,8 @@ const SHAPE_STAGGER_STEP = 0.08;
 // XL only -- S renders its own labels directly (see SLabel below), which
 // sets font-size/line-height itself since those differ from XL's values.
 const SHAPE_TEXT_STYLE = {
-  fontFamily: 'var(--font-space-grotesk)',
-  fontWeight: 'var(--font-weight-space-grotesk-bold)',
+  fontFamily: 'var(--font-atkinson)',
+  fontWeight: 'var(--font-weight-atkinson-bold)',
   fontSize: '22px',
   lineHeight: '28px',
 };
@@ -419,8 +419,8 @@ function SShape({ id, index, children }) {
         top: sCanvasPct(s.top, S_CANVAS.height),
         width: sCanvasPct(s.width, S_CANVAS.width),
         height: sCanvasPct(s.height, S_CANVAS.height),
-        fontFamily: 'var(--font-space-grotesk)',
-        fontWeight: 'var(--font-weight-space-grotesk-bold)',
+        fontFamily: 'var(--font-atkinson)',
+        fontWeight: 'var(--font-weight-atkinson-bold)',
       }}
     >
       <svg
@@ -591,8 +591,8 @@ export default function Section7() {
             <h3
               className="text-heading-red"
               style={{
-                fontFamily: 'var(--font-space-grotesk)',
-                fontWeight: 'var(--font-weight-space-grotesk-bold)',
+                fontFamily: 'var(--font-atkinson)',
+                fontWeight: 'var(--font-weight-atkinson-bold)',
                 fontSize: '22px',
                 lineHeight: '28px',
               }}
