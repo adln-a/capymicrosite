@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef } from 'react';
+import { useCallback, useEffect, useId, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { CloseButton } from './Navigation.jsx';
@@ -101,6 +101,19 @@ export default function TranscriptModal({ isOpen, onClose, subtitle, transcript 
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, onClose]);
 
+  // Swipe-navigation loop-back guard -- same gap, same fix as the nav
+  // panel's own handleTrapEnd (see its comment in Navigation.jsx): the
+  // keydown trap above only catches a physical `Tab` keypress, so
+  // VoiceOver's swipe-forward gesture past the transcript body (the last
+  // of the three content stops) isn't caught by it at all and falls
+  // through to whatever's next in the accessibility tree instead of
+  // looping back to Close. This sr-only button, rendered immediately
+  // after the transcript body in the DOM, catches that: whatever moves
+  // focus there (Tab, swipe, anything) redirects to the close button.
+  const handleTrapEnd = useCallback(() => {
+    closeRef.current?.focus();
+  }, []);
+
   return createPortal(
     <AnimatePresence>
       {isOpen && (
@@ -144,6 +157,17 @@ export default function TranscriptModal({ isOpen, onClose, subtitle, transcript 
               <p ref={transcriptRef} tabIndex={0} className="body-paragraph whitespace-pre-line self-stretch text-body-default">
                 {transcript}
               </p>
+              {/* Trap-end focus guard -- own comment on handleTrapEnd above.
+                  sr-only (not aria-hidden): must stay in the accessibility
+                  tree and real tab order to actually be reachable by
+                  swipe/Tab, just visually invisible. Real text content,
+                  not empty -- an empty, unlabeled focusable element is a
+                  known Safari/VoiceOver gap where swipe can skip straight
+                  past it without ever landing focus there, which would
+                  silently defeat the whole guard. */}
+              <button type="button" tabIndex={0} onFocus={handleTrapEnd} className="sr-only">
+                Return to close button
+              </button>
             </div>
           </div>
         </motion.div>
