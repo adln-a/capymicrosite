@@ -128,10 +128,10 @@ function FourHighlight({ children }) {
   // shape earlier).
   //
   // Sizing/position: rendered at Green-Scribble.svg's own native size (no
-  // w-full stretch). top: var(--scribble-offset-default) is the shared
-  // offset used across most of the underline/loop scribbles -- a fixed
-  // 10px pull-up from the span's own line-box bottom, same value
-  // everywhere rather than a per-font-metric calculation.
+  // w-full stretch). top: var(--scribble-offset-tight) -- the shared
+  // --scribble-offset-default (10px pull-up) pulled the scribble up far
+  // enough to cross into "FOUR"'s own glyph ink instead of sitting
+  // cleanly below it; the tighter 5px pull-up clears that.
   return (
     <span className="relative z-0 inline-block whitespace-nowrap">
       <img
@@ -139,7 +139,7 @@ function FourHighlight({ children }) {
         alt=""
         aria-hidden="true"
         className="pointer-events-none absolute left-1/2 -z-10 h-auto max-w-none -translate-x-1/2"
-        style={{ top: 'var(--scribble-offset-default)' }}
+        style={{ top: 'var(--scribble-offset-tight)' }}
       />
       <span className="heading-1-accent relative">{children}</span>
     </span>
@@ -212,8 +212,16 @@ export default function Section1({ sectionRef }) {
             <AccessibleHighlightText
               before="Children from low-income families in Singapore are over "
               highlight={<FourHighlight>FOUR</FourHighlight>}
-              after=" times more likely to underperform in school compared to their wealthier peers*"
+              after=" times more likely to underperform in school compared to their wealthier peers"
             />
+            {/* The visual "*" is a footnote marker pointing at the caption
+                below -- read literally, VoiceOver announces it as "star"
+                with no indication it refers to anything, so it's hidden
+                from AT and replaced with a plain-language equivalent
+                instead (matching the footnote's own fix, see its
+                comment). */}
+            <sup aria-hidden="true">*</sup>
+            <span className="sr-only">, see source note below</span>
           </h1>
         </ScrollSection>
 
@@ -240,8 +248,13 @@ export default function Section1({ sectionRef }) {
                 generation.
               </p>
               <p className="caption text-center text-body-default">
-                *Organisation for Economic Cooperation and Development (OECD)
-                Report 2016
+                {/* Same fix as the heading's own "*" (see its comment) --
+                    hidden from AT and replaced with a plain-language
+                    equivalent, so a screen reader user landing on this
+                    caption directly hears "Note:" instead of "star". */}
+                <sup aria-hidden="true">*</sup>
+                <span className="sr-only">Note: </span>Organisation for Economic
+                Cooperation and Development (OECD) Report 2016
               </p>
             </div>
           </ScrollSection>
