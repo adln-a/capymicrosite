@@ -1,25 +1,27 @@
 import ScrollSection from './ScrollSection.jsx';
 import AccessibleHighlightText from './AccessibleHighlightText.jsx';
 import paperTearBg from '../assets/Paper-Tear-BG.png';
-import blueLineScribble from '../assets/Blue-Line-Scribble.svg';
+import blueDottedUnderline from '../assets/Blue-Dotted-Underline.svg';
 import illustrationXl from '../assets/Desktop-IMG-Frame-5.svg';
 import illustrationS from '../assets/s/S--IMG-Frame5.svg';
 
-function ScribbleHighlight({ children }) {
-  // Same span-wrap technique as FourHighlight (Section 1) and
-  // MatterHighlight (Section 2): z-0 on the wrapping span gives it its own
-  // stacking context so the image's -z-10 stays scoped inside it. Kept at
-  // Blue-Line-Scribble.svg's own native 227x16 (not stretched to the wrapped
-  // word's rendered width) since the reference only underlines "enrichment"
-  // itself, not the whole "enrichment opportunities" phrase.
+function AffordableHighlight({ children }) {
+  // Same span-wrap technique as the other scribble/underline highlights
+  // (FourHighlight in Section 1, RealProblemHighlight in Section 11):
+  // z-0 on the wrapping span gives it its own stacking context so the
+  // image's -z-10 stays scoped inside it. Blue-Dotted-Underline.svg is a
+  // flat 197x3 line (not a thick hand-drawn scribble like the other
+  // highlights use), so it sits flush against the text's own bottom
+  // edge (bottom-0) rather than using the shared --scribble-offset-*
+  // pull-up tokens, which were tuned for taller marks that need to tuck
+  // up into the glyph's descender space.
   return (
     <span className="relative z-0 inline-block whitespace-nowrap">
       <img
-        src={blueLineScribble}
+        src={blueDottedUnderline}
         alt=""
         aria-hidden="true"
-        className="pointer-events-none absolute left-1/2 -z-10 max-w-none -translate-x-1/2"
-        style={{ width: '227px', height: '16px', top: 'var(--scribble-offset-default)' }}
+        className="pointer-events-none absolute bottom-0 left-1/2 -z-10 h-auto max-w-none -translate-x-1/2"
       />
       <span className="heading-2-accent relative">{children}</span>
     </span>
@@ -180,9 +182,9 @@ export default function Section5() {
               <div className="flex flex-1 items-center justify-center">
                 <h2 className="heading-2 text-heading-inverted">
                   <AccessibleHighlightText
-                    before="How might we help low-income parents access affordable "
-                    highlight={<ScribbleHighlight>enrichment</ScribbleHighlight>}
-                    after=" opportunities for their children despite financial constraints and competing essential needs?"
+                    before="How might we help low-income parents access "
+                    highlight={<AffordableHighlight>affordable</AffordableHighlight>}
+                    after=" enrichment opportunities for their children despite financial constraints and competing essential needs?"
                   />
                 </h2>
               </div>
