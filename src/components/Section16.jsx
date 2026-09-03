@@ -2,7 +2,7 @@ import { useRef } from 'react';
 import { motion, useReducedMotion, useScroll, useTransform } from 'framer-motion';
 import AccessibleHighlightText from './AccessibleHighlightText.jsx';
 import useMediaQuery from '../hooks/useMediaQuery.js';
-import pinkScribble from '../assets/Pink-Scribble.svg';
+import pinkDottedUnderline from '../assets/Pink-Dotted-Underline.svg';
 import frameLeft from '../assets/Desktop-IMG-Frame-16-Left.svg';
 import frameRight from '../assets/Desktop-IMG-Frame-16-Right.svg';
 import mBgBottom from '../assets/m/M--BG-Frame16 Bottom.svg';
@@ -132,14 +132,28 @@ function StackCard({ card, index, scrollYProgress }) {
 }
 
 function TogetherHighlight({ children }) {
+  // Pink-Dotted-Underline.svg is a flat line (replacing Pink-Scribble.svg,
+  // a thicker hand-drawn mark), so it sits flush against the word's own
+  // bottom edge (bottom-0) instead of using the shared --scribble-offset-*
+  // pull-up tokens tuned for taller marks (same swap as Section 1's
+  // FourHighlight and Section 5's AffordableHighlight).
+  //
+  // width: 100% (not the image's own native px width) -- confirmed live
+  // on Section 5's identical AffordableHighlight that a fixed native
+  // width badly overran past the word at smaller breakpoints, since
+  // heading-2-accent's font-size (and so "TOGETHER"'s own rendered
+  // width) shrinks at S/M while the image's native px width didn't. The
+  // wrapping span is inline-block, so it already hugs "TOGETHER"'s own
+  // current rendered width exactly -- sizing the image to 100% of THAT
+  // keeps the underline matched to the word at every breakpoint with no
+  // per-tier tuning.
   return (
     <span className="relative z-0 inline-block whitespace-nowrap">
       <img
-        src={pinkScribble}
+        src={pinkDottedUnderline}
         alt=""
         aria-hidden="true"
-        className="pointer-events-none absolute left-1/2 -z-10 h-auto max-w-none -translate-x-1/2"
-        style={{ top: 'var(--scribble-offset-default)' }}
+        className="pointer-events-none absolute bottom-0 left-1/2 -z-10 w-full h-auto max-w-none -translate-x-1/2"
       />
       <span className="heading-2-accent relative">{children}</span>
     </span>
