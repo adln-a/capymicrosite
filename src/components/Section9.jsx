@@ -316,7 +316,14 @@ export default function Section9() {
             carousel pattern (w3.org/WAI/ARIA/apg/patterns/carousel/):
             the region is the carousel's own accessible container --
             label deliberately doesn't include the word "carousel", since
-            aria-roledescription already announces that. This used to
+            aria-roledescription already announces that. tabIndex={-1}
+            (own explicit prop below, not covered by this comment block's
+            original scope) makes the region itself a real swipe stop --
+            without it, real VoiceOver swipe skips straight past this
+            non-interactive container to its first focusable child (the
+            Previous button), so a user never hears "Capy Activity Hub
+            screenshots, carousel" at all before "Previous slide, button".
+            This used to
             keep all 5 images permanently in the DOM/reading order
             regardless of which was visually centered (so linear reading
             reached all 5 without touching a control) -- reworked below
@@ -330,6 +337,7 @@ export default function Section9() {
           role="region"
           aria-roledescription="carousel"
           aria-label="Capy Activity Hub screenshots"
+          tabIndex={-1}
           className="relative overflow-hidden"
           style={{ width: '100vw', marginLeft: 'calc(50% - 50vw)', marginRight: 'calc(50% - 50vw)' }}
         >
@@ -401,13 +409,19 @@ export default function Section9() {
               on click regardless of whether the row is stepping onto a
               real slide or a clone (own comment on it above) -- a screen
               reader user gets the announcement right away rather than
-              waiting on the animation/reset to settle, and there's no
-              risk of double-announcing over an image's own alt text
-              since inactive real slides stay aria-hidden below and
-              clones are unconditionally aria-hidden regardless of
-              realIndex, so nothing else is ever reachable to swipe onto. */}
+              waiting on the animation/reset to settle.
+
+              Position only ("Slide N of 5"), not the slide's own alt text
+              too -- confirmed on-device that swiping forward immediately
+              after this fires reaches the newly-active slide's <img>,
+              whose own alt carries the same description a second time in
+              a row. Same fix Section 12 already uses for its own
+              Insight-N announcement (own comment on AssumptionCard's
+              tabProps): keep the button-triggered announcement brief,
+              let the actual content (reached separately, on its own
+              terms) be the one place with the full description. */}
           <div aria-live="polite" aria-atomic="false" className="sr-only">
-            {`Slide ${realIndex + 1} of ${SLIDES.length}: ${SLIDES[realIndex].alt}`}
+            {`Slide ${realIndex + 1} of ${SLIDES.length}`}
           </div>
           {/* Pink column: pinned to the same 960px width as the content
               above (not full-bleed), height hugging whatever the rotated
