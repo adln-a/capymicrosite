@@ -1,7 +1,7 @@
 import ScrollSection from './ScrollSection.jsx';
 import AccessibleHighlightText from './AccessibleHighlightText.jsx';
 import useMediaQuery from '../hooks/useMediaQuery.js';
-import pinkRoundScribble from '../assets/Pink-Round-Scribble.svg';
+import pinkCircleSmooth from '../assets/Pink-Circle-Smooth.svg';
 import illustration from '../assets/Desktop-IMG-Frame-15.svg';
 import sIllustration from '../assets/s/S--IMG-Frame15.svg';
 import mIllustration from '../assets/m/M--BG-Frame 15.svg';
@@ -18,20 +18,20 @@ const S_ILLUSTRATION = { src: sIllustration, width: 369, height: 303.29 };
 function PeopleHighlight({ children, isAtLeastSm }) {
   // Same z-0/-z-10 span-wrap technique as the other scribble highlights,
   // but centered on the word (left-1/2/top-1/2 + -translate-x-1/2/-y-1/2)
-  // rather than hugging its width -- Pink-Round-Scribble.svg is a full
-  // encircling oval, not an underline, and its native 161x55 already
+  // rather than hugging its width -- Pink-Circle-Smooth.svg is a full
+  // encircling oval, not an underline, and its native 169x55 already
   // matches "PEOPLE" 's own rendered size at XL (heading-2-accent is 28px
   // there) closely enough that no extra sizing was needed. heading-2-
   // accent drops to 20px at S though (28*20/28... i.e. a 20/28 ratio),
-  // and "PEOPLE" shrinks with it -- the same fixed 161x55 oval at that
+  // and "PEOPLE" shrinks with it -- the same fixed 169x55 oval at that
   // smaller size bled noticeably past the word into the next line's "do"
   // once the heading went full-width and rewrapped. Scaled down by that
-  // same 20/28 ratio for S (115x39) so the ring still hugs just the word.
-  const scribbleSize = isAtLeastSm ? { width: 161, height: 55 } : { width: 115, height: 39 };
+  // same 20/28 ratio for S (121x39) so the ring still hugs just the word.
+  const scribbleSize = isAtLeastSm ? { width: 169, height: 55 } : { width: 121, height: 39 };
   return (
     <span className="relative z-0 inline-block whitespace-nowrap">
       <img
-        src={pinkRoundScribble}
+        src={pinkCircleSmooth}
         alt=""
         aria-hidden="true"
         className="pointer-events-none absolute left-1/2 top-1/2 -z-10 max-w-none -translate-x-1/2 -translate-y-1/2"
