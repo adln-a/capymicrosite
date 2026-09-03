@@ -3,7 +3,7 @@ import AccessibleHighlightText from './AccessibleHighlightText.jsx';
 import bgFrame1Xl from '../assets/Desktop-BG--Frame-1.svg';
 import bgFrame1M from '../assets/m/M--BG-Frame1.svg';
 import bgFrame1Xs from '../assets/s/S--BG-Frame1.svg';
-import fourScribble from '../assets/Green-Scribble.svg';
+import fourScribble from '../assets/Green-Underline.svg';
 
 const CARD_SHADOW = 'shadow-[0_8px_16px_rgba(0,0,0,0.08)]';
 // White box's ScrollSection starts its own whileInView animation this much
@@ -122,24 +122,35 @@ function WhitePunchHoles() {
 }
 
 function FourHighlight({ children }) {
-  // Same stacking pattern as before: z-0 on this wrapping span gives it its
-  // own stacking context, so -z-10 on the image is scoped safely within it
-  // (rather than escaping to some ancestor context, as bit us with the nav
-  // shape earlier).
+  // z-0 gives this wrapping span its own stacking context, so -z-10 on the
+  // image stays scoped safely within it (rather than escaping to some
+  // ancestor context, as bit us with the nav shape earlier) -- BUT the
+  // wrapper itself also needs to be negative (-z-10, not z-0): the plain
+  // "over "/" times more..." text on either side of "FOUR" is
+  // non-positioned, which paints in an EARLIER CSS stacking step than any
+  // POSITIONED element at z-index 0/auto -- so a z-0 wrapper (even with a
+  // -z-10 image inside it) still painted as a whole ON TOP of that
+  // neighboring text wherever the wider scribble image overhung past
+  // "FOUR"'s own width. Confirmed live: with z-0, the scribble sat behind
+  // "FOUR" but in FRONT of "over"/"times". Negative z-index descendants
+  // paint in an earlier step than non-positioned content, so -z-10 here
+  // puts the whole wrapper (image AND text together) behind everything
+  // outside it; "FOUR" itself stays visually unaffected since it doesn't
+  // spatially overlap its neighbors, only the scribble does.
   //
-  // Sizing/position: rendered at Green-Scribble.svg's own native size (no
-  // w-full stretch). top: var(--scribble-offset-tight) -- the shared
-  // --scribble-offset-default (10px pull-up) pulled the scribble up far
-  // enough to cross into "FOUR"'s own glyph ink instead of sitting
-  // cleanly below it; the tighter 5px pull-up clears that.
+  // Sizing/position: rendered at Green-Underline.svg's own native size (no
+  // stretch/scale) -- 84x4, a flat line rather than the taller hand-drawn
+  // Green-Scribble.svg this replaced, so it sits flush against the text's
+  // own bottom edge (bottom-0) with no pull-up math needed to clear "FOUR"'s
+  // own glyph ink or the next wrapped line below it (same bottom-0 approach
+  // Section 5's AffordableHighlight uses for its own flat underline).
   return (
-    <span className="relative z-0 inline-block whitespace-nowrap">
+    <span className="relative -z-10 inline-block whitespace-nowrap">
       <img
         src={fourScribble}
         alt=""
         aria-hidden="true"
-        className="pointer-events-none absolute left-1/2 -z-10 h-auto max-w-none -translate-x-1/2"
-        style={{ top: 'var(--scribble-offset-tight)' }}
+        className="pointer-events-none absolute bottom-0 left-1/2 -z-10 h-auto max-w-none -translate-x-1/2"
       />
       <span className="heading-1-accent relative">{children}</span>
     </span>
