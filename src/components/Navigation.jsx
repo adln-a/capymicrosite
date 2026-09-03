@@ -452,20 +452,32 @@ export default function Navigation({ sentinelRef, contentRef, skipLinkRef, activ
   // Swipe-navigation loop-back guard. The keydown trap above only catches
   // a physical `Tab` keypress -- VoiceOver's swipe-forward gesture moves
   // focus without ever dispatching a `Tab` keydown, so that trap alone
-  // does nothing for swipe users (the originally reported bug). A first
-  // attempt at fixing this listened for `focusout` on Download and
-  // inspected `event.relatedTarget` to detect focus leaving the panel --
-  // that turned out to be unreliable with real VoiceOver: Safari doesn't
-  // consistently populate relatedTarget for AT-driven (as opposed to
-  // pointer/keyboard-driven) focus changes, so the check silently never
-  // fired. handleTrapEnd instead backs a real, focusable "guard" element
-  // rendered immediately after Download in the DOM (below) -- whatever
-  // moves focus there (Tab, swipe, anything), onFocus fires unconditionally
-  // and redirects to the close button. No relatedTarget inspection, so
-  // nothing to be unreliable about.
-  const handleTrapEnd = useCallback(() => {
-    toggleRef.current?.focus();
-  }, []);
+  // does nothing for swipe users (the originally reported bug).
+  //
+  // First attempt: an onFocus-driven redirect (focus lands on a guard
+  // element -> immediately .focus() the close button). Confirmed working
+  // on VoiceOver, but two real problems killed it: (1) it does nothing on
+  // Android TalkBack, which keeps its own swipe cursor ("accessibility
+  // focus") separate from real DOM focus -- swiping onto an element
+  // doesn't fire a genuine `focus` event there the way VoiceOver's swipe
+  // does, only explicit activation (double-tap, a real click) does; (2)
+  // even for keyboard/VoiceOver, redirecting instantly ON FOCUS means the
+  // guard's own sr-only/focus:not-sr-only "become visible" styling never
+  // has a chance to actually show -- focus bounces away again in the same
+  // tick, so a sighted keyboard user tabbing to it would never see or use
+  // it as its own real control, confirmed live (activeElement moved to
+  // the close button, not the guard, immediately after calling .focus()
+  // on it).
+  //
+  // Fixed by making this a genuinely activatable button instead: a real
+  // onClick calls the same close handler the visible Close button uses.
+  // Click/tap-to-activate is a universal AT interaction primitive --
+  // works identically via VoiceOver's swipe-then-double-tap-anywhere and
+  // TalkBack's swipe-then-double-tap, and via a sighted keyboard user
+  // tabbing to it and pressing Enter/Space, all without relying on a
+  // `focus` event ever firing at all. sr-only/focus:not-sr-only (matching
+  // the page's own "Skip to content" link, App.jsx) makes it a real,
+  // visible button once reached -- not a screen-reader-exclusive trick.
 
   // "Contact us" closing the panel isn't enough on its own: the anchor's
   // native hash-jump only moves the SCROLL position, not focus, so a
@@ -675,16 +687,19 @@ export default function Navigation({ sentinelRef, contentRef, skipLinkRef, activ
                     />
                   </nav>
                   <DownloadButton innerRef={downloadRef} />
-                  {/* Trap-end focus guard -- own comment on handleTrapEnd above.
-                      sr-only (not aria-hidden): must stay in the accessibility
-                      tree and real tab order to actually be reachable by
-                      swipe/Tab, just visually invisible. Real text content,
-                      not empty -- an empty, unlabeled focusable element is a
-                      known Safari/VoiceOver gap where swipe can skip straight
+                  {/* Trap-end guard -- own comment further up, right after
+                      the keydown Tab trap. Real text content, not empty --
+                      an empty, unlabeled focusable element is a known
+                      Safari/VoiceOver gap where swipe can skip straight
                       past it without ever landing focus there, which would
-                      silently defeat the whole guard. */}
-                  <button type="button" tabIndex={0} onFocus={handleTrapEnd} className="sr-only">
-                    Return to close button
+                      silently defeat the guard. */}
+                  <button
+                    type="button"
+                    tabIndex={0}
+                    onClick={handleToggleClick}
+                    className={`sr-only focus:not-sr-only button-default focus:inline-flex focus:cursor-pointer focus:items-center focus:gap-2xs focus:rounded-large focus:bg-button-primary-orange focus:px-m focus:py-s focus:text-button-inverted ${CARD_SHADOW}`}
+                  >
+                    Close navigation
                   </button>
                 </div>
 
@@ -726,9 +741,15 @@ export default function Navigation({ sentinelRef, contentRef, skipLinkRef, activ
                   />
                 </nav>
                 <DownloadButton innerRef={downloadRef} />
-                {/* Trap-end focus guard -- own comment on handleTrapEnd above. */}
-                <button type="button" tabIndex={0} onFocus={handleTrapEnd} className="sr-only">
-                  Return to close button
+                {/* Trap-end guard -- own comment further up, right after
+                    the keydown Tab trap. */}
+                <button
+                  type="button"
+                  tabIndex={0}
+                  onClick={handleToggleClick}
+                  className={`sr-only focus:not-sr-only button-default focus:inline-flex focus:cursor-pointer focus:items-center focus:gap-2xs focus:rounded-large focus:bg-button-primary-orange focus:px-m focus:py-s focus:text-button-inverted ${CARD_SHADOW}`}
+                >
+                  Close navigation
                 </button>
               </div>
 

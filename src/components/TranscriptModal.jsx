@@ -1,7 +1,7 @@
-import { useCallback, useEffect, useId, useRef } from 'react';
+import { useEffect, useId, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
-import { CloseButton } from './Navigation.jsx';
+import { CARD_SHADOW, CloseButton } from './Navigation.jsx';
 
 // Real transcript content hasn't been written yet for any of the audio
 // clips this opens for -- this is the same literal placeholder sentence
@@ -101,18 +101,20 @@ export default function TranscriptModal({ isOpen, onClose, subtitle, transcript 
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, onClose]);
 
-  // Swipe-navigation loop-back guard -- same gap, same fix as the nav
-  // panel's own handleTrapEnd (see its comment in Navigation.jsx): the
-  // keydown trap above only catches a physical `Tab` keypress, so
-  // VoiceOver's swipe-forward gesture past the transcript body (the last
-  // of the three content stops) isn't caught by it at all and falls
-  // through to whatever's next in the accessibility tree instead of
-  // looping back to Close. This sr-only button, rendered immediately
-  // after the transcript body in the DOM, catches that: whatever moves
-  // focus there (Tab, swipe, anything) redirects to the close button.
-  const handleTrapEnd = useCallback(() => {
-    closeRef.current?.focus();
-  }, []);
+  // Swipe-navigation loop-back guard -- same gap as the nav panel's own
+  // trap-end guard (see its comment in Navigation.jsx for the full
+  // reasoning): the keydown trap above only catches a physical `Tab`
+  // keypress, so VoiceOver's swipe-forward gesture past the transcript
+  // body (the last of the three content stops) isn't caught by it at all.
+  // An earlier onFocus-driven redirect confirmed working on VoiceOver but
+  // not Android TalkBack (whose swipe cursor doesn't move real DOM focus,
+  // only explicit double-tap activation does) -- and even on VoiceOver/
+  // keyboard, redirecting instantly on focus meant the button's own
+  // sr-only/focus:not-sr-only "become visible" state never had a chance
+  // to actually show. Fixed the same way: a real onClick below, calling
+  // the same close handler the visible Close button uses, so any AT's
+  // swipe-then-activate (or a sighted keyboard user's Tab-then-Enter)
+  // reaches it via a real click, not a focus event.
 
   return createPortal(
     <AnimatePresence>
@@ -157,16 +159,22 @@ export default function TranscriptModal({ isOpen, onClose, subtitle, transcript 
               <p ref={transcriptRef} tabIndex={0} className="body-paragraph whitespace-pre-line self-stretch text-body-default">
                 {transcript}
               </p>
-              {/* Trap-end focus guard -- own comment on handleTrapEnd above.
-                  sr-only (not aria-hidden): must stay in the accessibility
-                  tree and real tab order to actually be reachable by
-                  swipe/Tab, just visually invisible. Real text content,
-                  not empty -- an empty, unlabeled focusable element is a
-                  known Safari/VoiceOver gap where swipe can skip straight
-                  past it without ever landing focus there, which would
-                  silently defeat the whole guard. */}
-              <button type="button" tabIndex={0} onFocus={handleTrapEnd} className="sr-only">
-                Return to close button
+              {/* Trap-end guard -- own comment further up, right after the
+                  keydown Tab trap. Real text content, not empty -- an
+                  empty, unlabeled focusable element is a known Safari/
+                  VoiceOver gap where swipe can skip straight past it
+                  without ever landing focus there, which would silently
+                  defeat the guard. sr-only/focus:not-sr-only (matching the
+                  page's own "Skip to content" link, App.jsx) so it's also
+                  a real, visible button for sighted keyboard-only users
+                  who tab to it. */}
+              <button
+                type="button"
+                tabIndex={0}
+                onClick={onClose}
+                className={`sr-only focus:not-sr-only button-default focus:inline-flex focus:cursor-pointer focus:items-center focus:gap-2xs focus:rounded-large focus:bg-button-primary-orange focus:px-m focus:py-s focus:text-button-inverted ${CARD_SHADOW}`}
+              >
+                Close transcript
               </button>
             </div>
           </div>
