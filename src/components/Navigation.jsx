@@ -101,6 +101,7 @@ export function NavLink({
   activeMarkerSrc = bgNavActive,
   activeColorClassName = 'text-heading-default hover:text-black-950',
   defaultColorClassName = 'text-body-default hover:text-black-950',
+  onClick,
 }) {
   if (isActive) {
     return (
@@ -108,6 +109,7 @@ export function NavLink({
         ref={innerRef}
         href={href}
         aria-current="location"
+        onClick={onClick}
         className={`nav-active relative inline-flex cursor-pointer items-center p-xs transition-colors duration-150 ${activeColorClassName} ${className} ${ACTIVE_LINK_FOCUS_RING}`}
       >
         <img
@@ -122,7 +124,12 @@ export function NavLink({
   }
 
   return (
-    <a ref={innerRef} href={href} className={`nav-default inline-flex cursor-pointer items-center p-xs transition-colors duration-150 ${defaultColorClassName} ${className}`}>
+    <a
+      ref={innerRef}
+      href={href}
+      onClick={onClick}
+      className={`nav-default inline-flex cursor-pointer items-center p-xs transition-colors duration-150 ${defaultColorClassName} ${className}`}
+    >
       {label}
     </a>
   );
@@ -460,6 +467,28 @@ export default function Navigation({ sentinelRef, contentRef, skipLinkRef, activ
     toggleRef.current?.focus();
   }, []);
 
+  // "Contact us" closing the panel isn't enough on its own: the anchor's
+  // native hash-jump only moves the SCROLL position, not focus, so a
+  // screen reader user who swipes afterward continued from wherever the
+  // panel happened to leave focus (reported bug: landed back on the
+  // FIRST element on the page, not the Contact section). Deliberately
+  // NOT `close()` -- that returns focus to the toggle button, which is
+  // right for Escape/outside-click (the user didn't go anywhere) but
+  // wrong here (the user just navigated, focus should follow them).
+  // document.querySelector rather than a threaded ref: the Contact
+  // heading lives in Section18, a completely separate branch of the
+  // component tree from Navigation with no shared parent that isn't the
+  // page root -- same reasoning TranscriptModal's own #root inert
+  // toggle already relies on for reaching across component boundaries.
+  // rAF: waits one frame so this runs after the click's default action
+  // (the native hash-jump) has been queued, rather than racing it.
+  const handleContactClick = useCallback(() => {
+    setIsOpen(false);
+    requestAnimationFrame(() => {
+      document.querySelector('#contact h2')?.focus();
+    });
+  }, []);
+
   // Clicking anywhere outside the panel (and outside the toggle, which has
   // its own click handler) closes the panel the same way Escape does.
   useEffect(() => {
@@ -543,10 +572,27 @@ export default function Navigation({ sentinelRef, contentRef, skipLinkRef, activ
         // CSS rule (see index.css) while its own sticky number row is
         // engaged -- the two would otherwise stack/overlap at the top of
         // the viewport since both are `fixed`/`sticky` at y:0.
-        <div className="global-nav-toggle fixed inset-x-0 top-l z-50 h-14 px-page-margin-x">
+        // pointer-events-none on both wrapping divs: this bar is `fixed
+        // inset-x-0` (full viewport width) so it can keep the toggle
+        // reachable at a stable position regardless of scroll, but that
+        // same full-width box was silently swallowing clicks meant for
+        // whatever sat underneath it at the same y-position -- confirmed
+        // live, the open panel's own "Home" link (first item, right at
+        // the top) was unclickable because elementFromPoint at its
+        // coordinates resolved to this empty div, not the link. Only
+        // the actual button re-enables pointer-events (pointer-events-
+        // auto), so the bar's empty space is click-through again while
+        // the button itself stays exactly as clickable as before.
+        <div className="global-nav-toggle pointer-events-none fixed inset-x-0 top-l z-50 h-14 px-page-margin-x">
           <div className="flex h-full w-full items-center justify-end content-cap">
             {isOpen ? (
-              <CloseButton innerRef={toggleRef} onClick={handleToggleClick} label="Close navigation" aria-expanded={isOpen} />
+              <CloseButton
+                innerRef={toggleRef}
+                onClick={handleToggleClick}
+                label="Close navigation"
+                aria-expanded={isOpen}
+                className="pointer-events-auto"
+              />
             ) : (
               <button
                 ref={toggleRef}
@@ -554,7 +600,7 @@ export default function Navigation({ sentinelRef, contentRef, skipLinkRef, activ
                 onClick={handleToggleClick}
                 aria-expanded={isOpen}
                 aria-label="Open navigation"
-                className="flex h-14 w-14 cursor-pointer items-center justify-center rounded-full bg-button-primary-orange text-button-inverted transition-colors duration-150 hover:bg-capy-orange-500 shadow-[0_8px_16px_rgba(0,0,0,0.08)]"
+                className="pointer-events-auto flex h-14 w-14 cursor-pointer items-center justify-center rounded-full bg-button-primary-orange text-button-inverted transition-colors duration-150 hover:bg-capy-orange-500 shadow-[0_8px_16px_rgba(0,0,0,0.08)]"
               >
                 <MaterialIcon name="menu" size={32} />
               </button>
@@ -620,7 +666,13 @@ export default function Navigation({ sentinelRef, contentRef, skipLinkRef, activ
                       wrapper in the accessibility tree. */}
                   <nav aria-label="Primary" className="contents">
                     <NavLink href="#section-1" label="Home" isActive={activeSection === 'home'} innerRef={homeRef} />
-                    <NavLink href="#contact" label="Contact us" isActive={activeSection === 'contact'} innerRef={contactRef} />
+                    <NavLink
+                      href="#contact"
+                      label="Contact us"
+                      isActive={activeSection === 'contact'}
+                      innerRef={contactRef}
+                      onClick={handleContactClick}
+                    />
                   </nav>
                   <DownloadButton innerRef={downloadRef} />
                   {/* Trap-end focus guard -- own comment on handleTrapEnd above.
@@ -670,6 +722,7 @@ export default function Navigation({ sentinelRef, contentRef, skipLinkRef, activ
                     isActive={activeSection === 'contact'}
                     innerRef={contactRef}
                     className="w-full justify-center"
+                    onClick={handleContactClick}
                   />
                 </nav>
                 <DownloadButton innerRef={downloadRef} />

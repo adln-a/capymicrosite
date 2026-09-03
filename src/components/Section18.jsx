@@ -333,7 +333,16 @@ export default function Section18({ sectionRef }) {
           bounding either one. */}
       <div className="flex w-full flex-col items-start gap-m content-cap">
         <div className="flex flex-col items-start justify-start gap-m self-stretch">
-          <h2 className="heading-2 self-stretch text-heading-inverted">Contact us</h2>
+          {/* tabIndex=-1: not a real tab stop, but a focus target -- the
+              mobile nav's "Contact us" link closes the panel and moves
+              focus here on click (own comment in Navigation.jsx), so a
+              screen reader user swiping afterward continues from this
+              heading instead of the panel handing focus back to
+              wherever it happened to leave off (own bug report: swiping
+              landed back on the FIRST element on the page instead). */}
+          <h2 tabIndex={-1} className="heading-2 self-stretch text-heading-inverted">
+            Contact us
+          </h2>
           <p className="body-paragraph self-stretch text-body-inverted">
             If you're an organisation, NGO, or advocate working on similar issues - we'd love to hear from you.
           </p>
