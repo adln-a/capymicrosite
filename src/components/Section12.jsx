@@ -465,7 +465,7 @@ function dealMotionProps(shouldReduceMotion, revealOnScroll, stackX, stackRotate
 // column, same auto-margins-beat-align-items technique content-cap's
 // own comment already relies on elsewhere in this file.
 // showInsightPrefix (S/M's own callsite only, own comment there): adds an
-// sr-only "Insight N: " ahead of the visible "We assumed" text -- S/M
+// sr-only "Insight N" ahead of the visible "We assumed" text -- S/M
 // hides the number row from screen readers entirely (NumberButton's own
 // comment), so without this, a screen reader user landing on this card
 // would have no indication of which insight it belongs to at all. Purely
@@ -483,7 +483,7 @@ function AssumptionCard({ set, shouldReduceMotion, revealOnScroll = false, width
       className={`relative z-[3] flex flex-1 flex-col items-start justify-start gap-s rounded-large bg-bg-white p-l ${widthClassName}`}
     >
       <p className="body-paragraph self-stretch text-body-default">
-        {showInsightPrefix && <span className="sr-only">Insight {set.number}: </span>}
+        {showInsightPrefix && <span className="sr-only">Insight {set.number} </span>}
         We assumed
       </p>
       <p className="heading-3 self-stretch text-heading-default">{set.assumption}</p>
