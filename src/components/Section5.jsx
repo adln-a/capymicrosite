@@ -9,19 +9,29 @@ function AffordableHighlight({ children }) {
   // Same span-wrap technique as the other scribble/underline highlights
   // (FourHighlight in Section 1, RealProblemHighlight in Section 11):
   // z-0 on the wrapping span gives it its own stacking context so the
-  // image's -z-10 stays scoped inside it. Blue-Dotted-Underline.svg is a
-  // flat 197x3 line (not a thick hand-drawn scribble like the other
-  // highlights use), so it sits flush against the text's own bottom
-  // edge (bottom-0) rather than using the shared --scribble-offset-*
-  // pull-up tokens, which were tuned for taller marks that need to tuck
-  // up into the glyph's descender space.
+  // image's -z-10 stays scoped inside it. Blue-Dotted-Underline.svg sits
+  // flush against the text's own bottom edge (bottom-0) rather than
+  // using the shared --scribble-offset-* pull-up tokens, which were
+  // tuned for taller marks that need to tuck up into the glyph's
+  // descender space.
+  //
+  // width: 100% (not the image's own native 197px) -- heading-2-accent's
+  // font-size shrinks at S/M (own --type-h2-font-size breakpoints), so
+  // "affordable" itself renders much narrower there too; a fixed native
+  // width stayed 197px regardless, badly overrunning past the word and
+  // into "enrichment" on mobile. The wrapping span is inline-block, so
+  // it already hugs "affordable"'s own current rendered width exactly --
+  // sizing the image to 100% of THAT (rather than a fixed px value)
+  // keeps the underline matched to the word at every breakpoint with no
+  // per-tier tuning, the same fix needed if this ever badly overruns
+  // again at some other tier this wasn't tested against.
   return (
     <span className="relative z-0 inline-block whitespace-nowrap">
       <img
         src={blueDottedUnderline}
         alt=""
         aria-hidden="true"
-        className="pointer-events-none absolute bottom-0 left-1/2 -z-10 h-auto max-w-none -translate-x-1/2"
+        className="pointer-events-none absolute bottom-0 left-1/2 -z-10 w-full h-auto max-w-none -translate-x-1/2"
       />
       <span className="heading-2-accent relative">{children}</span>
     </span>
