@@ -58,7 +58,15 @@ const SET_DESIGN = [
 function getSet(number) {
   const design = SET_DESIGN.find((s) => s.number === number);
   const text = content[String(number)] ?? {};
-  return { ...design, assumption: text.assumption ?? '', reality: text.reality ?? '', quote: text.quote ?? '', transcript: text.transcript, audioSrc: text.audioSrc ?? '' };
+  return {
+    ...design,
+    title: text.title ?? '',
+    assumption: text.assumption ?? '',
+    reality: text.reality ?? '',
+    quote: text.quote ?? '',
+    transcript: text.transcript,
+    audioSrc: text.audioSrc ?? '',
+  };
 }
 
 // Card shells share the same shape/animation, just their content and
@@ -182,7 +190,7 @@ function NumberButton({ set, isActive, onClick, shouldReduceMotion, innerRef, id
       type="button"
       {...tabProps}
       onClick={onClick}
-      aria-label={`Insight ${set.number}`}
+      aria-label={`Insight ${set.number} - ${set.title}`}
       className="relative flex cursor-pointer flex-col items-center justify-center p-xs transition-opacity duration-150 hover:opacity-80"
       style={{ width: '48px', height: '48px' }}
     >
@@ -727,7 +735,7 @@ export default function Section12() {
             <NumberButton
               key={design.number}
               asTab={false}
-              set={design}
+              set={getSet(design.number)}
               isActive={activeSet === design.number}
               onClick={() => scrollToSet(design.number)}
               shouldReduceMotion={shouldReduceMotion}
@@ -793,7 +801,7 @@ export default function Section12() {
             }}
             id={tabId(design.number)}
             panelId={PANEL_ID}
-            set={design}
+            set={getSet(design.number)}
             isActive={activeSet === design.number}
             onClick={() => setActiveSet(design.number)}
             shouldReduceMotion={shouldReduceMotion}
