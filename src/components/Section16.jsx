@@ -2,7 +2,7 @@ import { useRef } from 'react';
 import { motion, useReducedMotion, useScroll, useTransform } from 'framer-motion';
 import AccessibleHighlightText from './AccessibleHighlightText.jsx';
 import useMediaQuery from '../hooks/useMediaQuery.js';
-import pinkDottedUnderline from '../assets/Pink-Dotted-Underline.svg';
+import pinkQuadrupleHighlight from '../assets/Highlights/Pink-Quadruple-Highlight.svg';
 import frameLeft from '../assets/Desktop-IMG-Frame-16-Left.svg';
 import frameRight from '../assets/Desktop-IMG-Frame-16-Right.svg';
 import mBgBottom from '../assets/m/M--BG-Frame16 Bottom.svg';
@@ -132,28 +132,37 @@ function StackCard({ card, index, scrollYProgress }) {
 }
 
 function TogetherHighlight({ children }) {
-  // Pink-Dotted-Underline.svg is a flat line (replacing Pink-Scribble.svg,
-  // a thicker hand-drawn mark), so it sits flush against the word's own
-  // bottom edge (bottom-0) instead of using the shared --scribble-offset-*
-  // pull-up tokens tuned for taller marks (same swap as Section 1's
-  // FourHighlight and Section 5's AffordableHighlight).
+  // Pink-Quadruple-Highlight.svg (88x38, a translucent hand-drawn
+  // highlighter-style mark) replaces Pink-Dotted-Underline.svg. Sits
+  // below the word (top-full, flush with the wrapper's own bottom edge)
+  // rather than centered through it -- confirmed against the actual
+  // reference: it reads as a compact underline-ish mark below "TOGETHER",
+  // not a highlighter stroke drawn across the letters. Centered
+  // horizontally (left-1/2 -translate-x-1/2, same as every other
+  // highlight in this codebase).
   //
-  // width: 100% (not the image's own native px width) -- confirmed live
-  // on Section 5's identical AffordableHighlight that a fixed native
-  // width badly overran past the word at smaller breakpoints, since
-  // heading-2-accent's font-size (and so "TOGETHER"'s own rendered
-  // width) shrinks at S/M while the image's native px width didn't. The
-  // wrapping span is inline-block, so it already hugs "TOGETHER"'s own
-  // current rendered width exactly -- sizing the image to 100% of THAT
-  // keeps the underline matched to the word at every breakpoint with no
-  // per-tier tuning.
+  // h-full (not w-full like this component's own previous underline, or
+  // Section 5's AffordableHighlight) -- this mark's native aspect ratio
+  // (88x38, much taller relative to its width than a flat line) meant
+  // matching it to "TOGETHER"'s own WIDTH scaled its HEIGHT up to ~70px,
+  // far taller than the reference's compact mark. Matching it to the
+  // wrapper's own HEIGHT instead (which tracks heading-2-accent's
+  // font-size, the same responsive value "TOGETHER" itself uses) keeps
+  // it proportional to the text at every breakpoint, with width auto-
+  // computed from the image's own aspect ratio at that height.
+  //
+  // -translate-y-1/3 pulls it up off the wrapper's bottom edge (which
+  // sits a full line-height below the baseline, including descender
+  // space) so it lands just under the baseline instead of noticeably
+  // below it. A fraction of the image's OWN height (not a fixed px
+  // offset) so the gap stays proportional at every breakpoint.
   return (
     <span className="relative z-0 inline-block whitespace-nowrap">
       <img
-        src={pinkDottedUnderline}
+        src={pinkQuadrupleHighlight}
         alt=""
         aria-hidden="true"
-        className="pointer-events-none absolute bottom-0 left-1/2 -z-10 w-full h-auto max-w-none -translate-x-1/2"
+        className="pointer-events-none absolute left-1/2 top-full -z-10 h-full w-auto max-w-none -translate-x-1/2 -translate-y-1/3"
       />
       <span className="heading-2-accent relative">{children}</span>
     </span>
