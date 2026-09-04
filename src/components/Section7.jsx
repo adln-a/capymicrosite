@@ -1,7 +1,7 @@
 import ScrollSection from './ScrollSection.jsx';
 import AccessibleHighlightText from './AccessibleHighlightText.jsx';
 import useMediaQuery from '../hooks/useMediaQuery.js';
-import purpleScribble from '../assets/Purple-Scribble.svg';
+import purpleHighlight from '../assets/Highlights/Purple-Highlight.svg';
 import paperClipMetal from '../assets/Paper-Clip-Metal.png';
 import blueEllipse from '../assets/Blue-Ellipse.svg';
 import yellowBeneficiariesShape from '../assets/Yellow-Shape-Beneficiaries-Background.svg';
@@ -67,32 +67,20 @@ const PAPERCLIP_POSITION = {
 };
 
 function PeopleHighlight({ children }) {
-  // Same span-wrap technique as FourHighlight/MatterHighlight/
-  // ScribbleHighlight: z-0 on the wrapping span gives it its own stacking
-  // context so the image's -z-10 stays scoped inside it. The earlier
-  // hardcoded heading-1-desktop font-size override here was a mistake --
-  // PEOPLE matches its surrounding heading-2 context like every other
-  // highlight, so heading-2-accent (which already carries its own correct,
-  // responsive font-size/line-height) is all that's needed. Purple-
-  // Scribble.svg is 140x32 natively -- exactly the ~140x32 target, so no
-  // explicit size override is needed.
-  //
-  // left-1/2 -translate-x-1/2 (was a fixed left:-11px): heading-2-accent's
-  // own font-size is responsive (smaller at S, larger from xl up per its
-  // own token), so "PEOPLE"'s actual rendered width changes across
-  // breakpoints while the scribble's own width stays a constant 140px --
-  // a fixed offset can only ever be centered at the ONE width it happened
-  // to be tuned against (confirmed: -11px landed within 0.2px of centered
-  // at xl, but sat 17px off-center at S's narrower rendered word). Self-
-  // adjusting centering keeps it centered at any width instead.
+  // Purple-Highlight.svg (120x31, a compact highlighter mark) replaces
+  // Purple-Scribble.svg -- same treatment as Section 10/11/13/14/16's
+  // marks: sits just under the baseline (top-full + a small
+  // downward-adjusted translate), centered via left-1/2/-translate-x-1/2
+  // (self-adjusting to PEOPLE's own responsive rendered width at any
+  // breakpoint). h-full/w-auto keeps it at its own proportions instead
+  // of stretching to the word's width.
   return (
     <span className="relative z-0 inline-block whitespace-nowrap">
       <img
-        src={purpleScribble}
+        src={purpleHighlight}
         alt=""
         aria-hidden="true"
-        className="pointer-events-none absolute left-1/2 -z-10 h-auto max-w-none -translate-x-1/2"
-        style={{ top: 'var(--scribble-offset-default)' }}
+        className="pointer-events-none absolute left-1/2 top-full -z-10 max-w-none -translate-x-1/2 translate-y-[calc(-33.333%+3px)]"
       />
       <span className="heading-2-accent relative">{children}</span>
     </span>

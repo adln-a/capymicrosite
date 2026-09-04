@@ -14,8 +14,8 @@ import bgScene3Xl from '../assets/Desktop-BG--Frame-2C.svg';
 import bgScene3L from '../assets/l/L--BG-Frame2C.svg';
 import bgScene3M from '../assets/m/M--BG-Frame2C.svg';
 import bgScene3Xs from '../assets/s/S--BG-Frame2C.svg';
-import pinkScribble from '../assets/Pink-Scribble.svg';
-import blueScribble from '../assets/Blue-Scribble.svg';
+import pinkHighlight from '../assets/Highlights/Pink-Highlight.svg';
+import blueShortHighlight from '../assets/Highlights/Blue-Short-Highlight.svg';
 import paperClip from '../assets/Paper-Clip.png';
 import paperClipBlack from '../assets/Paper-Clip-Black.png';
 import paperBorderTop from '../assets/Paper-Border-Top.png';
@@ -106,11 +106,10 @@ function MatterHighlight({ children }) {
   return (
     <span className="body-paragraph-large relative z-0 inline-block whitespace-nowrap text-center text-heading-blue">
       <img
-        src={pinkScribble}
+        src={pinkHighlight}
         alt=""
         aria-hidden="true"
-        className="pointer-events-none absolute left-1/2 -z-10 h-auto max-w-none -translate-x-1/2"
-        style={{ top: 'var(--scribble-offset-tight)' }}
+        className="pointer-events-none absolute left-1/2 top-full -z-10 max-w-none -translate-x-1/2 translate-y-[calc(-33.333%+3px)]"
       />
       <span className="relative">{children}</span>
     </span>
@@ -200,11 +199,10 @@ function BurnoutHighlight({ children }) {
   return (
     <span className="relative z-0 inline-block whitespace-nowrap">
       <img
-        src={blueScribble}
+        src={blueShortHighlight}
         alt=""
         aria-hidden="true"
-        className="pointer-events-none absolute left-1/2 -z-10 max-w-none -translate-x-1/2"
-        style={{ width: '89px', height: '23px', top: 'var(--scribble-offset-default)' }}
+        className="pointer-events-none absolute left-1/2 top-full -z-10 max-w-none -translate-x-1/2 translate-y-[calc(-33.333%+3px)]"
       />
       <span className="relative">{children}</span>
     </span>

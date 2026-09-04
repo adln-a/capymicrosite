@@ -1,7 +1,7 @@
 import ScrollSection from './ScrollSection.jsx';
 import AccessibleHighlightText from './AccessibleHighlightText.jsx';
 import useMediaQuery from '../hooks/useMediaQuery.js';
-import blueLineScribble from '../assets/Blue-Line-Scribble.svg';
+import blueLongHighlight from '../assets/Highlights/Blue-Long-Highlight.svg';
 import paperClipMetal2 from '../assets/Paper-Clip-Metal2.png';
 import illustration from '../assets/Desktop-IMG-Frame-14.svg';
 import sIllustration from '../assets/s/S--IMG-Frame14.svg';
@@ -18,19 +18,19 @@ const ILLUSTRATION_DELAY = 0.54;
 const RULED_LINE_COUNT = 8;
 
 function AloneHighlight({ children }) {
-  // Same z-0/-z-10 span-wrap technique as Section 5's ScribbleHighlight
-  // (same Blue-Line-Scribble.svg asset, 227x16 natively) -- w-full ties
-  // the scribble's width to the wrapped text's own rendered width rather
-  // than a fixed pixel value, so it can't drift if the text changes. No
-  // -translate-y-1/2 (unlike Section 5's version): this one sits fully
-  // below the text, same as ParticipationHighlight in Section 13.
+  // Blue-Long-Highlight.svg (340x25, a flat blue highlighter mark)
+  // replaces Blue-Line-Scribble.svg -- same treatment as Section 15/16's
+  // marks: sits just under the baseline (top-full + -translate-y-1/3),
+  // centered, w-full tying its width to the wrapped text's own rendered
+  // width. No rotate (unlike the old scribble asset) -- this mark is
+  // already a straight highlighter stroke.
   return (
     <span className="relative z-0 inline-block whitespace-nowrap px-3xs">
       <img
-        src={blueLineScribble}
+        src={blueLongHighlight}
         alt=""
         aria-hidden="true"
-        className="pointer-events-none absolute left-1/2 top-full -z-10 h-auto w-full max-w-none origin-top -translate-x-1/2 rotate-[-5deg]"
+        className="pointer-events-none absolute left-1/2 top-full -z-10 h-auto w-full max-w-none -translate-x-1/2 translate-y-[calc(-33.333%+10px)]"
       />
       <span className="relative">{children}</span>
     </span>

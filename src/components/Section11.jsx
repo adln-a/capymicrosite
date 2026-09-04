@@ -3,7 +3,7 @@ import { motion, useReducedMotion, useScroll, useTransform } from 'framer-motion
 import ScrollSection from './ScrollSection.jsx';
 import useMediaQuery from '../hooks/useMediaQuery.js';
 import AccessibleHighlightText from './AccessibleHighlightText.jsx';
-import greenScribble from '../assets/Green-Scribble.svg';
+import blueTripleHighlight2 from '../assets/Highlights/Blue-Triple-Highlight-2.svg';
 import speechBubbleWhiteEllipse1 from '../assets/Speech-Bubble-White-Ellipse1.svg';
 import speechBubbleWhiteEllipse2 from '../assets/Speech-Bubble-White-Ellipse2.svg';
 import speechBubbleWhiteEllipse2Tail1 from '../assets/Speech-Bubble-White-Ellipse2-Tail1.svg';
@@ -264,20 +264,20 @@ function shuffle(array) {
 }
 
 function RealProblemHighlight({ children }) {
-  // Same span-wrap technique as the other scribble highlights, reusing
-  // Green-Scribble.svg (already used for "FOUR" in Section 1). Kept at its
-  // own native 138x26 (not stretched to the wrapped words' rendered width).
-  // top: var(--scribble-offset-default) is the shared offset used across
-  // most of the underline/loop scribbles -- a fixed 10px pull-up from the
-  // span's own line-box bottom, same value everywhere.
+  // Blue-Triple-Highlight-2.svg (224x37, a compact highlighter mark)
+  // replaces Green-Scribble.svg -- same treatment as Section 13/14/15/16's
+  // marks: sits just under the baseline (top-full + a small
+  // downward-adjusted translate), centered. h-full/w-auto keeps it at its
+  // own proportions (tied to the wrapper's height, which tracks
+  // heading-2-accent's responsive font-size) instead of stretching to
+  // "REAL PROBLEM" 's own rendered width.
   return (
     <span className="relative z-0 inline-block whitespace-nowrap">
       <img
-        src={greenScribble}
+        src={blueTripleHighlight2}
         alt=""
         aria-hidden="true"
-        className="pointer-events-none absolute left-1/2 -z-10 max-w-none -translate-x-1/2"
-        style={{ width: '138px', height: '26px', top: 'var(--scribble-offset-default)' }}
+        className="pointer-events-none absolute left-1/2 top-full -z-10 h-full w-auto max-w-none -translate-x-1/2 translate-y-[calc(-33.333%+3px)]"
       />
       <span className="heading-2-accent relative">{children}</span>
     </span>

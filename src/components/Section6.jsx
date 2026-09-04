@@ -4,7 +4,7 @@ import { useReducedMotion } from 'framer-motion';
 import ScrollSection from './ScrollSection.jsx';
 import AccessibleHighlightText from './AccessibleHighlightText.jsx';
 import useMediaQuery from '../hooks/useMediaQuery.js';
-import blueScribbleMultiple from '../assets/Blue-Scribble-Multiple.svg';
+import blueTripleHighlight from '../assets/Highlights/Blue-Triple-Highlight.svg';
 import paperClipMetal from '../assets/Paper-Clip-Metal.png';
 import receipt1 from '../assets/section-6/Section6--Grocery-Receipt1.png';
 import receipt2 from '../assets/section-6/Section6--Grocery-Receipt2.png';
@@ -30,17 +30,18 @@ const PINK_CIRCLE_DELAY = 0.18;
 const RULED_LINE_COUNT = 9;
 
 function EssentialsHighlight({ children }) {
-  // Same z-0/-z-10 span-wrap technique as the other scribble highlights.
-  // Blue-Scribble-Multiple.svg is 162x28 natively -- an exact match for
-  // the target size, no scaling needed.
+  // Blue-Triple-Highlight.svg (compact highlighter mark) replaces
+  // Blue-Scribble-Multiple.svg -- same treatment as the other highlight
+  // swaps: rendered at its own native SVG size (no width/height
+  // override), sits just under the baseline (top-full + a small
+  // downward-adjusted translate), centered via left-1/2/-translate-x-1/2.
   return (
-    <span className="relative z-0 inline-block whitespace-nowrap">
+    <span className="relative -z-10 inline-block whitespace-nowrap">
       <img
-        src={blueScribbleMultiple}
+        src={blueTripleHighlight}
         alt=""
         aria-hidden="true"
-        className="pointer-events-none absolute left-1/2 -z-10 -translate-x-1/2"
-        style={{ width: '162px', height: '28px', top: 'var(--scribble-offset-tight)' }}
+        className="pointer-events-none absolute left-1/2 top-full -z-10 max-w-none -translate-x-1/2 translate-y-[calc(-33.333%+3px)]"
       />
       <span className="heading-3-accent relative">{children}</span>
     </span>
@@ -540,7 +541,7 @@ function CardColumn({ columnClassName, cardClassName, circleClassName = DEFAULT_
         transition={{ duration: 0.6, ease: 'easeOut', delay: WHITE_BOX_DELAY }}
         initial={disableFadeIn ? false : undefined}
         whileInView={disableFadeIn ? false : undefined}
-        className={cardClassName}
+        className={`${cardClassName} isolate`}
       >
         <div className="flex flex-1 flex-col items-start justify-start gap-m">
           <h3 className="heading-3 self-stretch text-center text-heading-blue">

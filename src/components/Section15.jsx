@@ -1,7 +1,7 @@
 import ScrollSection from './ScrollSection.jsx';
 import AccessibleHighlightText from './AccessibleHighlightText.jsx';
 import useMediaQuery from '../hooks/useMediaQuery.js';
-import pinkCircleSmooth from '../assets/Pink-Circle-Smooth.svg';
+import purpleTripleHighlight from '../assets/Highlights/Purple-Triple-Highlight.svg';
 import illustration from '../assets/Desktop-IMG-Frame-15.svg';
 import sIllustration from '../assets/s/S--IMG-Frame15.svg';
 import mIllustration from '../assets/m/M--BG-Frame 15.svg';
@@ -15,27 +15,22 @@ const XL_ILLUSTRATION = { src: illustration, width: 1039, height: 280 };
 const M_ILLUSTRATION = { src: mIllustration, width: 624, height: 280 };
 const S_ILLUSTRATION = { src: sIllustration, width: 369, height: 303.29 };
 
-function PeopleHighlight({ children, isAtLeastSm }) {
-  // Same z-0/-z-10 span-wrap technique as the other scribble highlights,
-  // but centered on the word (left-1/2/top-1/2 + -translate-x-1/2/-y-1/2)
-  // rather than hugging its width -- Pink-Circle-Smooth.svg is a full
-  // encircling oval, not an underline, and its native 169x55 already
-  // matches "PEOPLE" 's own rendered size at XL (heading-2-accent is 28px
-  // there) closely enough that no extra sizing was needed. heading-2-
-  // accent drops to 20px at S though (28*20/28... i.e. a 20/28 ratio),
-  // and "PEOPLE" shrinks with it -- the same fixed 169x55 oval at that
-  // smaller size bled noticeably past the word into the next line's "do"
-  // once the heading went full-width and rewrapped. Scaled down by that
-  // same 20/28 ratio for S (121x39) so the ring still hugs just the word.
-  const scribbleSize = isAtLeastSm ? { width: 169, height: 55 } : { width: 121, height: 39 };
+function PeopleHighlight({ children }) {
+  // Purple-Triple-Highlight.svg (125x21, a flat purple highlighter mark)
+  // replaces Pink-Circle-Smooth.svg -- same treatment as Section 16's
+  // TOGETHER: sits below the word just under the baseline (top-full +
+  // -translate-y-1/3) instead of encircling it. w-full/h-auto (this
+  // asset's aspect ratio is close to a flat underline, unlike Section
+  // 16's taller quadruple mark) so it scales with "PEOPLE" 's own
+  // responsive width at every breakpoint, with no per-tier fixed sizing
+  // needed.
   return (
     <span className="relative z-0 inline-block whitespace-nowrap">
       <img
-        src={pinkCircleSmooth}
+        src={purpleTripleHighlight}
         alt=""
         aria-hidden="true"
-        className="pointer-events-none absolute left-1/2 top-1/2 -z-10 max-w-none -translate-x-1/2 -translate-y-1/2"
-        style={{ width: `${scribbleSize.width}px`, height: `${scribbleSize.height}px` }}
+        className="pointer-events-none absolute left-1/2 top-full -z-10 h-auto w-full max-w-none -translate-x-1/2 translate-y-[calc(-33.333%+3px)]"
       />
       <span className="heading-2-accent relative">{children}</span>
     </span>
@@ -72,7 +67,7 @@ export default function Section15() {
         <h2 className="heading-2 w-full max-w-full text-center text-heading-inverted sm:w-[480px] lg:w-[540px]">
           <AccessibleHighlightText
             before="Products alone don’t solve problems. "
-            highlight={<PeopleHighlight isAtLeastSm={isAtLeastSm}>PEOPLE</PeopleHighlight>}
+            highlight={<PeopleHighlight>PEOPLE</PeopleHighlight>}
             after=" do."
           />
         </h2>

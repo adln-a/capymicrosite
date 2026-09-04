@@ -162,7 +162,7 @@ function TogetherHighlight({ children }) {
         src={pinkQuadrupleHighlight}
         alt=""
         aria-hidden="true"
-        className="pointer-events-none absolute left-1/2 top-full -z-10 h-full w-auto max-w-none -translate-x-1/2 -translate-y-1/3"
+        className="pointer-events-none absolute left-1/2 top-full -z-10 h-full w-auto max-w-none -translate-x-1/2 translate-y-[calc(-33.333%+3px)]"
       />
       <span className="heading-2-accent relative">{children}</span>
     </span>

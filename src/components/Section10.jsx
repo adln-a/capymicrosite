@@ -1,7 +1,7 @@
 import ScrollSection from './ScrollSection.jsx';
 import AccessibleHighlightText from './AccessibleHighlightText.jsx';
 import paperBorderTop from '../assets/Paper-Border-Top.png';
-import purpleScribble from '../assets/Purple-Scribble.svg';
+import purpleHighlight from '../assets/Highlights/Purple-Highlight.svg';
 import illustrationXl from '../assets/Desktop-IMG--Frame-10.svg';
 import illustrationS from '../assets/s/S--IMG-Frame10.svg';
 
@@ -20,20 +20,20 @@ const BORDER_TILE_WIDTH = (760 / 55) * BORDER_TILE_HEIGHT;
 const ILLUSTRATION_DELAY = 0.15;
 
 function PerfectSolutionHighlight({ children }) {
-  // Same span-wrap technique as the other scribble highlights. Purple-
-  // Scribble.svg is kept at its own native 140x32 (not stretched to the
-  // wrapped words' rendered width) and centered under the full "PERFECT
-  // SOLUTION" phrase via left-1/2/-translate-x-1/2, rather than the fixed
-  // left:58px offset this used to have (which only lined up under part of
-  // the phrase, not centered on it).
+  // Purple-Highlight.svg (120x31, a compact highlighter mark) replaces
+  // Purple-Scribble.svg -- same treatment as Section 11/13/14/15/16's
+  // marks: sits just under the baseline (top-full + a small
+  // downward-adjusted translate), centered under the full "PERFECT
+  // SOLUTION" phrase via left-1/2/-translate-x-1/2. h-full/w-auto keeps
+  // it at its own proportions instead of stretching to the phrase's own
+  // rendered width.
   return (
-    <span className="relative z-0 inline-block origin-top-left rotate-1 whitespace-nowrap">
+    <span className="relative z-0 inline-block whitespace-nowrap">
       <img
-        src={purpleScribble}
+        src={purpleHighlight}
         alt=""
         aria-hidden="true"
-        className="pointer-events-none absolute left-1/2 -z-10 max-w-none -translate-x-1/2"
-        style={{ width: '140px', height: '32px', top: 'var(--scribble-offset-tight)' }}
+        className="pointer-events-none absolute left-1/2 top-full -z-10 max-w-none -translate-x-1/2 translate-y-[calc(-33.333%+3px)]"
       />
       <span className="heading-2-accent relative">{children}</span>
     </span>

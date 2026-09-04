@@ -3,7 +3,7 @@ import AccessibleHighlightText from './AccessibleHighlightText.jsx';
 import bgFrame1Xl from '../assets/Desktop-BG--Frame-1.svg';
 import bgFrame1M from '../assets/m/M--BG-Frame1.svg';
 import bgFrame1Xs from '../assets/s/S--BG-Frame1.svg';
-import fourScribble from '../assets/Green-Underline.svg';
+import fourScribble from '../assets/Highlights/Green-Dot.svg';
 
 const CARD_SHADOW = 'shadow-[0_8px_16px_rgba(0,0,0,0.08)]';
 // White box's ScrollSection starts its own whileInView animation this much
@@ -138,19 +138,19 @@ function FourHighlight({ children }) {
   // outside it; "FOUR" itself stays visually unaffected since it doesn't
   // spatially overlap its neighbors, only the scribble does.
   //
-  // Sizing/position: rendered at Green-Underline.svg's own native size (no
-  // stretch/scale) -- 84x4, a flat line rather than the taller hand-drawn
-  // Green-Scribble.svg this replaced, so it sits flush against the text's
-  // own bottom edge (bottom-0) with no pull-up math needed to clear "FOUR"'s
-  // own glyph ink or the next wrapped line below it (same bottom-0 approach
-  // Section 5's AffordableHighlight uses for its own flat underline).
+  // Sizing/position: rendered at Green-Dot.svg's own native size (no
+  // stretch/scale) -- 81x10, a flat dotted line rather than the taller
+  // hand-drawn Green-Scribble.svg this originally replaced, so it sits
+  // flush against the text's own bottom edge (bottom-0), nudged down 3px
+  // for the same small baseline gap every other highlight in the codebase
+  // now uses.
   return (
     <span className="relative -z-10 inline-block whitespace-nowrap">
       <img
         src={fourScribble}
         alt=""
         aria-hidden="true"
-        className="pointer-events-none absolute bottom-0 left-1/2 -z-10 h-auto max-w-none -translate-x-1/2"
+        className="pointer-events-none absolute bottom-0 left-1/2 -z-10 h-auto max-w-none -translate-x-1/2 translate-y-[3px]"
       />
       <span className="heading-1-accent relative">{children}</span>
     </span>

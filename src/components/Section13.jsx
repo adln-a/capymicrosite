@@ -1,7 +1,7 @@
 import ScrollSection from './ScrollSection.jsx';
 import AccessibleHighlightText from './AccessibleHighlightText.jsx';
 import useMediaQuery from '../hooks/useMediaQuery.js';
-import blueScribble from '../assets/Blue-Scribble.svg';
+import purpleHighlight from '../assets/Highlights/Purple-Highlight.svg';
 import bgRight from '../assets/Desktop-BG--Frame-13-Right.svg';
 import bgBottomLeft from '../assets/Desktop-BG--Frame-13-BottomLeft.svg';
 import sImgFrame13 from '../assets/s/S--IMG-Frame13.svg';
@@ -17,21 +17,22 @@ const PINK_BOX_DELAY = 0.18;
 const BG_DELAY = 0.36;
 
 function ParticipationHighlight({ children }) {
-  // Same span-wrap technique as the other scribble highlights.
-  // Blue-Scribble.svg (not Blue-Line-Scribble.svg -- confirmed by
-  // rendering both: Blue-Scribble is the thick highlighter-swipe style
-  // that matches the reference under PARTICIPATION, Blue-Line-Scribble is
-  // a thin zigzag used elsewhere and doesn't match) is 89x23 natively --
-  // kept at that native size (not stretched to PARTICIPATION's own much
-  // wider rendered width).
+  // Purple-Highlight.svg (120x31, a compact highlighter mark, not a
+  // full-width underline) replaces Blue-Scribble.svg -- sits just under
+  // the baseline (top-full + a small downward-adjusted translate),
+  // centered. h-full/w-auto (not w-full): this mark stays its own native
+  // proportions instead of stretching to PARTICIPATION's own much wider
+  // rendered width -- same treatment as Section 16's TOGETHER mark, tied
+  // to the wrapper's own height (which tracks heading-2-accent's
+  // responsive font-size) so it scales at every breakpoint without
+  // getting stretched lengthwise.
   return (
-    <span className="relative z-0 inline-block origin-top-left rotate-[-1deg] whitespace-nowrap">
+    <span className="relative z-0 inline-block whitespace-nowrap">
       <img
-        src={blueScribble}
+        src={purpleHighlight}
         alt=""
         aria-hidden="true"
-        className="pointer-events-none absolute left-1/2 -z-10 max-w-none -translate-x-1/2"
-        style={{ width: '89px', height: '23px', top: 'var(--scribble-offset-default)' }}
+        className="pointer-events-none absolute left-1/2 top-full -z-10 max-w-none -translate-x-1/2 translate-y-[calc(-33.333%+3px)]"
       />
       <span className="heading-2-accent relative">{children}</span>
     </span>
