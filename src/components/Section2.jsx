@@ -149,6 +149,7 @@ function Scene1Content({ holeColumnColor }) {
           <AccessibleHighlightText
             before="What if we could help children from low-income families feel like they "
             highlight={<MatterHighlight>matter</MatterHighlight>}
+            after="?"
           />
         </p>
       </div>
