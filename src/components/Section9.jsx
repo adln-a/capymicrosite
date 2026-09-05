@@ -238,23 +238,29 @@ export default function Section9() {
             anchored to the pink block regardless of its content height. */}
         <ScrollSection className="relative flex w-full flex-col items-start justify-start self-stretch">
           <div className="flex items-start justify-end rounded-t-large bg-bg-pink px-l py-s sm:rounded-t-medium">
-            <h2 className="heading-2 text-heading-red">We built and we tested</h2>
+            <h2 className="heading-2 text-heading-red">We built and tested ideas</h2>
           </div>
 
           <div className="flex w-full items-start justify-end gap-m bg-bg-pink pb-l pl-l pr-s pt-l sm:pb-m sm:pt-m">
-            <div className="flex flex-1 flex-col items-start justify-start gap-m">
+            <div className="flex flex-1 flex-col items-start justify-start gap-xl lg:gap-m">
               <p className="body-paragraph self-stretch text-body-default">
-                Over the past three years, we built, tested, and reworked ideas. Always with families, not just for
-                them. We started with lo-fi prototypes, tested them, then refined them into high-fi versions for
-                further trials.
+                Over the past three years, we built, tested, and refined different ideas with families. We started
+                with simple prototypes, tested them with users, and used what we learned to improve them and develop
+                higher-fidelity versions for further testing.
               </p>
 
               {/* flex-col carries through S AND M now (was sm:flex-row,
                   applying from 640px up unconditionally) -- "stack Capy
                   Activity Hub and the paragraph" is an M-tier ask;
                   lg:flex-row/lg:gap-l restores the original side-by-side
-                  layout from 992px up, unchanged from before. */}
-              <div className="flex flex-col items-start justify-start gap-xl self-stretch lg:flex-row lg:gap-l">
+                  layout from 992px up, unchanged from before. gap-xs
+                  (was gap-xl) below lg: the tag and its own description
+                  read as one visual group, not two separate blocks, so
+                  they sit closer together than the gap above (between
+                  this group and the first paragraph, now gap-xl on the
+                  outer wrapper) -- unchanged at lg+, which keeps its own
+                  lg:gap-l for the side-by-side layout. */}
+              <div className="flex flex-col items-start justify-start gap-xs self-stretch lg:flex-row lg:gap-l">
                 {/* w-full stays S-only (unchanged, pre-existing). At M
                     the tag shouldn't stretch to the stacked column's
                     full width -- sm:w-fit hugs its own content instead,
@@ -268,8 +274,9 @@ export default function Section9() {
                   <PillDot />
                 </div>
                 <p className="body-paragraph flex-1 text-body-default">
-                  A monthly class-pass platform that lets parents access enrichment activities at a low cost.
-                  Achievements are logged in the app&ndash;turning small wins into long-term confidence.
+                  We designed a monthly class-pass platform under the working name Capy Activity Hub, that gives
+                  parents access to enrichment activities at a lower cost. The app also records children&rsquo;s
+                  achievements, giving families a way to track their progress over time.
                 </p>
               </div>
             </div>

@@ -569,30 +569,21 @@ export default function Section7() {
 
           <div className="flex flex-1 flex-col items-start justify-start gap-s">
             <p className="body-paragraph text-body-default">
-              Over two years, we sat down with families, non-profits, donors, and frontline
-              workers.
+              Over two years, we spoke with families, non-profits, donors, and frontline workers
+              to understand their experiences.
             </p>
             <p className="body-paragraph text-body-default">
-              We asked questions. We listened. We ran hands-on sessions with children to learn how
-              they think, dream, and cope.
+              We asked questions, listened to their stories, and ran hands-on sessions with
+              children to understand how they think, learn, and cope.
             </p>
-            <h3
-              className="text-heading-red"
-              style={{
-                fontFamily: 'var(--font-atkinson)',
-                fontWeight: 'var(--font-weight-atkinson-bold)',
-                fontSize: '22px',
-                lineHeight: '28px',
-              }}
-            >
-              Our goal wasn&rsquo;t to find quick fixes.
-            </h3>
+            <h3 className="heading-3 text-heading-red">We wanted to understand the challenges they face.</h3>
             <p className="body-paragraph text-body-default">
-              It was to understand the quiet barriers, the ones not seen in reports or funding
-              sheets.
+              Not just what we could see in reports or funding data, but also the everyday
+              challenges that can be harder to capture.
             </p>
             <p className="body-paragraph text-body-default">
-              The ones that start at home and echo in classrooms, care centres, and case files.
+              These challenges can start at home and affect children&rsquo;s experiences in
+              school, care centres, and the support they receive.
             </p>
           </div>
 

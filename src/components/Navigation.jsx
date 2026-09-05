@@ -359,19 +359,33 @@ export default function Navigation({ sentinelRef, contentRef, skipLinkRef, activ
 
   const close = useCallback(() => {
     setIsOpen(false);
-    toggleRef.current?.focus();
   }, []);
 
   const handleToggleClick = useCallback(() => {
     setIsOpen((prev) => !prev);
   }, []);
 
-  // Focus moves to the toggle button itself (now in its "close" state) the
-  // instant the panel opens. A plain click already focuses the button in
-  // most browsers, but Safari doesn't focus <button> on click by default, so
-  // this effect makes the behavior consistent everywhere.
+  // Focus moves to the toggle button itself the instant the panel opens
+  // OR closes -- not just on open. The toggle is really two DIFFERENT
+  // DOM elements sharing one ref (CloseButton's X icon while open, a
+  // plain hamburger <button> while closed, swapped via the ternary
+  // below), so a focus() call made synchronously inside an onClick
+  // handler (the old approach, e.g. in `close` above) targets whichever
+  // element is still mounted from the PREVIOUS render -- an instant
+  // later, React re-renders and swaps that element out for the other
+  // one, and removing a focused DOM node resets focus to <body>. Doing
+  // it here instead, in an effect keyed on `isOpen`, runs AFTER React
+  // has already committed the swap, so toggleRef.current correctly
+  // points at whichever element is actually mounted now, and the focus
+  // sticks. hasOpenedRef guards the close-side branch against firing on
+  // initial mount (isOpen starts false) -- without it, page load itself
+  // would yank focus onto the hamburger button.
+  const hasOpenedRef = useRef(false);
   useEffect(() => {
     if (isOpen) {
+      hasOpenedRef.current = true;
+      toggleRef.current?.focus();
+    } else if (hasOpenedRef.current) {
       toggleRef.current?.focus();
     }
   }, [isOpen]);
@@ -696,7 +710,7 @@ export default function Navigation({ sentinelRef, contentRef, skipLinkRef, activ
                   <button
                     type="button"
                     tabIndex={0}
-                    onClick={handleToggleClick}
+                    onClick={close}
                     className={`sr-only focus:not-sr-only button-default focus:inline-flex focus:cursor-pointer focus:items-center focus:gap-2xs focus:rounded-large focus:bg-button-primary-orange focus:px-m focus:py-s focus:text-button-inverted ${CARD_SHADOW}`}
                   >
                     Close navigation
@@ -746,7 +760,7 @@ export default function Navigation({ sentinelRef, contentRef, skipLinkRef, activ
                 <button
                   type="button"
                   tabIndex={0}
-                  onClick={handleToggleClick}
+                  onClick={close}
                   className={`sr-only focus:not-sr-only button-default focus:inline-flex focus:cursor-pointer focus:items-center focus:gap-2xs focus:rounded-large focus:bg-button-primary-orange focus:px-m focus:py-s focus:text-button-inverted ${CARD_SHADOW}`}
                 >
                   Close navigation
