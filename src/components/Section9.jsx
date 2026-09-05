@@ -43,7 +43,7 @@ const SLIDES = [
 // XL keeps its fixed pixel slide size (unchanged). M gets its own 560px
 // width, same 3:2 aspect ratio as XL (720/480) rather than a different
 // crop -- 560 * (480/720) = 373.33. At S each slide fills the full
-// viewport width instead (see the `<li>` below) -- `s` here only
+// viewport width instead (see the slide `<div>` below) -- `s` here only
 // supplies that slide's own aspect ratio, so a narrower or wider phone
 // still gets a proportional (not stretched/cropped) image.
 const SLIDE_SIZES = {
@@ -364,7 +364,7 @@ export default function Section9() {
               all, since the slides themselves carry no tabindex.
 
               z-10: needed now that these render BEFORE the slide track
-              in the DOM (above) -- the track is a motion.ul with an
+              in the DOM (above) -- the track is a motion.div with an
               animated `x` offset, and Framer applies that as an inline
               `transform`, which creates its own stacking context. Among
               same-level (no z-index) stacking contexts, later DOM order
@@ -407,29 +407,6 @@ export default function Section9() {
             style={{ right: isAtLeastSm ? 'calc(50% - 480px)' : 'var(--spacing-page-margin-x)' }}
           />
 
-          {/* Live region, per the APG pattern (aria-live="polite" for a
-              non-auto-rotating carousel; aria-atomic="false" is the
-              pattern's own value, not "true" -- there's nothing partial
-              to diff against here since the whole sentence is always
-              replaced wholesale, so this mostly just matches the spec's
-              literal usage). Reads realIndex, which updates immediately
-              on click regardless of whether the row is stepping onto a
-              real slide or a clone (own comment on it above) -- a screen
-              reader user gets the announcement right away rather than
-              waiting on the animation/reset to settle.
-
-              Position only ("Slide N of 5"), not the slide's own alt text
-              too -- confirmed on-device that swiping forward immediately
-              after this fires reaches the newly-active slide's <img>,
-              whose own alt carries the same description a second time in
-              a row. Same fix Section 12 already uses for its own
-              Insight-N announcement (own comment on AssumptionCard's
-              tabProps): keep the button-triggered announcement brief,
-              let the actual content (reached separately, on its own
-              terms) be the one place with the full description. */}
-          <div aria-live="polite" aria-atomic="false" className="sr-only">
-            {`Slide ${realIndex + 1} of ${SLIDES.length}`}
-          </div>
           {/* Pink column: pinned to the same 960px width as the content
               above (not full-bleed), height hugging whatever the rotated
               row needs -- the row itself is wider than this box and
@@ -442,21 +419,44 @@ export default function Section9() {
               unwanted strip of color past the rotated row's bounding box. */}
           <div className="mx-auto flex w-full max-w-full flex-col items-center justify-center bg-transparent sm:w-[960px] sm:bg-bg-pink">
             <div className="origin-top-left -rotate-1">
-              {/* Plain <ul>/<li> for the track's own flex/gap layout and
-                  Framer's translateX animation -- no list/listitem role
-                  here, since these are "slides" per the APG pattern
-                  (role="group" + aria-roledescription="slide" on each
-                  <li> below), not literal list items. role="presentation"
-                  is load-bearing, not decorative: a bare <ul> carries an
-                  IMPLICIT list role from the tag itself regardless of
-                  whether "list" is written explicitly, and with only one
-                  <li> ever exposed at a time (the other 8 aria-hidden,
-                  own comment further down), that implicit list was
-                  announcing "list, 1 item" right alongside the "1 of 5"
-                  slide label -- confusing, and actively wrong (it reads
-                  as "only 1 slide total," the opposite of "1 of 5"). */}
-              <motion.ul
-                role="presentation"
+              {/* Plain <div>s for the track's own flex/gap layout and
+                  Framer's translateX animation, matching W3C's own APG
+                  carousel reference implementation (which uses a plain
+                  div.carousel-item per slide, role="group" +
+                  aria-roledescription="slide" directly on it -- no
+                  ul/li at all) rather than a semantic list. An earlier
+                  version of this used <ul>/<li> with role="presentation"
+                  on the <ul> to strip its implicit list semantics (a
+                  bare <ul> otherwise announces "list, N items" right
+                  alongside the "1 of 5" slide label -- confusing, and
+                  actively wrong once only one <li> is ever exposed at a
+                  time). Plain divs need none of that: they carry no
+                  implicit role to strip in the first place, and axe/
+                  Lighthouse's aria-allowed-role check (which flagged
+                  role="group" on <li> as incompatible, even though it's
+                  literally the APG pattern) has nothing to flag on a div
+                  either, since div accepts any role.
+
+                  aria-live="polite"/aria-atomic="false" live here now
+                  (was a separate hand-built "Slide N of 5" sr-only div,
+                  removed) -- matching the W3C reference exactly, which
+                  puts aria-live on the container holding the slide
+                  groups, not on a standalone duplicate string. The old
+                  separate live region and the active slide's own
+                  aria-label ("N of 5" + aria-roledescription="slide")
+                  said the exact same position in two different word
+                  orders back to back for anyone who clicked Next/Prev
+                  and then swiped onward -- confirmed as a real double
+                  announcement, not just a theoretical one, since swiping
+                  onward after a button press is the normal way screen-
+                  reader touch users move through content. With aria-live
+                  on the track itself, the previously-hidden slide
+                  becoming un-aria-hidden IS the change the live region
+                  picks up and announces via that slide's own label, so
+                  there's exactly one announcement now, not two. */}
+              <motion.div
+                aria-live="polite"
+                aria-atomic="false"
                 className="flex items-start justify-start gap-0 sm:gap-s"
                 animate={{ x: offsetX }}
                 // skipAnimation (own comment on it above) goes instant
@@ -472,19 +472,19 @@ export default function Section9() {
                 transition={shouldReduceMotion || skipAnimation ? { duration: 0 } : { duration: 0.35, ease: 'easeOut' }}
               >
                 {EXTENDED_SLIDES.map((slide, i) => (
-                  <li
+                  // Clones are unconditionally aria-hidden, full stop --
+                  // never exposed regardless of realIndex, since they're
+                  // purely a visual stand-in for the seamless loop (own
+                  // comment on EXTENDED_SLIDES above). Only a REAL entry
+                  // (isClone false) ever becomes reachable, and only the
+                  // one matching realIndex -- the APG single-active-slide
+                  // model, same as before this rework, just now checked
+                  // against realIndex instead of activeIndex directly.
+                  <div
                     key={i}
                     role={slide.isClone ? undefined : 'group'}
                     aria-roledescription={slide.isClone ? undefined : 'slide'}
                     aria-label={slide.isClone ? undefined : `${slide.realIndex + 1} of ${SLIDES.length}`}
-                    // Clones are unconditionally aria-hidden, full stop --
-                    // never exposed regardless of realIndex, since they're
-                    // purely a visual stand-in for the seamless loop (own
-                    // comment on EXTENDED_SLIDES above). Only a REAL entry
-                    // (isClone false) ever becomes reachable, and only the
-                    // one matching realIndex -- the APG single-active-slide
-                    // model, same as before this rework, just now checked
-                    // against realIndex instead of activeIndex directly.
                     aria-hidden={slide.isClone || slide.realIndex !== realIndex ? true : undefined}
                     className="flex-shrink-0"
                     style={
@@ -494,9 +494,9 @@ export default function Section9() {
                     }
                   >
                     <img src={slide.src} alt={slide.alt} className="h-full w-full object-cover" />
-                  </li>
+                  </div>
                 ))}
-              </motion.ul>
+              </motion.div>
             </div>
           </div>
         </ScrollSection>

@@ -88,9 +88,16 @@ export default function Footer({ activeSection }) {
               activeColorClassName="text-body-inverted hover:text-capy-orange-100"
               defaultColorClassName="text-body-inverted hover:text-capy-orange-100"
             />
+            {/* Label deliberately distinct from DownloadButton's own
+                "Download our design guide" text -- this link only scrolls
+                to Section 17 (which has its own real download link to the
+                external file), it doesn't download anything itself.
+                Lighthouse's "Identical links have the same purpose" audit
+                flags two links sharing an accessible name but pointing to
+                different destinations, which this was doing. */}
             <NavLink
               href="#section-17"
-              label="Download our design guide"
+              label="Design guide"
               isActive={false}
               defaultColorClassName="text-body-inverted hover:text-capy-orange-100"
             />
